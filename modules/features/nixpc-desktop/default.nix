@@ -1,0 +1,69 @@
+# NIXPC desktop application suite, ported from
+# ~/.config/home-manager-v3/config/nixpc-config.nix (issue #25).
+#
+# Opt in from a host's `home-manager.users.<name>.imports`:
+#   imports = [ self.homeManagerModules.nixpcDesktop ];
+#
+# Deliberately NOT here (covered elsewhere or consciously dropped):
+#   - dunst/udiskie/grim/slurp/wl-clipboard/brightnessctl/swaylock -> mango
+#   - playerctl/pavucontrol -> audio;  libnotify -> core
+#   - eza/bat/zoxide/fzf/fastfetch/lazygit -> fish;  direnv/git -> programming
+#   - ghostty, nvim -> their own features
+#   - swaybg + waybar configs -> dropped outright (#28)
+#   - gaming tools (lutris/mangohud/gamescope/protonup-qt/wine/winetricks/
+#     vulkan tools/nvidia-vaapi-driver) -> gaming-tools feature (#26)
+#   - stremio-kai data package + mpv activation -> its own feature (#27)
+#
+# Session variables are NVIDIA/Wayland host-scoped and only make sense on
+# this machine — that is why they live here rather than waylandBase.
+{ ... }: {
+  flake.homeManagerModules.nixpcDesktop =
+    {
+      pkgs,
+      ...
+    }:
+    {
+      programs.brave = {
+        enable = true;
+        commandLineArgs = [
+          "--ozone-platform=wayland"
+          "--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,UseOzonePlatform"
+          "--enable-gpu-rasterization"
+          "--ignore-gpu-blocklist"
+        ];
+      };
+
+      home = {
+        packages = with pkgs; [
+          firefox
+          thunar
+          mpv
+          vlc
+          spotify
+          ncpamixer
+          pamixer
+          mission-center
+          lm_sensors
+          btop
+          gnome-disk-utility
+          ddcutil
+          wob
+          syshud
+          nwg-look
+          wl-clipboard-rs
+          nerd-fonts.droid-sans-mono
+          stremio-linux-shell
+        ];
+
+        sessionVariables = {
+          GBM_BACKEND = "nvidia-drm";
+          __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+          LIBVA_DRIVER_NAME = "nvidia";
+          WLR_NO_HARDWARE_CURSORS = "1";
+          WLR_RENDERER_ALLOW_SOFTWARE = "1";
+          SDL_VIDEODRIVER = "wayland,x11";
+          STEAM_USE_DYNAMIC_VGUI = "1";
+        };
+      };
+    };
+}

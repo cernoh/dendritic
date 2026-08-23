@@ -47,7 +47,8 @@
         grim
         slurp
         wl-clipboard
-        swaylock
+        # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
+        swaylock-effects
       ];
 
       wayland.windowManager.mango = {
