@@ -43,6 +43,7 @@
           ghostty
           nixpcDesktop
           gamingTools
+          stremioKai
         ];
         # Compact Noctalia variant from hm-v3 config/nixpc-noctalia.nix:
         # top-bar widget layout, cernoh/terminal plugin, Catppuccin.
