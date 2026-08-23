@@ -20,7 +20,12 @@
       # situation where the path is usable is a root rebuild on this machine,
       # so detect exactly that; everywhere else the platform module's neutral
       # defaults stay in effect and the path never enters derivation inputs.
-      onMacAsRoot = builtins.currentSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
+      # `currentSystem or null`: pure/restricted eval drops the attribute,
+      # and `getEnv` is outright forbidden there — the && short-circuit
+      # keeps both untouched in CI-style evaluations, which always take
+      # the neutral branch.
+      evalSystem = builtins.currentSystem or null;
+      onMacAsRoot = evalSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
       vendorfw = /boot/vendorfw;
     in
     {
@@ -28,7 +33,6 @@
 
       hardware.asahi.peripheralFirmwareDirectory = lib.mkIf onMacAsRoot vendorfw;
       hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
-
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
       home-manager.users.davr = {
@@ -36,6 +40,7 @@
           niri
           noctalia
           ghostty
+          posyCursors
         ];
         programs.noctalia.settings = import ./_noctalia-settings.nix;
       };

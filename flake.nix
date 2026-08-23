@@ -64,10 +64,6 @@
       url = "git+https://git.voidarc.co.uk/voidarc/nixos.davinci";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    driftwm = {
-      url = "github:malbiruk/driftwm";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     mangowm = {
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
