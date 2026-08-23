@@ -14,6 +14,8 @@
       noctalia
       ghostty
       programming
+      noctaliaGreeter
+      ({ programs.noctalia-greeter.greeter-args = "--session Niri"; })
     ];
   };
 }

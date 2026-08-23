@@ -15,6 +15,8 @@
       mango
       noctalia
       ghostty
+      noctaliaGreeter
+      ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
     ];
   };
 }
