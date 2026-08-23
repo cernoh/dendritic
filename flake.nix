@@ -1,6 +1,31 @@
 {
   description = "Dendritic master flake.";
 
+  # Offered by every `nix` command run against this flake; consumers accept
+  # once and get correct caches regardless of a broken global client
+  # ~/.config/nix/nix.conf (handoff: binary-cache substitution). Mirrors
+  # modules/system/core/nix-settings.nix; keep both lists in sync.
+  nixConfig = {
+    substituters = [
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+      "https://noctalia.cachix.org"
+      "https://nixos-apple-silicon.cachix.org"
+      "https://devenv.cachix.org"
+      "https://numtide.cachix.org"
+      "https://herdr.cachix.org"
+    ];
+    trusted-public-keys = [
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+      "nixos-apple-silicon.cachix.org-1:8psDu5SA5dAD7qA0zMy5UT292TxeEPzIz8VVEr2Js20="
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+      "numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE="
+      "herdr.cachix.org-1:3nH7IStRsS0ASfdonA0DCRR2ZrSCeWitZ7Kwew0cR4I="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     omp-flake = {
