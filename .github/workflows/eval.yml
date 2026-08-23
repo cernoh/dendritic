@@ -56,22 +56,17 @@ jobs:
         run: nix flake check --impure
 
       # Discover hosts dynamically so new nixosConfigurations are covered
-      # automatically; no matrix to keep in sync.
-      - name: List hosts
-        id: hosts
-        run: |
-          names="$(nix eval --impure --json '.#nixosConfigurations' --apply builtins.attrNames)"
-          echo "names=$names" >> "$GITHUB_OUTPUT"
-
+      # automatically; no matrix to keep in sync. Names arrive
+      # newline-separated straight from Nix — no JSON mangling in bash.
       - name: Strict-evaluate each host configuration
-        env:
-          HOSTS: ${{ steps.hosts.outputs.names }}
         run: |
           status=0
-          for host in $(echo "$HOSTS" | tr -d '[]",'); do
+          names="$(nix eval --impure --raw '.#nixosConfigurations' \
+            --apply 'ns: builtins.concatStringsSep "\n" (builtins.attrNames ns)')"
+          while IFS= read -r host; do
             [ -n "$host" ] || continue
             echo "::group::nixosConfigurations.$host"
             nix eval --impure ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" || status=1
             echo "::endgroup::"
-          done
+          done <<< "$names"
           exit $status
