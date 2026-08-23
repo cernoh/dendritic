@@ -1,0 +1,11 @@
+{
+  "title": "Terminal",
+  "status.starting": "Starting shell…",
+  "status.ready": "Shell running",
+  "status.unavailable": "Shell unavailable",
+  "input.placeholder": "Type a command and press Enter",
+  "button.clear": "Clear",
+  "button.close": "Close terminal",
+  "tooltip.clear": "Clear terminal output",
+  "tooltip.close": "Close terminal"
+}

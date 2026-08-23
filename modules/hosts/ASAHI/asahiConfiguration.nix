@@ -21,6 +21,13 @@
 
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
-      home-manager.users.davr.imports = [ self.homeManagerModules.niri ];
+      home-manager.users.davr = {
+        imports = with self.homeManagerModules; [
+          niri
+          noctalia
+          ghostty
+        ];
+        programs.noctalia.settings = import ./_noctalia-settings.nix;
+      };
     };
 }

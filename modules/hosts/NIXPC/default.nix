@@ -12,6 +12,8 @@
       nvidiaDrivers
       gaming
       mango
+      noctalia
+      ghostty
     ];
   };
 }
