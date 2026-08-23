@@ -1,0 +1,31 @@
+id = "cernoh/terminal"
+name = "Terminal"
+version = "1.0.0"
+plugin_api = 21
+author = "cernoh"
+license = "MIT"
+dependencies = ["script"]
+tags = ["terminal", "shell", "productivity"]
+icon = "terminal-2"
+description = "A persistent shell panel attached to the Noctalia bar."
+
+[[service]]
+id = "shell"
+entry = "service.luau"
+
+[[widget]]
+id = "bar"
+entry = "bar.luau"
+
+[[shortcut]]
+id = "toggle"
+entry = "shortcut.luau"
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 900
+height = 560
+placement = "attached"
+keyboard_focus = "exclusive"
+dismiss_on_outside_click = false

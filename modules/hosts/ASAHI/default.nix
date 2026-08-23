@@ -11,6 +11,8 @@
       asahiConfiguration
       asahiPlatform
       niri
+      noctalia
+      ghostty
       programming
     ];
   };

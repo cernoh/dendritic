@@ -13,6 +13,8 @@
       gaming
       programming
       mango
+      noctalia
+      ghostty
     ];
   };
 }
