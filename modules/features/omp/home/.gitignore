@@ -1,0 +1,36 @@
+# Oh My Pi state dir: tracked config only, runtime state never.
+#
+# ~/.omp is an out-of-store symlink to THIS directory, so omp writes all of
+# its live state here (dbs, sessions, logs, caches, daemons). Only genuine
+# config is committed; everything omp generates at runtime stays local.
+#
+# Pattern per gitignore semantics: ignore every entry under agent/, then
+# re-include the tracked ones (a re-include can't resurrect files inside an
+# ignored directory, so tracked subdirectories are negated as dirs first).
+
+agent/*
+!agent/RULES.md
+!agent/config.yml
+!agent/mcp.json
+!agent/managed-skills/
+!agent/managed-skills/**
+!agent/scripts/
+!agent/scripts/**
+
+logs/
+natives/
+cache/
+terminal-sessions/
+puppeteer/
+run/
+ssh-control/
+
+gpu_cache.json
+install-id
+autoqa.db
+*.db
+*.db-shm
+*.db-wal
+omp-session-*
+
+plugins/node_modules/

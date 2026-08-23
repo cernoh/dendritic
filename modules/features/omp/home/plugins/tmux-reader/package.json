@@ -1,0 +1,13 @@
+{
+  "name": "omp-tmux-reader",
+  "version": "0.1.0",
+  "description": "Read from running tmux panes for live debugging",
+  "license": "MIT",
+  "omp": {
+    "extensions": ["./index.ts"],
+    "skills": ["skills"]
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*"
+  }
+}

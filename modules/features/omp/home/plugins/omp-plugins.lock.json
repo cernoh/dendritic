@@ -1,0 +1,50 @@
+{
+  "plugins": {
+    "pi-teams": {
+      "version": "0.9.14",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "omp-direnv": {
+      "version": "0.1.0",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "@sinamtz/pi-minimax-provider": {
+      "version": "1.1.5",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "install": {
+      "version": "0.13.0",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "@imsus/pi-extension-minimax-coding-plan-mcp": {
+      "version": "1.0.2",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "pi-subagents": {
+      "version": "0.31.0",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "@dietrichgebert/ponytail": {
+      "version": "4.8.4",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "pi-interactive-shell": {
+      "version": "0.13.0",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "omp-tmux-reader": {
+      "version": "0.1.0",
+      "enabledFeatures": null,
+      "enabled": true
+    }
+  },
+  "settings": {}
+}
