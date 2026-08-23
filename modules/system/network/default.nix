@@ -2,26 +2,28 @@
   self,
   inputs,
   ...
-}: {
-  flake.nixosModules.network = {
-    pkgs,
-    lib,
-    ...
-  }: {
-    ##TODO: add nextdns with agenix
-    networking = {
-      networkmanager = {
-        enable = true;
-        dns = "nextdns";
+}:
+{
+  flake.nixosModules.network =
+    {
+      pkgs,
+      lib,
+      ...
+    }:
+    {
+      ##TODO: add nextdns with agenix
+      networking = {
+        networkmanager = {
+          enable = true;
+        };
+        nameservers = [
+        ];
+        firewall.enable = false;
       };
-      nameservers = [
-      ];
-      firewall.enable = false;
-    };
-    services.unbound = {
-      enable = true;
-    };
+      services.unbound = {
+        enable = true;
+      };
 
-    systemd.services.NetworkManager-wait-online.enable = false;
-  };
+      systemd.services.NetworkManager-wait-online.enable = false;
+    };
 }
