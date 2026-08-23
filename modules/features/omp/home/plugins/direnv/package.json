@@ -1,0 +1,13 @@
+{
+  "name": "omp-direnv",
+  "version": "0.1.0",
+  "description": "Automatically loads direnv environment for bash commands in the agent",
+  "license": "MIT",
+  "omp": {
+    "extensions": ["./index.ts"],
+    "skills": ["skills"]
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "omp-plugins",
+  "private": true,
+  "dependencies": {
+    "@dietrichgebert/ponytail": "github:DietrichGebert/ponytail",
+    "@imsus/pi-extension-minimax-coding-plan-mcp": "^1.0.2",
+    "@sinamtz/pi-minimax-provider": "^1.1.5",
+    "install": "^0.13.0",
+    "omp-direnv": "./direnv",
+    "pi-interactive-shell": "^0.13.0",
+    "pi-mcp-adapter": "^2.8.0",
+    "pi-subagents": "^0.31.0",
+    "pi-teams": "0.9.14"
+  }
+}
