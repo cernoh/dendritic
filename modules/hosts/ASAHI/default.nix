@@ -10,6 +10,7 @@
       desktop
       asahiConfiguration
       asahiPlatform
+      niri
     ];
   };
 }

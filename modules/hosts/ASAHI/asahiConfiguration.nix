@@ -16,8 +16,11 @@
       # dump the Asahi installer places on the ESP. Only evaluable/buildable
       # ON this machine: /boot/vendorfw is root-only, so foreign machines
       # fail while stat-ing the path. Rebuild with:
-      #   sudo nixos-rebuild switch --impure --flake .#ASAHI
       hardware.asahi.peripheralFirmwareDirectory = /boot/vendorfw;
       hardware.asahi.extractPeripheralFirmware = true;
+
+      # Host-specific HM features; the shared homeManager module contributes
+      # nvf + omp, and `imports` concatenates across modules.
+      home-manager.users.davr.imports = [ self.homeManagerModules.niri ];
     };
 }
