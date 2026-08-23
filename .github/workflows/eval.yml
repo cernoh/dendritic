@@ -1,9 +1,10 @@
 # Ensures every commit evaluates: whole-flake composition checks plus deep
 # per-host strict evaluation against machine-neutral stubs.
 #
-# Why two gates?
+# Why stubs come first?
 #   - `nix flake check --impure` covers module composition (merging, packages,
-#     devshells) but does NOT force nixosConfigurations toplevels.
+#     devshells). Depending on the Nix version it may also force
+#     nixosConfigurations toplevels, so it must run with stubs already seeded.
 #   - Per-host `system.build.toplevel.drvPath` evaluation forces every option
 #     value through derivation strictification, catching typos, conflicts and
 #     broken wiring that lazy composition hides until rebuild day.
@@ -39,34 +40,33 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Whole-flake check
-        run: nix flake check --impure
-
-      # Empty dir is enough: eval only stats the pinned firmware path during
-      # derivation strictification; extraction runs at build time on the Mac.
+      # Hosts import /etc/nixos/hardware-configuration.nix only when present
+      # (voidarc guard in modules/system/core/default.nix) and ASAHI pins its
+      # ESP firmware path, so BOTH gates below need these stand-ins in place
+      # before any evaluation runs. Empty dir is enough for vendorfw: eval
+      # only stats the pinned path during derivation strictification;
+      # extraction runs at build time on the Mac.
       - name: Seed machine-neutral eval stubs
         run: |
           sudo mkdir -p /etc/nixos /boot/vendorfw
           sudo install -m 644 .github/stubs/hardware-configuration.nix \
             /etc/nixos/hardware-configuration.nix
 
-      # Discover hosts dynamically so new nixosConfigurations are covered
-      # automatically; no matrix to keep in sync.
-      - name: List hosts
-        id: hosts
-        run: |
-          names="$(nix eval --impure --json '.#nixosConfigurations' --apply builtins.attrNames)"
-          echo "names=$names" >> "$GITHUB_OUTPUT"
+      - name: Whole-flake check
+        run: nix flake check --impure
 
+      # Discover hosts dynamically so new nixosConfigurations are covered
+      # automatically; no matrix to keep in sync. Names arrive
+      # newline-separated straight from Nix — no JSON mangling in bash.
       - name: Strict-evaluate each host configuration
-        env:
-          HOSTS: ${{ steps.hosts.outputs.names }}
         run: |
           status=0
-          for host in $(echo "$HOSTS" | tr -d '[]",'); do
+          names="$(nix eval --impure --raw '.#nixosConfigurations' \
+            --apply 'ns: builtins.concatStringsSep "\n" (builtins.attrNames ns)')"
+          while IFS= read -r host; do
             [ -n "$host" ] || continue
             echo "::group::nixosConfigurations.$host"
             nix eval --impure ".#nixosConfigurations.$host.config.system.build.toplevel.drvPath" || status=1
             echo "::endgroup::"
-          done
+          done <<< "$names"
           exit $status
