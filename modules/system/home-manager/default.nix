@@ -24,6 +24,7 @@
           imports = with self.homeManagerModules; [
             nvf
             omp
+            programming
           ];
           home = {
             username = "davr";

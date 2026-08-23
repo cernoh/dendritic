@@ -11,6 +11,7 @@
       asahiConfiguration
       asahiPlatform
       niri
+      programming
     ];
   };
 }
