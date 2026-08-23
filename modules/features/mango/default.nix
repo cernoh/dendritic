@@ -245,12 +245,12 @@
           ];
         };
 
+        # No wallpaper autostart: noctalia's wallpaper module owns the
+        # desktop background on every host; the v3 swaybg wrapper was
+        # deliberately dropped (issue #28).
         autostart_sh = ''
           dunst &
           udiskie &
-          # Wallpaper setup (swaybg script) lives outside this flake for now;
-          # the line no-ops until that lands.
-          ~/.config/swaybg/start-swaybg.sh
         '';
       };
     };
