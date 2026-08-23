@@ -1,0 +1,37 @@
+{
+        "plugin": [
+                "@simonwjackson/opencode-direnv",
+                "opencode-fff-search"
+        ],
+        "$schema": "https://opencode.ai/config.json",
+        "lsp": {
+                "gdscript": {
+                        "command": [
+                                "npx",
+                                "opencode-godot-lsp"
+                        ],
+                        "extensions": [
+                                ".gd",
+                                ".gdshader"
+                        ]
+                }
+        },
+        "mcp": {
+                "playwright": {
+                        "type": "local",
+                        "command": [
+                                "npx",
+                                "@playwright/mcp@latest"
+                        ],
+                        "enabled": true
+                },
+        },
+        "permission": {
+                "read": {
+                        "~/.config/opencode/get-shit-done/*": "allow"
+                },
+                "external_directory": {
+                        "~/.config/opencode/get-shit-done/*": "allow"
+                }
+        }
+}

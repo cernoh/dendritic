@@ -1,0 +1,82 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/dev/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "sisyphus": {
+                        "model": "github-copilot/claude-opus-4.5",
+      "fallback_models": "nvidia/moonshotai/kimi-k2.5",
+"prompt_append": "Use npx kratos-memory CLI for persistent memory. Run npx kratos-memory --help to see commands. Save important observations. Search before starting work."
+    },
+    "hephaestus": {
+      "model": "github-copilot/gpt-5.3-codex",
+      "variant": "medium",
+"prompt_append": "Use npx kratos-memory CLI for persistent memory. Run npx kratos-memory --help to see commands. Save important observations. Search before starting work."
+    },
+    "oracle": {
+      "model": "github-copilot/claude-sonnnet-4.5",
+      "variant": "high"
+    },
+    "explore": {
+      "model": "github-copilot/gpt-5-mini",
+"prompt_append": "Use npx kratos-memory CLI for persistent memory. Run npx kratos-memory --help to see commands. Save important observations. Search before starting work. Try to fit whatever you find into a memory with the tag exploration, then tell the original model to make sure they read it."
+    },
+    "multimodal-looker": {
+      "model": "google/gemini-2.5-flash",
+      "variant": "medium"
+    },
+    "prometheus": {
+                        "model": "nvidia/z-ai/glm5"
+    },
+    "metis": {
+
+                        "model": "nvidia/z-ai/glm5"
+    },
+    "momus": {
+
+                        "model": "nvidia/z-ai/glm5"
+    },
+    "atlas": {
+      "model": "github-copilot/gpt-5.2"
+    },
+    "sisyphus-junior": {
+      "model": "github-copilot/claude-sonnet-4.5"
+    },
+    "librarian": {
+      "model": "github-copilot/gpt-5-mini",
+"prompt_append": "Use npx kratos-memory CLI for persistent memory. Run npx kratos-memory --help to see commands. Save important observations. Search before starting work."
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "nvidia/moonshotai/kimi-k2.5"
+    },
+    "ultrabrain": {
+
+      "model": "nvidia/moonshotai/kimi-k2.5"
+    },
+    "artistry": {
+      "model": "nvidia/moonshotai/kimi-k2.5"
+    },
+    "quick": {
+      "model": "github-copilot/gpt-5-mini"
+    },
+    "unspecified-low": {
+      "model": "nvidia/meta/llama-3.3-70b-instruct"
+    },
+    "unspecified-high": {
+      "model": "github-copilot/gpt-5.1-codex"
+    },
+    "writing": {
+      "model": "google/gemini-2.5-flash",
+      "prompt_append": "Apply the ste-writing managed skill for all prose output. Use STE-flavored mode for general text and strict mode for procedures, error messages, or safety text."
+    },
+    "deep": {
+      "model": "github-copilot/gpt-5.1-codex",
+      "variant": "medium"
+    }
+  },
+  "tmux": {
+                "main_pane_min_width": 120,
+    "enabled": true,
+    "layout": "main-vertical"
+  }
+}

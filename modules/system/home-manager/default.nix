@@ -27,6 +27,7 @@
             programming
             fish
             nushell
+            opencode
           ];
           home = {
             username = "davr";
