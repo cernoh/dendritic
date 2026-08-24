@@ -70,7 +70,11 @@
     { lib, ... }:
     let
       hardwareFile = /etc/nixos/hardware-configuration.nix;
-      onMachine = builtins.currentSystem == system && builtins.pathExists hardwareFile;
+      # `builtins.currentSystem` disappears under pure/restricted eval, so
+      # select it defensively: there we always take the placeholder branch,
+      # which is exactly right for CI-style evaluations.
+      evalSystem = builtins.currentSystem or null;
+      onMachine = evalSystem == system && builtins.pathExists hardwareFile;
     in
     {
       imports = lib.optional onMachine hardwareFile;
