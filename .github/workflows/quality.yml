@@ -39,7 +39,12 @@ jobs:
           else
             base="${{ github.event.before }}"
           fi
-          files=$(git diff --name-only "$base" "${{ github.sha }}" -- '*.nix' | tr '\n' ' ')
+          # Three-dot diff: compare against the merge-base with the default
+          # branch, not its tip. Long-lived stacked branches otherwise see
+          # files that exist only on main (e.g. .github/stubs from a PR
+          # merged after this stack diverged) reported as changed — and
+          # nixfmt --check crashes on paths missing from the checkout.
+          files=$(git diff --name-only "$base"..."${{ github.sha }}" -- '*.nix' | tr '\n' ' ')
           echo "files=$files" >> "$GITHUB_OUTPUT"
       - name: Check formatting
         if: steps.changed.outputs.files != ''
