@@ -1,0 +1,4 @@
+name = Posy's Cursor Black
+description = A hyprcursor port of simtrami's fork of Posy's Cursor Black
+version = 0.1.8.1
+cursors_directory = hyprcursors
