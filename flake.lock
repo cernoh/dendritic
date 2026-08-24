@@ -397,6 +397,7 @@
         "noctalia-greeter": "noctalia-greeter",
         "nvf": "nvf",
         "omp-flake": "omp-flake",
+        "stremio-kai": "stremio-kai",
         "wrappers": "wrappers"
       }
     },
@@ -420,6 +421,23 @@
       "original": {
         "owner": "wlrfx",
         "repo": "scenefx",
+        "type": "github"
+      }
+    },
+    "stremio-kai": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1784387373,
+        "narHash": "sha256-3VL35j6NnMh9xs6M1blYJ6l33jZv3j6U5OKVGqKlI00=",
+        "owner": "allecsc",
+        "repo": "Stremio-Kai",
+        "rev": "37e6273a7d18ff0a3745c59265aebd99bb2509a6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "allecsc",
+        "repo": "Stremio-Kai",
+        "rev": "37e6273a7d18ff0a3745c59265aebd99bb2509a6",
         "type": "github"
       }
     },

@@ -64,6 +64,12 @@
       url = "git+https://git.voidarc.co.uk/voidarc/nixos.davinci";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Pinned rev (v4.8.0), flake = false: consumed as a plain source tree by
+    # the data package in modules/features/stremio-kai/_stremio-kai.pkg.nix.
+    stremio-kai = {
+      url = "github:allecsc/Stremio-Kai/37e6273a7d18ff0a3745c59265aebd99bb2509a6";
+      flake = false;
+    };
     mangowm = {
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
