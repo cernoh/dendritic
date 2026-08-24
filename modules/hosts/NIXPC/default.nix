@@ -11,6 +11,7 @@
       nixpcConfiguration
       nvidiaDrivers
       gaming
+      programming
       mango
       noctalia
       ghostty

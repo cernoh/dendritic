@@ -13,6 +13,7 @@
       niri
       noctalia
       ghostty
+      programming
     ];
   };
 }
