@@ -68,10 +68,6 @@
       url = "github:malbiruk/driftwm";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    herdr = {
-      url = "github:ogulcancelik/herdr";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     mangowm = {
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
