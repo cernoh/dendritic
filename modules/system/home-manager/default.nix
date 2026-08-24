@@ -25,6 +25,7 @@
             nvf
             omp
             programming
+            fish
           ];
           home = {
             username = "davr";
