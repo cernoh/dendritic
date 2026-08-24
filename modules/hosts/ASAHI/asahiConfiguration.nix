@@ -9,15 +9,25 @@
       lib,
       ...
     }:
+    let
+      # Peripheral firmware (Wi-Fi, webcam, ambient light sensor) is dumped
+      # by the Asahi installer onto the ESP at /boot/vendorfw, root-only.
+      #
+      # That path must never be probed directly: for any non-root user,
+      # `builtins.pathExists` on it THROWS "Permission denied" (tryEval does
+      # not contain it either — skill asahi-vendorfw-cross-eval-trap mode 2),
+      # which would break every cross evaluation (CI, other hosts). The only
+      # situation where the path is usable is a root rebuild on this machine,
+      # so detect exactly that; everywhere else the platform module's neutral
+      # defaults stay in effect and the path never enters derivation inputs.
+      onMacAsRoot = builtins.currentSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
+      vendorfw = /boot/vendorfw;
+    in
     {
       networking.hostName = "ASAHI";
 
-      # Peripheral firmware (Wi-Fi, webcam, ambient light sensor) from the
-      # dump the Asahi installer places on the ESP. Only evaluable/buildable
-      # ON this machine: /boot/vendorfw is root-only, so foreign machines
-      # fail while stat-ing the path. Rebuild with:
-      hardware.asahi.peripheralFirmwareDirectory = /boot/vendorfw;
-      hardware.asahi.extractPeripheralFirmware = true;
+      hardware.asahi.peripheralFirmwareDirectory = lib.mkIf onMacAsRoot vendorfw;
+      hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
 
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
