@@ -1,0 +1,28 @@
+name: Update flake lock
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Update flake.lock
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - name: Open update pull request
+        uses: DeterminateSystems/update-flake-lock@v27
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: automation/update-flake-lock
+          pr-title: 'chore: update flake inputs'
+          git-author-name: github-actions[bot]
+          git-author-email: 41898282+github-actions[bot]@users.noreply.github.com
+          git-committer-name: github-actions[bot]
+          git-committer-email: 41898282+github-actions[bot]@users.noreply.github.com

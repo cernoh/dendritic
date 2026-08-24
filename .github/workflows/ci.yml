@@ -1,0 +1,47 @@
+name: Nix CI
+
+on:
+  pull_request:
+    paths:
+      - '**/*.nix'
+      - 'flake.lock'
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - '**/*.nix'
+      - 'flake.lock'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate-hosts:
+    name: Evaluate ${{ matrix.host }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [NIXPC, ASAHI]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      # Pure evaluation: runners have no /etc/nixos and no /boot/vendorfw,
+      # so core's hardwareFromMachine takes the placeholder-root-filesystem
+      # branch and ASAHI keeps its neutral firmware defaults — exactly the
+      # cross-machine evaluation mode the modules were built for (#16).
+      # Real-deploy validation happens on each machine with `--impure`.
+      - name: Evaluate host toplevel
+        run: |
+          nix eval --accept-flake-config \
+            --raw ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel.drvPath"
+
+  flake-check:
+    name: Flake check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v16
+      - name: nix flake check (x86_64-linux scope)
+        run: nix flake check --accept-flake-config --impure
