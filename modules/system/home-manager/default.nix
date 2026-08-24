@@ -28,6 +28,7 @@
             fish
             nushell
             opencode
+            waylandBase
           ];
           home = {
             username = "davr";
