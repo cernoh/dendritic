@@ -1,0 +1,21 @@
+{
+  "backed_up_at": "2026-04-22T22:25:26.849Z",
+  "from_version": "1.38.1",
+  "from_manifest_timestamp": "2026-04-20T21:31:55.699Z",
+  "files": [
+    "get-shit-done/VERSION",
+    "get-shit-done/workflows/import.md",
+    "get-shit-done/workflows/sketch.md",
+    "command/gsd-set-profile.md",
+    "hooks/gsd-check-update.js",
+    "hooks/gsd-context-monitor.js"
+  ],
+  "pristine_hashes": {
+    "get-shit-done/VERSION": "995c14ca49b032f607f2b5e836729304546380b0099ac41d827d0469813ce992",
+    "get-shit-done/workflows/import.md": "ec27aa0fb901c0b245b6360df71504372c80b8dc9e2e418414632f133933b2c6",
+    "get-shit-done/workflows/sketch.md": "34c112a5e3219b5c1c858a618f88c81abf419bacbfc182e545a19bf00c75f506",
+    "command/gsd-set-profile.md": "a6ad5333c170831d9f3f8e2dc85748758540666e556ef54ed543528280906a5b",
+    "hooks/gsd-check-update.js": "0e8b1da3c4592ceeeab65468cf7544a578f9389e4eb19aac7fff4d3ad07085bb",
+    "hooks/gsd-context-monitor.js": "b31df8f735fa96ef5661d87f6db4ce0138501c945fa6b89200088a9cadace11d"
+  }
+}
