@@ -26,6 +26,7 @@
             omp
             programming
             fish
+            nushell
           ];
           home = {
             username = "davr";
