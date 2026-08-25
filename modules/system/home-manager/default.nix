@@ -9,8 +9,12 @@
   flake.nixosModules.homeManager =
     {
       lib,
+      config,
       ...
     }:
+    let
+      userName = config.dendritic.userName;
+    in
     {
       imports = [ inputs.home-manager.nixosModules.default ];
 
@@ -20,7 +24,7 @@
         # Don't clobber pre-existing dotfiles on first switch; move them aside.
         backupFileExtension = "hm-backup";
 
-        users.davr = {
+        users.${userName} = {
           imports = with self.homeManagerModules; [
             nvf
             omp
@@ -31,8 +35,8 @@
             waylandBase
           ];
           home = {
-            username = "davr";
-            homeDirectory = "/home/davr";
+            username = userName;
+            homeDirectory = "/home/${userName}";
             stateVersion = "25.05";
           };
         };

@@ -7,6 +7,7 @@
   flake.nixosModules.asahiConfiguration =
     {
       lib,
+      config,
       ...
     }:
     let
@@ -31,11 +32,16 @@
     {
       networking.hostName = "ASAHI";
 
+      # The Mac's existing login is "da" (carried over from hm-v3); unlike
+      # NIXPC it must NOT default to "davr", or switch would create a second,
+      # unconfigured account next to the real one.
+      dendritic.userName = "da";
+
       hardware.asahi.peripheralFirmwareDirectory = lib.mkIf onMacAsRoot vendorfw;
       hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
-      home-manager.users.davr = {
+      home-manager.users.${config.dendritic.userName} = {
         imports = with self.homeManagerModules; [
           niri
           noctalia

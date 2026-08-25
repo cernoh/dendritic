@@ -7,6 +7,7 @@
   flake.nixosModules.nixpcConfiguration =
     {
       lib,
+      config,
       ...
     }:
     {
@@ -36,7 +37,7 @@
       };
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
-      home-manager.users.davr = {
+      home-manager.users.${config.dendritic.userName} = {
         imports = with self.homeManagerModules; [
           mango
           noctalia
