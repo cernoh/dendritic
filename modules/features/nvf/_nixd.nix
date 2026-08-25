@@ -11,8 +11,6 @@
 #
 # Fields populated below:
 #   nixpkgs     - the nixpkgs instance nixd uses for package/lib completion
-#   formatting  - formatter invoked by nixd on format requests
-#   options     - module option sets nixd should know about for completion
 {
   # Root markers that tell nixd where the workspace root lives.
   # The nvf nixd preset ships with `[ ".git" ]`; we also accept
@@ -48,13 +46,11 @@
         expr = "import (builtins.getFlake (toString ./.)).inputs.nixpkgs { }";
       };
 
-      # Formatter. `nixfmt` is the current default; if you
-      # prefer `alejandra`, `nil`, or something else, change the
-      # command here. Whatever you name must be on `$PATH` when
-      # nvim is launched (typically added to `home.packages`).
-      formatting = {
-        command = ["nixfmt"];
-      };
+      # Formatting is deliberately NOT configured here: nvf owns it via
+      # vim.languages.nix.format.type (conform-nvim, bundled nixfmt preset
+      # with an absolute store path). Pointing nixd at a bare `formatting.
+      # command` would reintroduce a $PATH dependency that breaks in any
+      # environment without a globally installed formatter.
     };
   };
 }

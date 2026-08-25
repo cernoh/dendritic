@@ -5,6 +5,12 @@
 # Opt in from a home-manager configuration:
 #   imports = [ self.homeManagerModules.programming ];
 #
+# Policy (issue #54): projects bring their own toolchains through direnv
+#   (nix-direnv), so no global language runtime is installed here — a
+#   localised bun/nodejs/jdk/... would only drift from what each project's
+#   env actually pins. Editor-side LSP/formatter/DAP binaries live inside
+#   the nvf feature (features/nvf), which bundles them via nvf presets.
+#
 # Deviations from v3, each fixing a latent break instead of copying it:
 #   - gh added to packages: v3 set credential.helper = "!gh auth git-credential"
 #     globally but only packaged gh on WSL, leaving other machines' helper dangling.
@@ -21,30 +27,11 @@
     }:
     {
       home.packages = with pkgs; [
-        # Language toolchains & runtimes
-        jdk
-        maven
-        python3
-        nodejs
-        bun
-        deno
-        yarn
-        clang
-        lldb
-        lua
-
-        # Language servers & formatters
-        lua-language-server
-        stylua
-        tree-sitter
-        nixd
-        nixfmt # formatter used by nvf's nixd setup (features/nvf/_nixd.nix)
-
-        # Dev infrastructure & workflows
+        # Dev infrastructure & workflows. NOT language runtimes: direnv
+        # provides those per project; NOT editor tooling: nvf bundles it.
         cachix
         devbox
         devenv
-        act
         worktrunk
         jujutsu
         gh # backs programs.git credential.helper below
@@ -397,14 +384,6 @@
       home.sessionVariables = {
         EDITOR = "nvim";
         VISUAL = "nvim";
-        PATH = "$HOME/.npm-global/bin:$HOME/.local/share/pnpm:$PATH";
       };
-
-      # npm global installs go to ~/.npm-global (v3 home.activation.setNpmPrefix)
-      home.activation.setNpmPrefix = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        if ! $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm config get prefix | grep -q "$HOME/.npm-global"; then
-          $DRY_RUN_CMD ${pkgs.nodejs}/bin/npm config set prefix "$HOME/.npm-global"
-        fi
-      '';
     };
 }

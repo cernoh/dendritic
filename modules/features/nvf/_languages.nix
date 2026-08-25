@@ -7,7 +7,12 @@
     nix = {
       enable = true;
       extraDiagnostics.enable = true;
-      lsp.servers = ["nixd"];
+      lsp.servers = [ "nixd" ];
+      # Formatter for conform-nvim (formatOnSave). nvf's nixfmt preset
+      # bundles the binary via an absolute store path, so formatting works
+      # with nothing on $PATH — previously this silently defaulted to
+      # alejandra while _nixd.nix pointed at a PATH-installed nixfmt.
+      format.type = [ "nixfmt" ];
     };
     qml.enable = true;
     python = {
@@ -46,9 +51,9 @@
     html.enable = true;
     typescript = {
       enable = true;
-      lsp.servers = ["deno"];
+      lsp.servers = [ "deno" ];
       extensions.ts-error-translator.enable = true;
-      format.type = ["prettier"];
+      format.type = [ "prettier" ];
     };
     json = {
       enable = true;
@@ -58,7 +63,7 @@
       extensions.crates-nvim.enable = true;
       lsp.enable = true;
       dap.enable = true;
-      dap.debugger = ["lldb"];
+      dap.debugger = [ "lldb" ];
       format.enable = true;
     };
     go.enable = true;
