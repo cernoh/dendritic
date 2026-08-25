@@ -11,6 +11,7 @@
   flake.nixosModules.act =
     {
       pkgs,
+      config,
       ...
     }:
     {
@@ -22,7 +23,7 @@
       # non-interactively instead of hanging on the image prompt.
       # Requires the homeManager glue (co-imported by attrs/desktop);
       # per-run overrides still work via -P/--container-architecture.
-      home-manager.users.davr.home.file.".actrc".text = ''
+      home-manager.users.${config.dendritic.userName}.home.file.".actrc".text = ''
         -P ubuntu-latest=catthehacker/ubuntu:act-latest
       '';
     };
