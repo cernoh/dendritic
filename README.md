@@ -35,6 +35,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 
 | Feature | What importing it enables |
 |---|---|
+| `act` | GitHub Actions local runner via [nektos/act](https://github.com/nektos/act); composes `docker`, ships a default runner image in `~/.actrc`. Enabled by the `desktop` bundle |
 | `davinci` | DaVinci Resolve (from the `davinci` input) |
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902, hindsight host-networked) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
