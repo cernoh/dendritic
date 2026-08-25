@@ -14,6 +14,7 @@
   flake.nixosModules.docker =
     {
       pkgs,
+      config,
       ...
     }:
     {
@@ -21,7 +22,7 @@
 
       # Container access for the primary user (merged into the groups set
       # by system/core's nixosModules.user).
-      users.users.davr.extraGroups = [ "docker" ];
+      users.users.${config.dendritic.userName}.extraGroups = [ "docker" ];
 
       environment.systemPackages = [
         pkgs.docker-compose

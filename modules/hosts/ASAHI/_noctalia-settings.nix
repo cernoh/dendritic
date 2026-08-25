@@ -5,7 +5,6 @@
 # explicitly into programs.noctalia.settings.
 #
 # Adaptations vs hm-v3 (everything else verbatim):
-# - wallpaper.directory: hm-v3 ran as user "da"; this flake's user is davr.
 # - appLauncher.terminalCommand: alacritty is not installed here; ghostty is
 #   (and ghostty accepts `-e` per its CLI).
 {
@@ -316,11 +315,10 @@
     monitorForColors = "";
     syncGsettings = true;
   };
-
   wallpaper = {
     enabled = true;
     overviewEnabled = false;
-    directory = "/home/davr/Pictures/Wallpapers";
+    directory = "/home/da/Pictures/Wallpapers";
     monitorDirectories = [ ];
     enableMultiMonitorDirectories = false;
     showHiddenFiles = false;

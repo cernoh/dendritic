@@ -10,13 +10,19 @@
 # The upstream module (inputs.noctalia-greeter) enables greetd and
 # accounts-daemon by default, renders the command as
 #   <package>/bin/noctalia-greeter-session -- <greeter-args>
-# and asserts default_session.user exists — hence davr below, who is
-# created by system/core (nixosModules.user).
-{ inputs, ... }: {
-  flake.nixosModules.noctaliaGreeter = {
-    imports = [ inputs.noctalia-greeter.nixosModules.default ];
+# and asserts default_session.user exists — hence the primary user below
+# (dendritic.userName), who is created by system/core (nixosModules.user).
+{
+  inputs,
+  ...
+}:
+{
+  flake.nixosModules.noctaliaGreeter =
+    { config, ... }:
+    {
+      imports = [ inputs.noctalia-greeter.nixosModules.default ];
 
-    programs.noctalia-greeter.enable = true;
-    services.greetd.settings.default_session.user = "davr";
-  };
+      programs.noctalia-greeter.enable = true;
+      services.greetd.settings.default_session.user = config.dendritic.userName;
+    };
 }

@@ -29,46 +29,48 @@ let
   ];
 in
 {
-  flake.nixosModules.nixSettings = {
-    nix = {
-      settings = {
-        experimental-features = [
-          "nix-command"
-          "flakes"
-        ];
-        trusted-users = [
-          "root"
-          "davr"
-        ];
-        # cache.nixos.org stays FIRST — substituters are tried in order,
-        # and assigning `substituters` replaces the built-in default, so
-        # it must be listed explicitly. Without it, user shells whose HM
-        # config overrides substituters silently lose the official cache
-        # entirely (see managed skill nix-substitution-silently-broken).
-        substituters = [ "https://cache.nixos.org" ] ++ cachixSubstituters;
-        # Same non-default caches, so untrusted users may use them too.
-        trusted-substituters = cachixSubstituters;
-        trusted-public-keys = [
-          "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-        ]
-        ++ cachixKeys;
+  flake.nixosModules.nixSettings =
+    { config, ... }:
+    {
+      nix = {
+        settings = {
+          experimental-features = [
+            "nix-command"
+            "flakes"
+          ];
+          trusted-users = [
+            "root"
+            config.dendritic.userName
+          ];
+          # cache.nixos.org stays FIRST — substituters are tried in order,
+          # and assigning `substituters` replaces the built-in default, so
+          # it must be listed explicitly. Without it, user shells whose HM
+          # config overrides substituters silently lose the official cache
+          # entirely (see managed skill nix-substitution-silently-broken).
+          substituters = [ "https://cache.nixos.org" ] ++ cachixSubstituters;
+          # Same non-default caches, so untrusted users may use them too.
+          trusted-substituters = cachixSubstituters;
+          trusted-public-keys = [
+            "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+          ]
+          ++ cachixKeys;
+        };
+        registry.nixpkgs.flake = inputs.nixpkgs;
+        nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
+        optimise.automatic = true;
+        gc = {
+          automatic = true;
+          dates = "weekly";
+          options = "--delete-older-than 14d";
+        };
       };
-      registry.nixpkgs.flake = inputs.nixpkgs;
-      nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
-      optimise.automatic = true;
-      gc = {
-        automatic = true;
-        dates = "weekly";
-        options = "--delete-older-than 14d";
-      };
+
+      # Steam, CopilotChat's language server, DaVinci Resolve, ...
+      nixpkgs.config.allowUnfree = true;
+
+      # Deliberate deviation from home-manager-v3, which pinned
+      # `nix.package = pkgs.nixVersions.latest`: follow the nixpkgs default.
+      # nixos-unstable ships a current Nix anyway, and a pin would add a
+      # rebuild trigger with no stability benefit.
     };
-
-    # Steam, CopilotChat's language server, DaVinci Resolve, ...
-    nixpkgs.config.allowUnfree = true;
-
-    # Deliberate deviation from home-manager-v3, which pinned
-    # `nix.package = pkgs.nixVersions.latest`: follow the nixpkgs default.
-    # nixos-unstable ships a current Nix anyway, and a pin would add a
-    # rebuild trigger with no stability benefit.
-  };
 }
