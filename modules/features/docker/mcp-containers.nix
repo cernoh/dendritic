@@ -12,19 +12,29 @@
 #   hindsight-control-plane host network same tag
 #
 # Invariants carried over from v3:
-#   - The Hindsight LLM key lives ONLY in ~/.config/hindsight/.env, never in
-#     the store: the api unit gets it via EnvironmentFile and a pre-start
-#     check hard-fails when the file is absent (v3 skipped provisioning then;
-#     a red unit is the honest declarative equivalent).
+#   - The Hindsight LLM key lives ONLY in the primary user's
+#     ~/.config/hindsight/.env, never in the store: the api unit gets it via
+#     EnvironmentFile and a pre-start check hard-fails when the file is
+#     absent (v3 skipped provisioning then; a red unit is the honest
+#     declarative equivalent).
 #   - agentwebsearch-mcp is built locally from the omp feature's skill dir;
 #     a oneshot service builds the image only when missing and the container
 #     unit requires+orders after it with pull = "never".
-{ ... }: {
+{ ... }:
+{
   flake.nixosModules.mcpContainers =
     {
       pkgs,
+      config,
       ...
     }:
+    let
+      # The env file belongs to the host's primary user, not to any fixed
+      # login name (issue #61): derive it from dendritic.userName so importing
+      # this module on a host with a different primary user keeps pointing at
+      # a real path.
+      hindsightEnv = "${config.users.users.${config.dendritic.userName}.home}/.config/hindsight/.env";
+    in
     {
       virtualisation.oci-containers = {
         backend = "docker";
@@ -61,7 +71,7 @@
               "--restart=unless-stopped"
               "--network=host"
             ];
-            environmentFiles = [ "/home/davr/.config/hindsight/.env" ];
+            environmentFiles = [ hindsightEnv ];
             volumes = [ "hindsight-data:/home/hindsight/.pg0" ];
           };
 
@@ -127,8 +137,8 @@
             envCheck = pkgs.writeShellApplication {
               name = "hindsight-env-check";
               text = ''
-                if [ ! -f /home/davr/.config/hindsight/.env ]; then
-                  echo "hindsight-api: /home/davr/.config/hindsight/.env missing — refusing to start (LLM key must come from this file)" >&2
+                if [ ! -f ${hindsightEnv} ]; then
+                  echo "hindsight-api: ${hindsightEnv} missing — refusing to start (LLM key must come from this file)" >&2
                   exit 1
                 fi
               '';
