@@ -21,7 +21,10 @@
       ghostty
       noctaliaGreeter
       ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
-      docker
+      # The Docker daemon comes in through attrs/desktop -> act -> docker;
+      # importing `docker` here as well would define the module twice and
+      # duplicate the docker extraGroup entry (mcpContainers below only
+      # needs the daemon to exist).
       mcpContainers
     ];
   };
