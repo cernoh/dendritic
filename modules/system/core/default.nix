@@ -10,6 +10,7 @@
 {
   flake.nixosModules.core =
     {
+      lib,
       pkgs,
       ...
     }:
@@ -47,7 +48,9 @@
         libnotify
       ];
 
-      system.stateVersion = "25.05";
+      # mkDefault so hosts whose machines were installed on a later NixOS
+      # release can override upward without priority fights (ASAHI: 25.11).
+      system.stateVersion = lib.mkDefault "25.05";
     };
 
   # Deploy-time machine facts stay out of the repo by design (voidarc
