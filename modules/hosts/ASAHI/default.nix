@@ -21,6 +21,14 @@
       ghostty
       programming
       noctaliaGreeter
+      # Ported from the Mac's pre-dendritic configuration.nix (issue #63
+      # inventory; keep/drop decisions recorded 2026-08-25).
+      stability
+      timeSync
+      tailscale
+      flatpak
+      obs
+      portals
       ({ programs.noctalia-greeter.greeter-args = "--session Niri"; })
     ];
   };
