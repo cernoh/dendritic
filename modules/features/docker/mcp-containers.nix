@@ -20,7 +20,8 @@
 #   - agentwebsearch-mcp is built locally from the omp feature's skill dir;
 #     a oneshot service builds the image only when missing and the container
 #     unit requires+orders after it with pull = "never".
-{ ... }: {
+{ ... }:
+{
   flake.nixosModules.mcpContainers =
     {
       pkgs,
@@ -32,8 +33,7 @@
       # login name (issue #61): derive it from dendritic.userName so importing
       # this module on a host with a different primary user keeps pointing at
       # a real path.
-      hindsightEnv =
-        "${config.users.users.${config.dendritic.userName}.home}/.config/hindsight/.env";
+      hindsightEnv = "${config.users.users.${config.dendritic.userName}.home}/.config/hindsight/.env";
     in
     {
       virtualisation.oci-containers = {
