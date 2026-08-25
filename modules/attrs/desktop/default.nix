@@ -1,5 +1,6 @@
 # Shared desktop-machine base: core system + networking + audio + removable
-# media handling + home-manager features.
+# media handling + home-manager features + act (local GitHub Actions runner,
+# pulls in the docker runtime).
 {
   self,
   moduleWithSystem,
@@ -15,6 +16,7 @@
         audio
         usbAutomount
         homeManager
+        act
       ];
     in
     {
