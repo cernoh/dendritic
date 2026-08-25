@@ -1,6 +1,5 @@
 {
   self,
-  inputs,
   ...
 }:
 {
@@ -36,6 +35,15 @@
       # NIXPC it must NOT default to "davr", or switch would create a second,
       # unconfigured account next to the real one.
       dendritic.userName = "da";
+
+      # The machine's pre-dendritic standalone config ran stateVersion 25.11;
+      # stateVersion must never move backwards, so this host overrides the
+      # 25.05 default from system/core (issue #63).
+      system.stateVersion = "25.11";
+
+      # Carried over from the Mac's previous configuration.nix: without it
+      # the built-in display's notch region misbehaves under appledrm.
+      boot.kernelParams = [ "appledrm.show_notch=1" ];
 
       hardware.asahi.peripheralFirmwareDirectory = lib.mkIf onMacAsRoot vendorfw;
       hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
