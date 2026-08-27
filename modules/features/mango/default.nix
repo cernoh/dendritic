@@ -46,7 +46,7 @@
         brightnessctl
         grim
         slurp
-        wl-clipboard
+        wl-clipboard-rs
         # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
         swaylock-effects
       ];
