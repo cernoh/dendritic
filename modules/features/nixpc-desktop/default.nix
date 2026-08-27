@@ -5,7 +5,7 @@
 #   imports = [ self.homeManagerModules.nixpcDesktop ];
 #
 # Deliberately NOT here (covered elsewhere or consciously dropped):
-#   - dunst/udiskie/grim/slurp/wl-clipboard/brightnessctl/swaylock -> mango
+#   - dunst/udiskie/grim/slurp/wl-clipboard-rs/brightnessctl/swaylock -> mango
 #   - playerctl/pavucontrol -> audio;  libnotify -> core
 #   - eza/bat/zoxide/fzf/fastfetch/lazygit -> fish;  direnv/git -> programming
 #   - ghostty, nvim, brave -> their own features
@@ -49,7 +49,6 @@
           wob
           syshud
           nwg-look
-          wl-clipboard-rs
           nerd-fonts.droid-sans-mono
           stremio-linux-shell
         ];

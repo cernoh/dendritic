@@ -55,6 +55,7 @@
           noctalia
           ghostty
           posyCursors
+          clipboard
           widevine
           brave
         ];
