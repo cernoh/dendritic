@@ -1,9 +1,9 @@
 modelRoles: 
-  default: openrouter/stealth/ox-alpha
+  default: opencode-go/hy3
   task: opencode-go/deepseek-v4-flash
   plan: opencode-go/deepseek-v4-flash
   slow: opencode-go/deepseek-v4-flash
-  advisor: openrouter/nvidia/nemotron-3.5-lightning:free
+  advisor: opencode-go/hy3
 providers: 
   tinyModel: lfm2-350m
   tinyModelDevice: gpu
