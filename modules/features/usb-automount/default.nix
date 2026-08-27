@@ -25,7 +25,7 @@
     }:
     {
       services.udev.extraRules = ''
-        ACTION=="add|remove", SUBSYSTEM=="block", ENV{ID_FS_USAGE}=="filesystem", TAG+="systemd", ENV{SYSTEMD_WANTS}="usb-automount@%k.service"
+        ACTION=="add|remove", SUBSYSTEM=="block", ENV{ID_FS_USAGE}=="filesystem", ENV{ID_BUS}=="usb", TAG+="systemd", ENV{SYSTEMD_WANTS}="usb-automount@%k.service"
       '';
 
       systemd.services."usb-automount@" = {
@@ -84,7 +84,7 @@
           uid=$(active_uids | head -n1)
           if [ -z "$uid" ]; then
             echo "usb-automount: no active graphical session, skipping $name" >&2
-            exit 1
+            exit 0
           fi
           user=$(id -nu "$uid")
           gid=$(id -ng "$uid")
