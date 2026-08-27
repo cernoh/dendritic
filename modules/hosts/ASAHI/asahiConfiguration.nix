@@ -56,6 +56,7 @@
           ghostty
           posyCursors
           widevine
+          brave
         ];
         programs.noctalia.settings = import ./_noctalia-settings.nix;
       };

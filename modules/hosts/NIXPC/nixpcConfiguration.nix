@@ -43,6 +43,7 @@
           noctalia
           ghostty
           nixpcDesktop
+          brave
           gamingTools
           stremioKai
         ];

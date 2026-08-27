@@ -8,7 +8,7 @@
 #   - dunst/udiskie/grim/slurp/wl-clipboard/brightnessctl/swaylock -> mango
 #   - playerctl/pavucontrol -> audio;  libnotify -> core
 #   - eza/bat/zoxide/fzf/fastfetch/lazygit -> fish;  direnv/git -> programming
-#   - ghostty, nvim -> their own features
+#   - ghostty, nvim, brave -> their own features
 #   - swaybg + waybar configs -> dropped outright (#28)
 #   - gaming tools (lutris/mangohud/gamescope/protonup-qt/wine/winetricks/
 #     vulkan tools/nvidia-vaapi-driver) -> gaming-tools feature (#26)
@@ -23,15 +23,14 @@
       ...
     }:
     {
-      programs.brave = {
-        enable = true;
-        commandLineArgs = [
-          "--ozone-platform=wayland"
-          "--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,UseOzonePlatform"
-          "--enable-gpu-rasterization"
-          "--ignore-gpu-blocklist"
-        ];
-      };
+      # NVIDIA/Wayland GPU tuning for Brave on this host; `enable` and the
+      # generic --ozone-platform=wayland flag live in the brave feature.
+      # commandLineArgs lists merge across modules, so the two combine.
+      programs.brave.commandLineArgs = [
+        "--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,UseOzonePlatform"
+        "--enable-gpu-rasterization"
+        "--ignore-gpu-blocklist"
+      ];
 
       home = {
         packages = with pkgs; [
