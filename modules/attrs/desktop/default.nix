@@ -22,7 +22,6 @@
         core
         network
         audio
-        usbAutomount
         homeManager
         act
       ];

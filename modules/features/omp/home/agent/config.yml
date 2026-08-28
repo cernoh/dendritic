@@ -1,9 +1,9 @@
 modelRoles: 
-  default: opencode-go/hy3
+  default: opencode-go/deepseek-v4-flash
   task: opencode-go/deepseek-v4-flash
   plan: opencode-go/deepseek-v4-flash
   slow: opencode-go/deepseek-v4-flash
-  advisor: opencode-go/hy3
+  advisor: opencode-go/deepseek-v4-flash
 providers: 
   tinyModel: lfm2-350m
   tinyModelDevice: gpu
