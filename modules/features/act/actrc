@@ -1,0 +1,4 @@
+# Default runner image so a bare `act push`/`act pull_request` runs
+# non-interactively instead of hanging on the image prompt.
+# Per-run overrides still work via -P/--container-architecture.
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
