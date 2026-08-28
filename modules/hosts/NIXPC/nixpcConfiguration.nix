@@ -46,7 +46,6 @@
         { config, ... }:
         {
           imports = with self.homeManagerModules; [
-            mango
             noctalia
             ghostty
             nixpcDesktop

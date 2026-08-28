@@ -1,3 +1,6 @@
+# ~/.config/nushell/functions.nu — LIVE-EDITABLE copy from the dendritic
+# checkout (homeless-dotfiles policy #93, issue #98); sourced by config.nu.
+
 # Create and cd into directory
 def --env mkcd [dir: string] {
   mkdir $dir

@@ -16,6 +16,7 @@
       desktop
       asahiConfiguration
       asahiPlatform
+      widevine
       niri
       noctalia
       ghostty
