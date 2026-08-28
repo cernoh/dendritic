@@ -49,17 +49,46 @@
       hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
-      home-manager.users.${config.dendritic.userName} = {
-        imports = with self.homeManagerModules; [
-          niri
-          noctalia
-          ghostty
-          posyCursors
-          clipboard
-          widevine
-          brave
-        ];
-        programs.noctalia.settings = import ./_noctalia-settings.nix;
-      };
+      home-manager.users.${config.dendritic.userName} =
+        { pkgs, ... }:
+        let
+          # Login notification when system.activationScripts.asahiRebootRequired
+          # (see drivers/asahi.nix) flagged a pending reboot (issue #72).
+          rebootNotifier = pkgs.writeShellScript "asahi-reboot-notify" ''
+            [ -f /run/reboot-required ] || exit 0
+            exec ${pkgs.libnotify}/bin/notify-send \
+              --urgency critical --app-name asahi \
+              "Reboot required" \
+              "New kernel / bootchain switched but not booted yet. Save your work and reboot."
+          '';
+        in
+        {
+          imports = with self.homeManagerModules; [
+            niri
+            noctalia
+            ghostty
+            posyCursors
+            clipboard
+            widevine
+            brave
+          ];
+          programs.noctalia.settings = import ./_noctalia-settings.nix;
+
+          # One-shot at graphical login: if the flag file is present, surface a
+          # desktop notification. WantedBy default.target (not
+          # graphical-session.target) because Niri's session target is not
+          # guaranteed to register by the time the user manager starts.
+          systemd.user.services.asahi-reboot-notify = {
+            Unit = {
+              Description = "Notify when an asahi kernel/bootchain switch needs a reboot";
+              After = [ "graphical-session.target" ];
+            };
+            Service = {
+              Type = "oneshot";
+              ExecStart = rebootNotifier;
+            };
+            Install.WantedBy = [ "default.target" ];
+          };
+        };
     };
 }
