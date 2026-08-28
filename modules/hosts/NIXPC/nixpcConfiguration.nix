@@ -42,67 +42,81 @@
       };
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
-      home-manager.users.${config.dendritic.userName} = {
-        imports = with self.homeManagerModules; [
-          mango
-          noctalia
-          ghostty
-          nixpcDesktop
-          brave
-          gamingTools
-          stremioKai
-        ];
-        # Compact Noctalia variant from hm-v3 config/nixpc-noctalia.nix:
-        # top-bar widget layout, cernoh/terminal plugin, Catppuccin.
-        programs.noctalia.settings = {
-          shell = {
-            panel_anchor_bar = "main";
-            panel.launcher_placement = "attached";
-            launcher = {
-              categories = true;
-              show_icons = true;
-              sort_by_usage = true;
+      home-manager.users.${config.dendritic.userName} =
+        { config, ... }:
+        {
+          imports = with self.homeManagerModules; [
+            mango
+            noctalia
+            ghostty
+            nixpcDesktop
+            brave
+            gamingTools
+            stremioKai
+          ];
+          # Easy access to the SATA data disks mounted above: home-dir
+          # symlinks for shell/yazi, plus GTK bookmarks so Thunar and GTK
+          # file pickers list both mounts at top level. mkOutOfStoreSymlink
+          # keeps them plain symlinks (no store copy of the disk contents).
+          home.file = {
+            "2tb-storage".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-storage";
+            "2tb-ext4".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-ext4";
+          };
+          xdg.configFile."gtk-3.0/bookmarks".text = ''
+            file:///mnt/2tb-storage 2tb-storage
+            file:///mnt/2tb-ext4 2tb-ext4
+          '';
+          # Compact Noctalia variant from hm-v3 config/nixpc-noctalia.nix:
+          # top-bar widget layout, cernoh/terminal plugin, Catppuccin.
+          programs.noctalia.settings = {
+            shell = {
+              panel_anchor_bar = "main";
+              panel.launcher_placement = "attached";
+              launcher = {
+                categories = true;
+                show_icons = true;
+                sort_by_usage = true;
+              };
+            };
+            bar.main = {
+              position = "top";
+              thickness = 34;
+              start = [
+                "launcher"
+                "cernoh/terminal:bar"
+                "wallpaper"
+                "workspaces"
+              ];
+              center = [ "clock" ];
+              end = [
+                "media"
+                "tray"
+                "notifications"
+                "clipboard"
+                "network"
+                "bluetooth"
+                "volume"
+                "brightness"
+                "battery"
+                "control-center"
+                "session"
+              ];
+            };
+            plugins = {
+              enabled = [ "cernoh/terminal" ];
+              auto_update = "none";
+            };
+            wallpaper = {
+              enabled = true;
+              directory = "~/Pictures/Wallpapers";
+              default.path = "";
+            };
+            theme = {
+              mode = "dark";
+              source = "builtin";
+              builtin = "Catppuccin";
             };
           };
-          bar.main = {
-            position = "top";
-            thickness = 34;
-            start = [
-              "launcher"
-              "cernoh/terminal:bar"
-              "wallpaper"
-              "workspaces"
-            ];
-            center = [ "clock" ];
-            end = [
-              "media"
-              "tray"
-              "notifications"
-              "clipboard"
-              "network"
-              "bluetooth"
-              "volume"
-              "brightness"
-              "battery"
-              "control-center"
-              "session"
-            ];
-          };
-          plugins = {
-            enabled = [ "cernoh/terminal" ];
-            auto_update = "none";
-          };
-          wallpaper = {
-            enabled = true;
-            directory = "~/Pictures/Wallpapers";
-            default.path = "";
-          };
-          theme = {
-            mode = "dark";
-            source = "builtin";
-            builtin = "Catppuccin";
-          };
         };
-      };
     };
 }
