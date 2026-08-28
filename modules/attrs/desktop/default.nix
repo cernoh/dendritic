@@ -24,6 +24,7 @@
         audio
         homeManager
         act
+        waylandBase
       ];
 
       # Allow unfree packages (e.g. obsidian) on every desktop host — NIXPC

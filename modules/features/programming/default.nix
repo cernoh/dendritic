@@ -383,9 +383,8 @@
         '';
       };
 
-      home.sessionVariables = {
-        EDITOR = "nvim";
-        VISUAL = "nvim";
-      };
+      # EDITOR/VISUAL are delivered system-side (attrs/programming ->
+      # environment.sessionVariables) and per-shell (fish/nushell init).
+      # Nothing to set here (homeless-dotfiles policy #93, issue #95).
     };
 }

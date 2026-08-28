@@ -17,6 +17,15 @@
       ];
     in
     {
+      # Editor env for login shells, systemd user units and any process not
+      # started from an interactive shell's own config (GH_EDITOR fallback,
+      # git, systemd services...). Fish/nushell additionally pin nvim
+      # per-shell; this is the system-wide baseline (issue #95).
+      environment.sessionVariables = {
+        EDITOR = "nvim";
+        VISUAL = "nvim";
+      };
+
       imports = modules;
     }
   );

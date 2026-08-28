@@ -13,6 +13,7 @@
 
       desktop
       nixpcConfiguration
+      nixpcDesktop
       nvidiaDrivers
       gaming
       programming

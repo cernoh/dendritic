@@ -56,14 +56,25 @@
         systemd.enable = true;
 
         settings = {
-          # NIXPC's terminal is ghostty; register TERMINAL here (not from the
-          # ghostty feature) because nixpkgs' module system rejects any def of
-          # an option undeclared on the host — including mkIf-false guards —
-          # and ASAHI's ghostty has no mango option (issue #86). Mango
-          # setenv()s entries in-process; children of spawn_shell inherit them.
+          # Mango setenv()s these entries in-process; children of
+          # spawn_shell inherit them. TERMINAL and the NVIDIA/Wayland GPU
+          # vars live HERE (not the ghostty/nixpc-desktop features) because
+          # nixpkgs' module system rejects any def of an option undeclared
+          # on the host — including mkIf-false guards — and ASAHI has no
+          # mango options (issue #86). The same vars are also delivered via
+          # environment.sessionVariables for login-shell consumers (issue
+          # #95); the compositor channel is the one that actually reaches
+          # greeter-spawned mango and its spawns.
           env = [
             "XCURSOR_SIZE,24"
             "TERMINAL,ghostty"
+            "GBM_BACKEND,nvidia-drm"
+            "__GLX_VENDOR_LIBRARY_NAME,nvidia"
+            "LIBVA_DRIVER_NAME,nvidia"
+            "WLR_NO_HARDWARE_CURSORS,1"
+            "WLR_RENDERER_ALLOW_SOFTWARE,1"
+            "SDL_VIDEODRIVER,wayland,x11"
+            "STEAM_USE_DYNAMIC_VGUI,1"
           ];
           # DP-2 is the AOC; place it at the center/left of the two connected outputs.
           monitorrule = [
