@@ -56,7 +56,12 @@
         systemd.enable = true;
 
         settings = {
-          env = "XCURSOR_SIZE,24";
+          # List form so the terminal feature can register TERMINAL into the
+          # compositor env (mango setenv()s entries in-process; children of
+          # spawn_shell inherit them).
+          env = [
+            "XCURSOR_SIZE,24"
+          ];
           # DP-2 is the AOC; place it at the center/left of the two connected outputs.
           monitorrule = [
             "name:^DP-2$,x:0,y:0,scale:1"
