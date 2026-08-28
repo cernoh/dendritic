@@ -80,8 +80,9 @@ put it (store path, `/etc`, repo checkout, or an env/flag the flake sets).
   ```
   Add the wrapped binary to `environment.systemPackages` — no dotfiles at all.
 - **Compositor env pattern (mango):** register env in the session root's own
-  settings list (`wayland.windowManager.mango.settings.env`), the only channel
-  compositor-spawned shells see; never rely on the profile for these.
+  settings list (`env = [ "TERMINAL,ghostty" ... ]` inside the mango feature's
+  system-side settings render, issue #97), the only channel compositor-spawned
+  shells see; never rely on the profile for these.
 
 ## When home-manager is still right
 
