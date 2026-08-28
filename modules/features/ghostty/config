@@ -12,7 +12,9 @@ macos-option-as-alt = true
 background-opacity = 0.85
 background-blur = true
 
-# Color scheme
+# Color scheme — built-in Catppuccin Mocha. Matches the flake-wide default
+# (self.catppuccin.default, modules/features/catppuccin); this static file
+# cannot read nix values, so keep the names in sync manually.
 theme = Catppuccin Mocha
 
 # Terminal features

@@ -18,7 +18,7 @@
 #     which v3 got implicitly from its shell layer that dendritic has no equivalent of yet.
 #   - zellij copy_command hardcoded to wl-copy: v3 branched on a `distro`
 #     specialArg (forbidden here); both dendritic hosts are Wayland.
-{ ... }: {
+{ self, ... }: {
   flake.homeManagerModules.programming =
     {
       pkgs,
@@ -65,7 +65,8 @@
         enable = true;
         settings = {
           simplified_ui = true;
-          theme = "catppuccin-macchiato";
+          # Follows the flake-wide default scheme (features/catppuccin).
+          theme = "catppuccin-${self.catppuccin.default}";
           default_mode = "locked";
           default_shell = "fish";
           default_layout = "default";
@@ -334,7 +335,8 @@
           {
             plugin = catppuccin;
             extraConfig = ''
-              set -g @catppuccin_flavor 'frappe'
+              # Follows the flake-wide default scheme (features/catppuccin).
+              set -g @catppuccin_flavor '${self.catppuccin.default}'
               set -g @catppuccin_window_left_separator ""
               set -g @catppuccin_window_right_separator " "
               set -g @catppuccin_window_middle_separator " █"
