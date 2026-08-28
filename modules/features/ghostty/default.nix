@@ -15,7 +15,6 @@
   flake.nixosModules.ghostty =
     {
       pkgs,
-      lib,
       ...
     }:
     {
@@ -26,7 +25,6 @@
 
   flake.homeManagerModules.ghostty =
     {
-      lib,
       config,
       pkgs,
       ...
@@ -37,21 +35,14 @@
       xdg.configFile."config/ghostty/config.ghostty".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/ghostty/config";
 
-      # Compositor bindings spawn "$TERMINAL" (e.g. Mango's SUPER,T). The
-      # session root compositor is greeter-spawned and never sources
-      # ~/.profile, so sessionVariables alone never reaches spawn_shell's
-      # non-login `sh -c`; register TERMINAL into mango's own env instead
-      # (mango setenv()s it in-process, children inherit). Guarded: ASAHI
-      # runs ghostty under niri with no mango option defined.
-      wayland.windowManager.mango.settings.env =
-        lib.mkIf (config ? wayland.windowManager.mango) (
-          lib.mkAfter [
-            "TERMINAL,ghostty"
-          ]
-        );
-
-      # Login shells (SSH, PTYs) and anything not started by the compositor
-      # still read the variable from the profile.
+      # Compositor bindings spawn "$TERMINAL" (Mango's SUPER,T). The session
+      # root compositor is greeter-spawned and never sources ~/.profile, so
+      # sessionVariables alone never reaches spawn_shell's non-login `sh -c`.
+      # TERMINAL is registered into mango's settings.env inside the mango
+      # feature module instead: nixpkgs' module system rejects any definition
+      # of an option that is not declared on the host — including mkIf-false
+      # ones — so a guarded def here would break every non-mango host (issue
+      # #86). NIXPC pairs mango with ghostty, so the entry is unconditional.
       home.sessionVariables.TERMINAL = "ghostty";
     };
 }

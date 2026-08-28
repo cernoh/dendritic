@@ -10,8 +10,17 @@ let
   cachixSubstituters = [
     "https://nix-community.cachix.org"
     "https://noctalia.cachix.org"
-    # ASAHI-critical: asahi kernel/uboot/mesa builds are far too heavy for
-    # local compilation on the Mac.
+    # ASAHI: nixos-apple-silicon.cachix.org covers most of the flake's
+    # packages, but NOT the bootchain — upstream tpwrules/nixos-apple-silicon
+    # publishes no cache for linux-asahi/uboot-asahi/m1n1 (per their
+    # docs/binary-cache.md the runners can't build the kernel; a
+    # nixos-hardware Hydra migration is pending). A dry-run of
+    # linux-asahi-7.1.8 with this cache listed still reports ~4 derivations
+    # to build locally, and no alternative rev is cached, so pinning would
+    # not help. Strategy decision (issue #73): keep the cache, accept the
+    # local bootchain build after each asahi input bump, and reboot to load
+    # it — the pending reboot is surfaced by #72's asahi-reboot-required
+    # mechanism and rollback is covered by modules/hosts/ASAHI/RESCUE.md.
     "https://nixos-apple-silicon.cachix.org"
     "https://devenv.cachix.org"
     "https://numtide.cachix.org"

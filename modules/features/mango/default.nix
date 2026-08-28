@@ -56,11 +56,14 @@
         systemd.enable = true;
 
         settings = {
-          # List form so the terminal feature can register TERMINAL into the
-          # compositor env (mango setenv()s entries in-process; children of
-          # spawn_shell inherit them).
+          # NIXPC's terminal is ghostty; register TERMINAL here (not from the
+          # ghostty feature) because nixpkgs' module system rejects any def of
+          # an option undeclared on the host — including mkIf-false guards —
+          # and ASAHI's ghostty has no mango option (issue #86). Mango
+          # setenv()s entries in-process; children of spawn_shell inherit them.
           env = [
             "XCURSOR_SIZE,24"
+            "TERMINAL,ghostty"
           ];
           # DP-2 is the AOC; place it at the center/left of the two connected outputs.
           monitorrule = [

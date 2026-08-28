@@ -109,3 +109,9 @@ hosts, and a weekly flake-lock bump.
 - **Asahi inputs must follow nixpkgs** (`inputs.nixpkgs.follows = "nixpkgs"`): apple-silicon
   support modules inject packages into host configs, and without the follow they resolve
   against the input's own eval system and break `ASAHI` evals from other machines (#16).
+- **Asahi bootchain builds locally**: tpwrules/nixos-apple-silicon publish no
+  binary cache for linux-asahi/uboot-asahi/m1n1 (`nixos-apple-silicon.cachix.org`
+  covers everything else), so every `asahi` input bump rebuilds the ~4 heavy
+  bootchain derivations on the Mac (issue #73). Plan for it: reboot after a
+  bump (`/run/reboot-required` banner, issue #72) and follow the rescue
+  runbook in `modules/hosts/ASAHI/RESCUE.md` when rolling back.
