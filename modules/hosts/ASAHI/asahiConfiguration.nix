@@ -31,6 +31,16 @@
     {
       networking.hostName = "ASAHI";
 
+      # 8 GiB RAM: `nix.settings.max-jobs = auto` (nproc = 8) plus nested
+      # toplevel builds inside derivation buildPhases repeatedly OOM-killed
+      # `nixos-rebuild switch` (SIGKILL 9, cgroup OOM — issue #108). Cap
+      # concurrent builds and per-build cores; slower but completes.
+      # NIXPC is untouched (host-scoped).
+      nix.settings = {
+        max-jobs = 2;
+        cores = 4;
+      };
+
       # The Mac's existing login is "da" (carried over from hm-v3); unlike
       # NIXPC it must NOT default to "davr", or switch would create a second,
       # unconfigured account next to the real one.
