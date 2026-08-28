@@ -26,6 +26,7 @@
 
   flake.homeManagerModules.ghostty =
     {
+      lib,
       config,
       pkgs,
       ...
@@ -36,7 +37,21 @@
       xdg.configFile."config/ghostty/config.ghostty".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/ghostty/config";
 
-      # Compositor bindings spawn "$TERMINAL" (e.g. Mango's SUPER,T).
+      # Compositor bindings spawn "$TERMINAL" (e.g. Mango's SUPER,T). The
+      # session root compositor is greeter-spawned and never sources
+      # ~/.profile, so sessionVariables alone never reaches spawn_shell's
+      # non-login `sh -c`; register TERMINAL into mango's own env instead
+      # (mango setenv()s it in-process, children inherit). Guarded: ASAHI
+      # runs ghostty under niri with no mango option defined.
+      wayland.windowManager.mango.settings.env =
+        lib.mkIf (config ? wayland.windowManager.mango) (
+          lib.mkAfter [
+            "TERMINAL,ghostty"
+          ]
+        );
+
+      # Login shells (SSH, PTYs) and anything not started by the compositor
+      # still read the variable from the profile.
       home.sessionVariables.TERMINAL = "ghostty";
     };
 }
