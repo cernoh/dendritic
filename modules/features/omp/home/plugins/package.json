@@ -7,6 +7,7 @@
     "@sinamtz/pi-minimax-provider": "^1.1.5",
     "install": "^0.13.0",
     "omp-direnv": "./direnv",
+    "pi-herdr-sudo-task": "^0.1.5",
     "pi-interactive-shell": "^0.13.0",
     "pi-mcp-adapter": "^2.8.0",
     "pi-subagents": "^0.31.0",

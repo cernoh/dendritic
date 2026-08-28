@@ -44,6 +44,11 @@
       "version": "0.1.0",
       "enabledFeatures": null,
       "enabled": true
+    },
+    "pi-herdr-sudo-task": {
+      "version": "0.1.5",
+      "enabledFeatures": null,
+      "enabled": true
     }
   },
   "settings": {}
