@@ -7,7 +7,8 @@
 #   imports = [ self.nixosModules.nixpcDesktop ];
 #
 # Deliberately NOT here (covered elsewhere or consciously dropped):
-#   - dunst/udiskie/grim/slurp/wl-clipboard-rs/brightnessctl/swaylock -> mango
+#   - udiskie/grim/slurp/wl-clipboard-rs/brightnessctl/swaylock -> mango;
+#     notifications -> noctalia daemon (dunst dropped, issue #112)
 #   - playerctl/pavucontrol -> audio;  libnotify -> core
 #   - eza/bat/zoxide/fzf/fastfetch/lazygit -> fish;  direnv/git -> programming
 #   - ghostty, nvim, brave -> their own features

@@ -101,6 +101,13 @@
                 "session"
               ];
             };
+            # Notifications go through Noctalia's built-in daemon (claims
+            # org.freedesktop.Notifications) since the mango session no
+            # longer starts dunst (issue #112). Default is already true;
+            # explicit so the contract survives upstream default changes.
+            notification = {
+              enable_daemon = true;
+            };
             plugins = {
               enabled = [ "cernoh/terminal" ];
               auto_update = "none";

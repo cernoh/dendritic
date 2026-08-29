@@ -44,7 +44,6 @@
         ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
         systemctl --user reset-failed
         systemctl --user start mango-session.target
-        dunst &
         udiskie &
       '';
 
@@ -308,12 +307,12 @@
         after = [ "graphical-session-pre.target" ];
       };
 
-      # Helper binaries referenced by bindings/autostart. Noctalia and the
-      # terminal are deliberately absent — they are separate features.
+      # Helper binaries referenced by bindings/autostart. Noctalia (including
+      # its notification daemon, which claims org.freedesktop.Notifications)
+      # and the terminal are deliberately absent — they are separate features.
       # (Formerly home.packages in the HM module; moved system-side with the
       # homelessness change, issue #97.)
       environment.systemPackages = with pkgs; [
-        dunst
         udiskie
         brightnessctl
         grim
