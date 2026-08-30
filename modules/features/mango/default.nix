@@ -149,12 +149,14 @@
           "SUPER,DOWN,viewtoright_have_client"
         ];
 
-        # Move the focused panel from the main display to the secondary display.
+        # Move the focused client to the HUAWEI (DP-1, right) or AOC (DP-2, left) monitor.
         bind = [
+          "SUPER+ALT,L,tagmon,DP-1,1"
+          "SUPER+ALT,H,tagmon,DP-2,1"
           "SUPER,T,spawn_shell,$TERMINAL"
           "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
           "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
-          "SUPER+ALT,L,spawn_shell,swaylock --screenshots --clock --indicator --indicator-radius 100 --indicator-thickness 7 --effect-blur 7x5 --effect-vignette 0.5:0.5 --ring-color bb00cc --key-hl-color 880033 --line-color 00000000 --inside-color 00000088 --separator-color 00000000 --grace 2 --fade-in 0.2"
+          "SUPER+ALT+SHIFT,L,spawn_shell,swaylock --screenshots --clock --indicator --indicator-radius 100 --indicator-thickness 7 --effect-blur 7x5 --effect-vignette 0.5:0.5 --ring-color bb00cc --key-hl-color 880033 --line-color 00000000 --inside-color 00000088 --separator-color 00000000 --grace 2 --fade-in 0.2"
           "SUPER,Q,killclient"
           "SUPER,F,togglemaximizescreen"
           "SUPER+SHIFT,F,togglefullscreen"
