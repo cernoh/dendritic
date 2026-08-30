@@ -1,0 +1,76 @@
+name: STE writing
+
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  lint-prose:
+    name: Lint prose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lint title and body
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            kind=pull_request
+          else
+            kind=issue
+          fi
+          title=$(jq -r --arg k "$kind" '.[$k].title // ""' "$GITHUB_EVENT_PATH")
+          body=$(jq -r --arg k "$kind" '.[$k].body // ""' "$GITHUB_EVENT_PATH")
+          number=$(jq -r --arg k "$kind" '.[$k].number' "$GITHUB_EVENT_PATH")
+          author=$(jq -r --arg k "$kind" '.[$k].user.login // ""' "$GITHUB_EVENT_PATH")
+
+          # Skip bot authors. The update-flake-lock bot cannot rewrite
+          # its own PR body. GitHub does not run workflows on PRs that
+          # a GitHub Action opened, so this guard is belt and braces.
+          case "$author" in
+            *\[bot\]*) echo "Bot-authored content; skip."; exit 0 ;;
+          esac
+
+          printf '%s\n\n%s\n' "$title" "$body" > prose.txt
+          python3 .github/scripts/ste-lint.py < prose.txt > report.json
+          total=$(jq -r .total report.json)
+          echo "STE violations: $total"
+          jq '{words, sentences, total, total_per100w, longest_sentence_words, violations}' report.json
+
+          marker='<!-- ste-lint -->'
+          comment_url="repos/$GITHUB_REPOSITORY/issues/$number/comments"
+          comment_id=$(gh api "$comment_url?per_page=100" \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n 1)
+
+          if [ "$total" -gt 0 ]; then
+            list=$(jq -r '.violations | to_entries | map(select(.value > 0)) | map("  - \(.key): \(.value)") | .[]' report.json)
+            report=$(printf '%s\n\n%s\n\n%s\n\n%s\n\n%s\n\n%s\n' \
+              "$marker" \
+              "This text does not pass the STE linter. It has $total violations." \
+              "$list" \
+              "Fix the title or the body, then save the edit. The check runs again on edit." \
+              "Run the linter locally:" \
+              "python3 .github/scripts/ste-lint.py < your-draft.md")
+            echo "::error::STE violations: $total"
+            if [ -n "$comment_id" ]; then
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" -f body="$report"
+            else
+              gh api -X POST "$comment_url" -f body="$report"
+            fi
+            exit 1
+          fi
+
+          if [ -n "$comment_id" ]; then
+            gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id"
+            echo "Removed the previous failure comment."
+          fi
