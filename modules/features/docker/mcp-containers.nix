@@ -52,7 +52,6 @@
             ];
             ports = [ "127.0.0.1:8000:8000" ];
             volumes = [ "scrapling-playwright-cache:/root/.cache/ms-playwright" ];
-            extraOptions = [ "--restart=unless-stopped" ];
           };
 
           agentwebsearch-mcp = {
@@ -61,16 +60,12 @@
             # Built locally by agentwebsearch-image.service below; never pull.
             pull = "never";
             ports = [ "127.0.0.1:8902:8902" ];
-            extraOptions = [ "--restart=unless-stopped" ];
           };
 
           hindsight-api = {
             image = "ghcr.io/vectorize-io/hindsight-api:0.8.4";
             autoStart = true;
-            extraOptions = [
-              "--restart=unless-stopped"
-              "--network=host"
-            ];
+            extraOptions = [ "--network=host" ];
             environmentFiles = [ hindsightEnv ];
             volumes = [ "hindsight-data:/home/hindsight/.pg0" ];
           };
@@ -78,10 +73,7 @@
           hindsight-control-plane = {
             image = "ghcr.io/vectorize-io/hindsight-control-plane:0.8.4";
             autoStart = true;
-            extraOptions = [
-              "--restart=unless-stopped"
-              "--network=host"
-            ];
+            extraOptions = [ "--network=host" ];
           };
         };
       };
