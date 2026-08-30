@@ -6,7 +6,7 @@
 # Wire from the NIXPC host preset: import flake.nixosModules.mcpContainers.
 #
 # Container contract (must keep matching omp's mcp.json ports):
-#   scrapling-mcp        127.0.0.1:8000  pyd4vinci/scrapling, mcp --http
+#   scrapling-mcp        127.0.0.1:8000  pyd4vinci/scrapling, mcp --http --no-auth
 #   agentwebsearch-mcp   127.0.0.1:8902  built from the in-repo skill dir
 #   hindsight-api        host network    ghcr.io/vectorize-io/hindsight-api:0.8.4
 #   hindsight-control-plane host network same tag
@@ -49,6 +49,7 @@
               "0.0.0.0"
               "--port"
               "8000"
+              "--no-auth"
             ];
             ports = [ "127.0.0.1:8000:8000" ];
             volumes = [ "scrapling-playwright-cache:/root/.cache/ms-playwright" ];
