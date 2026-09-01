@@ -60,6 +60,13 @@
       url = "git+https://git.voidarc.co.uk/voidarc/nixos.davinci";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Pinned rev (v0.2.2), flake = false: consumed as source for the Dart AOT
+    # fallback in modules/features/dojjo/_dojjo.pkg.nix (unsupported systems) and
+    # for pinning the binary release.
+    dojjo = {
+      url = "github:tjarvstrand/dojjo/v0.2.2";
+      flake = false;
+    };
     # Pinned rev (v4.8.0), flake = false: consumed as a plain source tree by
     # the data package in modules/features/stremio-kai/_stremio-kai.pkg.nix.
     stremio-kai = {
