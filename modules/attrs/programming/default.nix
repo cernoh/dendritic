@@ -14,6 +14,7 @@
     let
       modules = with self.nixosModules; [
         lazygit
+        dojjo
       ];
     in
     {
