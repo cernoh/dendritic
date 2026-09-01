@@ -30,7 +30,8 @@
   inputs,
   moduleWithSystem,
   ...
-}: {
+}:
+{
   flake.nixosModules.dojjo = moduleWithSystem (
     { self', pkgs, ... }:
     {
