@@ -11,7 +11,9 @@
       ];
     }
   );
-  perSystem = { inputs', ... }: {
-    packages.davinci-resolve = inputs'.davinci.packages.default;
-  };
+  perSystem =
+    { inputs', lib, system, ... }:
+    lib.optionalAttrs (system == "x86_64-linux") {
+      packages.davinci-resolve = inputs'.davinci.packages.default;
+    };
 }

@@ -15,6 +15,7 @@
       modules = with self.nixosModules; [
         lazygit
         dojjo
+        agent-browser
       ];
     in
     {

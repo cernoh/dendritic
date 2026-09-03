@@ -49,7 +49,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `noctalia-greeter` | greetd login UI matching Noctalia; each host picks `--session <compositor>` inline |
 | `nushell` | nushell as secondary interactive shell, incl. `nixpc-rebuild` / `asahi-rebuild` helpers |
 | `nvf` | Neovim via [nvf](https://github.com/notashelf/nvf) (languages, keymaps, nixd config) |
-| `omp` | [Oh My Pi](https://github.com/cernoh/omp-flake) agent CLI; `~/.omp` symlinked out-of-store |
+| `omp` | [Oh My Pi](https://github.com/can1357/oh-my-pi) agent CLI via overlay (`overlays.omp`, `packages.omp`); `~/.omp` symlinked out-of-store |
 | `opencode` | OpenCode agent CLI config tree, out-of-store |
 | `posy-cursors` | Posy cursor themes |
 | `programming` | Dev environment: git, direnv, tmux, zellij, gh, editors' companions |

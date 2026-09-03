@@ -28,6 +28,7 @@
           imports = with self.homeManagerModules; [
             nvf
             omp
+            agent-browser
             programming
             fish
             nushell

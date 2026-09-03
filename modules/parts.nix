@@ -14,4 +14,10 @@
   options.flake.homeManagerModules = lib.mkOption {
     type = lib.types.lazyAttrsOf lib.types.raw;
   };
+
+  config.perSystem =
+    { pkgs, ... }:
+    {
+      formatter = pkgs.nixfmt-rfc-style;
+    };
 }
