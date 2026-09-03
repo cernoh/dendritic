@@ -1,55 +1,66 @@
-modelRoles: 
-  default: opencode-go/deepseek-v4-flash
-  task: opencode-go/deepseek-v4-flash
+modelRoles:
+  task: opencode-go/muse-spark-1.2-contributor
   plan: opencode-go/deepseek-v4-flash
   slow: opencode-go/deepseek-v4-flash
-  advisor: opencode-go/deepseek-v4-flash
-providers: 
+  vision: opencode-go/deepseek-v4-flash-vision-exp
+  default: opencode-go/muse-spark-1.2-contributor
+  advisor: opencode-go/muse-spark-1.2-contributor
+providers:
   tinyModel: lfm2-350m
   tinyModelDevice: gpu
 symbolPreset: nerd
-theme: 
+theme:
   dark: dark-catppuccin
-setupVersion: 1
+setupVersion: 2
 hideThinkingBlock: true
-memory: 
+memory:
   backend: "off"
-autolearn: 
+autolearn:
   enabled: true
   autoContinue: true
-bash: 
-  autoBackground: 
+bash:
+  autoBackground:
     enabled: true
-bashInterceptor: 
+bashInterceptor:
   enabled: true
-shellMinimizer: 
+shellMinimizer:
   sourceOutlineLevel: default
-github: 
+github:
   enabled: true
-mcp: 
+mcp:
   {}
-task: 
+task:
   eager: default
-  isolation: 
+  isolation:
     mode: auto
-advisor: 
+  agentAdvisor:
+    task: "on"
+advisor:
   enabled: true
-  subagents: true
   syncBacklog: "5"
 steeringMode: one-at-a-time
-compaction: 
+compaction:
   handoffSaveToDisk: true
-browser: 
+browser:
   headless: false
 defaultThinkingLevel: auto
-dev: 
+dev:
   autoqaConsent: granted
 includeWorkspaceTree: true
-features: 
-  unexpectedStopDetection: true
-edit: 
+features:
+  unexpectedStopDetection: smart
+edit:
   mode: hashline
-lsp: 
+lsp:
   formatOnWrite: true
-astGrep: 
+astGrep:
   enabled: true
+composer:
+  shape: rule
+statusLine:
+  preset: nerd
+  separator: pipe
+  transparent: true
+  compactThinkingLevel: true
+terminal:
+  showProgress: true
