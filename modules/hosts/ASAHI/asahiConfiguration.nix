@@ -26,7 +26,7 @@
       # the neutral branch.
       evalSystem = builtins.currentSystem or null;
       onMacAsRoot = evalSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
-      vendorfw = /boot/vendorfw;
+      vendorfw = if onMacAsRoot then "/boot/vendorfw" else null;
     in
     {
       networking.hostName = "ASAHI";
@@ -55,8 +55,8 @@
       # the built-in display's notch region misbehaves under appledrm.
       boot.kernelParams = [ "appledrm.show_notch=1" ];
 
-      hardware.asahi.peripheralFirmwareDirectory = lib.mkIf onMacAsRoot vendorfw;
-      hardware.asahi.extractPeripheralFirmware = lib.mkIf onMacAsRoot true;
+      hardware.asahi.peripheralFirmwareDirectory = vendorfw;
+      hardware.asahi.extractPeripheralFirmware = onMacAsRoot;
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
       home-manager.users.${config.dendritic.userName} =

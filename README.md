@@ -97,6 +97,27 @@ Cheapest first; stop at the rung that covers your change:
 3. Rendered-artifact checks: read generated files out of evaluated derivations
 4. Whole flake: `nix flake check --impure`
 
+Automated via Nix module `modules/verify.nix` (replaces the former `scripts/verify.sh`):
+
+```sh
+nix flake check --impure              # all gates as checks: parse, eval-pure, hardware, fmt, verify
+nix run .#verify                      # same gates, run outside sandbox so impure hardware sees real /etc/nixos
+nix run .#verify -- --host ASAHI      # only ASAHI (also --hosts, --system, --systems)
+nix run .#verify -- --system aarch64-linux  # only aarch64-linux hosts
+nix build .#checks.aarch64-linux.verify-parse     # single gate
+nix build .#checks.aarch64-linux.verify-hardware  # hardware gate only
+```
+
+Gate 3 is the `hardwareFromMachine` gate from `modules/system/core/default.nix`:
+on the native machine `--impure` must consume `/etc/nixos/hardware-configuration.nix`
+(no placeholder warning, `fileSystems."/"` is `by-uuid` not `by-label`);
+cross-machine evals must stay placeholder. The Nix module auto-detects
+`currentSystem` and fails with the fix (`sudo rm /etc/nixos` if dangling
+symlink, then restore from `/etc/nixos.backup.*` or `nixos-generate-config`)
+when the gate is violated. In CI/sandbox (`CI=1` or `NIX_BUILD_TOP`) placeholder
+is expected for all hosts.
+
+
 CI (`.github/workflows/`) runs a changed-file nixfmt check, an eval matrix over both
 hosts, and a weekly flake-lock bump.
 
