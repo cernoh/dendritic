@@ -88,7 +88,12 @@
       };
 
       warnings = lib.optionals (!onMachine) [
-        "hardwareFromMachine ${system}: /etc/nixos/hardware-configuration.nix not consumed — placeholder root filesystem (cross-machine evaluation mode)."
+        (
+          if evalSystem == system then
+            "hardwareFromMachine ${system}: /etc/nixos/hardware-configuration.nix not found on this machine (evaluating as ${system} but ${toString hardwareFile} missing) — placeholder root filesystem in use. Fix: sudo rm /etc/nixos # if dangling symlink; sudo mkdir -p /etc/nixos; sudo cp /etc/nixos.backup.*/hardware-configuration.nix /etc/nixos/hardware-configuration.nix  OR  sudo nixos-generate-config --show-hardware-config > /tmp/hw.nix && sudo cp /tmp/hw.nix ${toString hardwareFile}"
+          else
+            "hardwareFromMachine ${system}: /etc/nixos/hardware-configuration.nix not consumed — placeholder root filesystem (cross-machine evaluation mode)."
+        )
       ];
     };
 }

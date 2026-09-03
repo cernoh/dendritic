@@ -34,9 +34,16 @@
       };
 
       # Lazy: only forces pkgs.widevine-cdm evaluation on aarch64.
+      # `force = true` avoids `backupFileExtension` clobber on every
+      # rebuild: Brave rewrites this pointer at runtime (to
+      # `.../4.10.3057.0`), so the live file always diverges from the
+      # store text and HM would otherwise try to back up to
+      # `...hm-backup` which already exists from the previous switch
+      # (exit 4/NOPERMISSION, home-manager-da.service failed).
       home.file = lib.optionalAttrs onAsahi {
         ".config/BraveSoftware/Brave-Browser/WidevineCdm/latest-component-updated-widevine-cdm" = {
           text = ''{"Path":"${pkgs.widevine-cdm}/share/google/chrome/WidevineCdm"}'';
+          force = true;
         };
       };
     };

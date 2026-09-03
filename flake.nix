@@ -28,8 +28,8 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    omp-flake = {
-      url = "github:cernoh/omp-flake";
+    oh-my-pi = {
+      url = "github:can1357/oh-my-pi";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     home-manager = {

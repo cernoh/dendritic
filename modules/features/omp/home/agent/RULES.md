@@ -46,6 +46,25 @@ gh extension install github/gh-stack
 
 After installation, verify that `gh stack` is available before continuing.
 
+## Rule 6: Tag every PR title with its number
+
+Every pull request sent to the default branch MUST have its title end with the
+pull-request tag `(#<number>)`, where `<number>` is the PR's own number — the
+same tag GitHub appends to squashed merge commits (for example,
+`feat(mango): move focused client to HUAWEI/AOC monitor (#115)`).
+
+1. Create or update the PR as usual (`gh pr create` / `gh pr edit`).
+2. Read the PR number from the returned URL, or with:
+   ```bash
+   gh pr view --json number --jq .number
+   ```
+3. Update the title to append the tag:
+   ```bash
+   gh pr edit <number> --title "<title> (#<number>)"
+   ```
+4. Apply the tag to every PR in a stack, each with its own number. Skip the
+   edit only when the title already ends with `(#<number>)`.
+
 ## Rule 5: Clean up worktrees after use
 
 When work in a worktree is complete, clean it up before finishing the task:
@@ -61,7 +80,7 @@ Never remove a worktree that contains uncommitted user changes. If cleanup is bl
 
 1. Work on the issue's feature branch, or on the appropriate branch in the stack.
 2. Run the relevant tests and checks.
-3. Commit the change, push the branch, and open/update the issue-linked PR. Use the `ce-commit-push-pr` skill when the work is done.
+3. Commit the change, push the branch, and open/update the issue-linked PR. Use the `ce-commit-push-pr` skill when the work is done, then tag the PR title with its number per Rule 6.
 4. For stacked changes, preserve stack order and use `gh stack` for stack operations.
 5. After the worktree's task is complete, perform the Rule 5 cleanup from another checkout.
 
