@@ -1,66 +1,60 @@
-modelRoles:
-  task: opencode-go/muse-spark-1.2-contributor
-  plan: opencode-go/deepseek-v4-flash
-  slow: opencode-go/deepseek-v4-flash
-  vision: opencode-go/deepseek-v4-flash-vision-exp
-  default: opencode-go/muse-spark-1.2-contributor
-  advisor: opencode-go/muse-spark-1.2-contributor
-providers:
-  tinyModel: lfm2-350m
-  tinyModelDevice: gpu
-symbolPreset: nerd
-theme:
-  dark: dark-catppuccin
-setupVersion: 2
-hideThinkingBlock: true
-memory:
-  backend: "off"
-autolearn:
+advisor:
   enabled: true
+  syncBacklog: "5"
+astGrep:
+  enabled: true
+autolearn:
   autoContinue: true
+  enabled: true
 bash:
   autoBackground:
     enabled: true
 bashInterceptor:
   enabled: true
-shellMinimizer:
-  sourceOutlineLevel: default
-github:
-  enabled: true
-mcp:
-  {}
-task:
-  eager: default
-  isolation:
-    mode: auto
-  agentAdvisor:
-    task: "on"
-advisor:
-  enabled: true
-  syncBacklog: "5"
-steeringMode: one-at-a-time
-compaction:
-  handoffSaveToDisk: true
 browser:
   headless: false
+compaction:
+  handoffSaveToDisk: true
 defaultThinkingLevel: auto
 dev:
   autoqaConsent: granted
-includeWorkspaceTree: true
-features:
-  unexpectedStopDetection: smart
 edit:
   mode: hashline
+features:
+  unexpectedStopDetection: smart
+github:
+  enabled: true
+hideThinkingBlock: true
+includeWorkspaceTree: true
 lsp:
   formatOnWrite: true
-astGrep:
-  enabled: true
+mcp:
+  {}
+memory:
+  backend: "off"
+modelRoles:
+  advisor: opencode-go/deepseek-v4-flash
+  default: opencode-go/deepseek-v4-flash
+  plan: opencode-go/deepseek-v4-flash
+  slow: opencode-go/deepseek-v4-flash
+  task: opencode-go/deepseek-v4-flash
+providers:
+  tinyModel: lfm2-350m
+  tinyModelDevice: gpu
+setupVersion: 2
+shellMinimizer:
+  sourceOutlineLevel: default
+steeringMode: one-at-a-time
+symbolPreset: nerd
+task:
+  eager: default
+  isolation:
+    enabled: true
+  agentAdvisor:
+    task: "on"
+theme:
+  dark: dark-catppuccin
+isolation:
+  backend: auto
 composer:
-  shape: rule
-statusLine:
-  preset: nerd
-  separator: pipe
-  transparent: true
-  compactThinkingLevel: true
-terminal:
-  showProgress: true
+  shape: rail

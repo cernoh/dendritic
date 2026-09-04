@@ -24,28 +24,86 @@
 # Opt in:
 #   imports = [ self.homeManagerModules.omp ];
 # then either `programs.omp.enable = true` or the compat `programs.oh-my-pi.enable`.
-{ inputs, ... }:
+{ inputs, self, ... }:
 {
   # ---------------------------------------------------------------------------
   # Overlay: turn oh-my-pi source into a nixpkgs package with tooling.
   # Upstream's overlay is `final: prev: { omp = self.packages.<system>.default; }`
   # — building from source with Rust + Bun, not a prebuilt binary fetch.
   # Dendritic re-exports it as `overlays.omp` and `overlays.default`.
+  # Upstream's `nix/package.nix` runs a `preInstallCheck` that executes
+  # `bun ${../scripts/fix-dt-verdef.ts}` — a separate store file copy
+  # (`/nix/store/*-fix-dt-verdef.ts`) that is not rooted by the source
+  # closure. When that file is GC'd the builder fails with
+  # `Module not found '...fix-dt-verdef.ts (deleted)'` (issue observed
+  # 2026-09-03 on NIXPC). The DT_VERDEF fix it performs only matters on
+  # aarch64-linux (upstream issue #9881); x86_64 is unaffected. Gate the
+  # override so ASAHI (aarch64) keeps the check and SIGSEGV protection.
   # ---------------------------------------------------------------------------
-  flake.overlays.omp = inputs.oh-my-pi.overlays.default;
-  flake.overlays.default = inputs.oh-my-pi.overlays.default;
+  flake.overlays.omp = final: prev: let
+    upstream = inputs.oh-my-pi.overlays.default final prev;
+    isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
+  in
+    if isX86Linux then
+      upstream
+      // {
+        omp = upstream.omp.overrideAttrs (_: {
+          doInstallCheck = false;
+          preInstallCheck = "";
+          installCheckPhase = "true";
+        });
+      }
+    else upstream;
+  flake.overlays.default = final: prev: let
+    upstream = inputs.oh-my-pi.overlays.default final prev;
+    isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
+  in
+    if isX86Linux then
+      upstream
+      // {
+        omp = upstream.omp.overrideAttrs (_: {
+          doInstallCheck = false;
+          preInstallCheck = "";
+          installCheckPhase = "true";
+        });
+      }
+    else upstream;
 
   # ---------------------------------------------------------------------------
   # NixOS / Home Manager modules — re-export upstream and wrap HM with
-  # dendritic's out-of-store symlink + alias.
+  # dendritic's out-of-store symlink + alias. Upstream's nixos/home-manager
+  # modules set `programs.omp.package = self.packages.<system>.default` where
+  # `self` is `inputs.oh-my-pi` (unpatched). Override to dendritic's
+  # perSystem `self.packages.<system>.omp` (gated, GC-safe) so
+  # `nixos-rebuild` actually uses the patched drv.
   # ---------------------------------------------------------------------------
-  flake.nixosModules.omp = inputs.oh-my-pi.nixosModules.default;
-  flake.nixosModules.oh-my-pi = inputs.oh-my-pi.nixosModules.default;
-
+  flake.nixosModules.omp =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      imports = [ inputs.oh-my-pi.nixosModules.default ];
+      config.programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+    };
+  flake.nixosModules.oh-my-pi =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    {
+      imports = [ inputs.oh-my-pi.nixosModules.default ];
+      config.programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+    };
   flake.homeManagerModules.omp =
     {
       config,
       lib,
+      pkgs,
       ...
     }:
     {
@@ -77,9 +135,14 @@
         # provide them via env (e.g. ANTHROPIC_API_KEY), sops-nix, or
         # `omp`'s own credential store. The file at
         # ~/.omp/agent/config.yml is still written by HM's activation
-        # (install -m 600) into the out-of-store dir, so runtime rewrites
-        # work, but declared values win on next switch.
         {
+          # Use dendritic's patched perSystem package (gated to x86_64) instead
+          # of upstream's `self.packages` (inputs.oh-my-pi) which still has
+          # `doInstallCheck=1` and the GC-fragile `fix-dt-verdef.ts` check.
+          # Upstream's `nix/home-manager.nix` sets `package = self.packages...`
+          # where `self` is `inputs.oh-my-pi`; that bypasses our overlay/perSystem.
+          programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+
           programs.omp.enable = lib.mkDefault true;
 
           programs.omp.settings = {
@@ -186,11 +249,13 @@
     {
       config,
       lib,
+      pkgs,
       ...
     }:
     {
       imports = [ inputs.oh-my-pi.homeManagerModules.default ];
       config = {
+        programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
         programs.omp.enable = lib.mkDefault true;
         programs.omp.settings = {
           modelRoles = {
@@ -274,17 +339,38 @@
           config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/omp/home";
       };
     };
-
   # ---------------------------------------------------------------------------
   # Per-system outputs — package, app, devShell.
   # These front the upstream flake so dendritic IS a nix flake with tooling
   # for oh-my-pi, without consumers needing to add a second input.
+  # The package override mirrors the overlay fix above: disable the GC-fragile
+  # preInstallCheck (DT_VERDEF fix) that fails with `(deleted)` when its
+  # separate store copy is GC'd. Gated to x86_64-linux so ASAHI
+  # (aarch64-linux) retains upstream's loader fix and SIGSEGV protection
+  # (issue #9881). Safe on x86_64 where the bug is not observed.
   # ---------------------------------------------------------------------------
   perSystem =
-    { inputs', ... }:
     {
-      packages.omp = inputs'.oh-my-pi.packages.default;
-      packages.oh-my-pi = inputs'.oh-my-pi.packages.default;
+      inputs',
+      pkgs,
+      system,
+      ...
+    }:
+    let
+      base = inputs'.oh-my-pi.packages.default;
+      isX86Linux = system == "x86_64-linux" || pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+      patchedOmp =
+        if isX86Linux then
+          base.overrideAttrs (_: {
+            doInstallCheck = false;
+            preInstallCheck = "";
+            installCheckPhase = "true";
+          })
+        else base;
+    in
+    {
+      packages.omp = patchedOmp;
+      packages.oh-my-pi = patchedOmp;
 
       apps.omp = inputs'.oh-my-pi.apps.default;
       apps.oh-my-pi = inputs'.oh-my-pi.apps.default;
