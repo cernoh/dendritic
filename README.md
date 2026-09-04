@@ -53,6 +53,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `opencode` | OpenCode agent CLI config tree, out-of-store |
 | `posy-cursors` | Posy cursor themes |
 | `programming` | Dev environment: git, direnv, tmux, zellij, gh, editors' companions |
+| `sober` | Roblox via Sober ([flatpak `org.vinegarhq.Sober`](https://flathub.org/apps/org.vinegarhq.Sober)); composes `flatpak` + `portals`, installs the app on the first switch (needs flathub) |
 | `steam` | `programs.steam` + protontricks + compat packages |
 | `stremio-kai` | Stremio-Kai mpv configuration copied writable into `~/.config/mpv` |
 | `usb-automount` | udev-triggered USB mounting under `/run/media/<user>` with mount/unmount notifications |
@@ -66,7 +67,7 @@ modules/
   parts.nix           shared flake-parts plumbing: systems list, output-option declarations
   attrs/              machine-class bundles composing features by name
     desktop/            core + network + audio + usb-automount + home-manager glue
-    gaming/             the Steam bundle
+    gaming/             the Steam + Sober bundle
     programming/        system-side dev tools (HM side comes from the programming feature)
   features/<app>/     opt-in feature modules (the table above)
   hosts/<HOST>/       host presets producing nixosConfigurations.<HOST>
