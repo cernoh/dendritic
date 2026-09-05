@@ -21,6 +21,7 @@
       noctalia
       ghostty
       programming
+      fastpotify
       noctaliaGreeter
       # Ported from the Mac's pre-dendritic configuration.nix (issue #63
       # inventory; keep/drop decisions recorded 2026-08-25).

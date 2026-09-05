@@ -107,6 +107,27 @@
         "type": "github"
       }
     },
+    "fastpotify": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1788630550,
+        "narHash": "sha256-UDCo+MIb2vna14bg0BQ4iU0VrLqJExmG6n6+SHEwRFs=",
+        "owner": "crmne",
+        "repo": "fastpotify",
+        "rev": "3a3d7939fef2c407061d3084e4a9cb530d87f220",
+        "type": "github"
+      },
+      "original": {
+        "owner": "crmne",
+        "repo": "fastpotify",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "locked": {
         "lastModified": 1761640442,
@@ -498,7 +519,7 @@
           "nixpkgs"
         ],
         "nixpkgs-darwin-x64": "nixpkgs-darwin-x64",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay_2"
       },
       "locked": {
         "lastModified": 1788451071,
@@ -519,6 +540,7 @@
         "asahi": "asahi",
         "davinci": "davinci",
         "dojjo": "dojjo",
+        "fastpotify": "fastpotify",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
         "import-tree": "import-tree",
@@ -533,6 +555,27 @@
       }
     },
     "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "fastpotify",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787834454,
+        "narHash": "sha256-jXSvqn04IOecJCvSvl8+g3PsbDVNP6qKs6dKUs/b16k=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "dc2fd1acc537f3583744e1373597a5731ff7a6e3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
       "inputs": {
         "nixpkgs": [
           "oh-my-pi",

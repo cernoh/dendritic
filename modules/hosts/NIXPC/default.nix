@@ -17,6 +17,7 @@
       nvidiaDrivers
       gaming
       programming
+      fastpotify
       mango
       noctalia
       ghostty
