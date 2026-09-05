@@ -36,7 +36,7 @@
                         # Flake-owned settings, previously modules/features/ghostty/config.
                         configFlags = [
                                 "--font-family=Monofur Nerd Font"
-                                "--font-size=20"
+                                "--font-size=16"
                                 "--window-padding-x=10"
                                 "--window-padding-y=10"
                                 "--window-theme=dark"
