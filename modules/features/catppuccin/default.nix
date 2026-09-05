@@ -6,16 +6,16 @@
 #                                  # zellij, … point at this so repointing
 #                                  # the default is a one-line change
 #   self.catppuccin.mocha          # full mocha palette; hex values WITHOUT
-#                                  # the leading '#' (ghostty/niri style)
+#                                  # the leading '#' (niri style)
 #   self.catppuccin.mocha.blue     # "89b4fa"
 #
 # App-level scheme selection that cannot take nix values stays in sync
 # manually:
-#   - ghostty (static config file, modules/features/ghostty/config):
-#     `theme = Catppuccin Mocha` is the built-in theme matching
-#     self.catppuccin.default.
 #   - noctalia (builtin schemes, hosts/*): `Catppuccin` in dark mode ==
 #     mocha; keep `darkMode = true` / `mode = "dark"`.
+# (ghostty is nix-wired: modules/features/ghostty builds a CLI-flag wrapper
+# with `--theme` derived from self.catppuccin.default, so it needs no entry
+# here.)
 { lib, ... }: {
   options.flake.catppuccin = lib.mkOption {
     type = lib.types.raw;
