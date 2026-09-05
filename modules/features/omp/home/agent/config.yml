@@ -33,11 +33,13 @@ mcp:
 memory:
   backend: "off"
 modelRoles:
-  advisor: opencode-go/deepseek-v4-flash
-  default: opencode-go/deepseek-v4-flash
+  advisor: opencode-go/muse-spark-1.3-contributor
   plan: opencode-go/deepseek-v4-flash
   slow: opencode-go/deepseek-v4-flash
   task: opencode-go/deepseek-v4-flash
+  smol: opencode-go/deepseek-v4-flash
+  default: opencode-go/muse-spark-1.3-contributor
+  vision: opencode-go/deepseek-v4-flash-vision-exp
 providers:
   tinyModel: lfm2-350m
   tinyModelDevice: gpu
