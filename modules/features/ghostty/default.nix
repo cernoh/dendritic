@@ -6,27 +6,11 @@
 # config.ghostty taking precedence). Like hm-v3, that file is symlinked
 # out-of-store into THIS repo checkout so it stays live-editable
 # (ctrl+shift+, reloads it at runtime).
+#
+# The Droid Sans Mono family in `config` resolves via `fonts.packages` in
+# attrs/desktop (every desktop host imports it).
+{ ... }:
 {
-  self,
-  inputs,
-  ...
-}:
-{
-  flake.nixosModules.ghostty =
-    {
-      pkgs,
-      ...
-    }:
-    {
-      # font-family in the config resolves against these nerd-font patches.
-      # Droid Sans Mono is the active ghostty family (config); Monofur rides
-      # along for editor/UI use.
-      fonts.packages = with pkgs.nerd-fonts; [
-        droid-sans-mono
-        monofur
-      ];
-    };
-
   flake.homeManagerModules.ghostty =
     {
       config,
