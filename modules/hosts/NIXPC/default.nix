@@ -19,6 +19,7 @@
       programming
       mango
       noctalia
+      ghostty
       noctaliaGreeter
       ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
       # The Docker daemon comes in through attrs/desktop -> act -> docker;

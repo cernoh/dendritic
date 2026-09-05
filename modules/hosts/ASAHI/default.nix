@@ -19,6 +19,7 @@
       widevine
       niri
       noctalia
+      ghostty
       programming
       noctaliaGreeter
       # Ported from the Mac's pre-dendritic configuration.nix (issue #63

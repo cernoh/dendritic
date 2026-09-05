@@ -31,13 +31,6 @@
       # and ASAHI both import this module. Without this the pure CI eval
       # refuses unfree licenses during system.build.toplevel evaluation.
       nixpkgs.config.allowUnfree = true;
-      # System fonts for every desktop host (NIXPC + ASAHI both import this
-      # module): Droid Sans Mono is ghostty's active family
-      # (features/ghostty/config); Monofur rides along for editor/UI use.
-      fonts.packages = with pkgs.nerd-fonts; [
-        droid-sans-mono
-        monofur
-      ];
 
       # CLI tooling shared by every desktop host (NIXPC + ASAHI both import
       # this module). Excludes programming languages and language servers:

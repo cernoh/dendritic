@@ -74,6 +74,8 @@
         wob
         syshud
         nwg-look
+        nerd-fonts.droid-sans-mono
+        nerd-fonts.monofur
         stremio-linux-shell
       ];
     };
