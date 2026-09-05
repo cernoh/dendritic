@@ -78,6 +78,8 @@
         repeat_rate = 35;
         repeat_delay = 200;
         numlockon = 1;
+        # GB layout: Shift+2 gives quote. Matches system xkb layout gb.
+        xkb_rules_layout = "gb";
 
         tap_to_click = 1;
         trackpad_natural_scrolling = 1;
