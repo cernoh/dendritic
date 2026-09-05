@@ -18,9 +18,13 @@
       ...
     }:
     {
-      # font-family in the config resolves against this nerd-font patch of
-      # Droid Sans Mono.
-      fonts.packages = [ pkgs.nerd-fonts.droid-sans-mono ];
+      # font-family in the config resolves against these nerd-font patches.
+      # Droid Sans Mono is the active ghostty family (config); Monofur rides
+      # along for editor/UI use.
+      fonts.packages = with pkgs.nerd-fonts; [
+        droid-sans-mono
+        monofur
+      ];
     };
 
   flake.homeManagerModules.ghostty =
