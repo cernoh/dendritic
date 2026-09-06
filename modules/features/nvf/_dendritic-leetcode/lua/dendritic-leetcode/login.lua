@@ -1,7 +1,7 @@
 -- dendritic-leetcode/login.lua
--- Self-contained LeetCode login UI for leetcode.nvim
--- Replaces `leetcode.command.cookie_prompt` with an in-Neovim floating form.
--- No external browser window is opened; help text is embedded.
+-- LeetCode login for leetcode.nvim: tries headed-browser auto-capture first
+-- (browser.lua + dendritic-leet-login helper), falls back to an in-Neovim
+-- floating cookie-paste form. Replaces `leetcode.command.cookie_prompt`.
 -- Supports:
 --   * Full Cookie header paste (LEETCODE_SESSION=...; csrftoken=...)
 --   * Two-field fallback
@@ -50,8 +50,9 @@ local function try_set_cookie(raw, cb)
   end
 end
 
--- Build the self-contained login window using nui.layout + nui.popup + nui.input
-function M.cookie_prompt(cb)
+-- Paste fallback: the self-contained login window using nui.layout + nui.popup + nui.input.
+-- Reached directly when no browser/helper is available, or after a failed browser attempt.
+function M.paste_prompt(cb)
   local has_nui, _ = pcall(require, "nui.input")
   if not has_nui then
     -- Fallback to vim.ui.input if nui not available
@@ -146,7 +147,7 @@ function M.cookie_prompt(cb)
       if perr then
         notify("Parse error: " .. perr .. " — expected: LEETCODE_SESSION=xxx; csrftoken=yyy", vim.log.levels.ERROR)
         -- Re-open prompt on error
-        vim.defer_fn(function() M.cookie_prompt(cb) end, 150)
+        vim.defer_fn(function() M.paste_prompt(cb) end, 150)
         return
       end
 
@@ -223,7 +224,7 @@ function M.cookie_prompt(cb)
           local _, perr = parse_cookie(cur)
           if perr then
             notify("Env LEETCODE_COOKIE invalid: " .. perr, vim.log.levels.ERROR)
-            M.cookie_prompt(cb)
+            M.paste_prompt(cb)
             return
           end
           try_set_cookie(cur, function(ok, err)
@@ -252,6 +253,24 @@ function M.cookie_prompt(cb)
       -- Don't auto-unmount on bufleave for layout — handle explicitly
     end)
   end)
+end
+
+-- Dispatcher: prefer headed-browser auto-capture, fall back to cookie paste.
+-- Signature matches leetcode.command.cookie_prompt so init.lua can keep patching it.
+function M.cookie_prompt(cb)
+  local ok, browser = pcall(require, "dendritic-leetcode.browser")
+  if ok and browser.available() then
+    browser.login(function(ok2, err)
+      if ok2 then
+        if cb then pcall(cb, true) end
+      else
+        notify("Browser login unavailable (" .. (err or "unknown") .. ") — falling back to cookie paste", vim.log.levels.WARN)
+        M.paste_prompt(cb)
+      end
+    end)
+    return
+  end
+  M.paste_prompt(cb)
 end
 
 return M
