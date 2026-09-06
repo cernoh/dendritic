@@ -14,11 +14,16 @@
   flake.nixosModules.bootloader =
     {
       pkgs,
+      lib,
       ...
     }:
     {
       boot.loader = {
         systemd-boot.enable = true;
+        # ESP is only 477M on ASAHI (352M already for 6 gens × ~65M Image.efi + initrds)
+        # and defaults to null (keep every generation) → fills ESP after a few
+        # switches and fails install with ENOSPC. Cap globally; ASAHI overrides tighter.
+        systemd-boot.configurationLimit = lib.mkDefault 10;
         efi.canTouchEfiVariables = pkgs.stdenv.hostPlatform.isx86_64;
       };
     };

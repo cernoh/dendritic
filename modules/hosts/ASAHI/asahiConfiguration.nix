@@ -80,6 +80,11 @@
       # the built-in display's notch region misbehaves under appledrm.
       boot.kernelParams = [ "appledrm.show_notch=1" ];
 
+      # 477M ESP + 65M Asahi Image.efi / 26M initrd per generation → 6 gens
+      # already occupies 352M and blocks switch with ENOSPC (2026-09-06).
+      # Cap to 3 so boot adds ~270M + 123M fixed (m1n1/asahi/vendorfw) < ESP.
+      boot.loader.systemd-boot.configurationLimit = 3;
+
       hardware.asahi.peripheralFirmwareDirectory = vendorfw;
       hardware.asahi.extractPeripheralFirmware = onMacAsRoot;
       # Host-specific HM features; the shared homeManager module contributes

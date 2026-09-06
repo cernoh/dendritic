@@ -249,9 +249,13 @@
 
           # Out-of-store symlink: omp mutates ~/.omp constantly (dbs,
           # sessions, logs, model caches). A store symlink would be read-only
-          # and break every launch.
-          home.file.".omp".source =
-            config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/omp/home";
+          # and break every launch. force=true so rebuilds don't fail on
+          # existing ~/.omp.hm-backup collision (HM would otherwise refuse to
+          # clobber the backup).
+          home.file.".omp" = {
+            source = config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/omp/home";
+            force = true;
+          };
         }
         (lib.mkIf config.programs.omp.enable (
           lib.mkMerge [
