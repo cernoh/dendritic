@@ -24,6 +24,13 @@ in
       # Provides the programs.nvf options.
       imports = [ inputs.nvf.homeManagerModules.default ];
 
+      # `dendritic-leet-login`: stdlib-only cookie extractor behind
+      # :DendriticLeetLogin browser auto-capture (see ./_leet-login.py).
+      # Interpreter bundled by writePython3Bin; no new runtime deps.
+      home.packages = [
+        (pkgs.writers.writePython3Bin "dendritic-leet-login" { } (builtins.readFile ./_leet-login.py))
+      ];
+
       programs.nvf = {
         enable = true;
         settings.vim = {
@@ -236,14 +243,14 @@ in
                 end)
               '';
             };
-            # --- Self-contained login UI (dendritic) ---
-            # Provides :DendriticLeetLogin / :LeetLogin with an embedded
-            # help buffer + NUI form — no external browser window.
-            # See modules/features/nvf/_dendritic-leetcode/lua/dendritic-leetcode/login.lua
+            # --- Login UI (dendritic) ---
+            # :DendriticLeetLogin / :LeetLogin — headed-browser auto-capture
+            # (browser.lua + dendritic-leet-login helper) with NUI cookie-paste
+            # fallback. See _dendritic-leetcode/lua/dendritic-leetcode/.
             "dendritic-leetcode" = {
               package = pkgs.vimUtils.buildVimPlugin {
                 pname = "dendritic-leetcode";
-                version = "0.1.0";
+                version = "0.2.0";
                 src = ./_dendritic-leetcode;
               };
               setupModule = "dendritic-leetcode";
