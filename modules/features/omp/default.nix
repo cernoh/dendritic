@@ -1,21 +1,29 @@
-# Oh My Pi (omp) feature — overlay-based packaging from upstream.
+# Oh My Pi (omp) feature — prebuilt binary from GitHub releases with auto-update.
 #
-# Replaces the former `cernoh/omp-flake` binary wrapper. Upstream
-# `can1357/oh-my-pi` is already a full Nix flake with package, overlay,
-# homeManagerModules, nixosModules, devShells and checks. This module
-# consumes it directly via the `oh-my-pi` input and adds dendritic
-# integration:
+# Formerly consumed `can1357/oh-my-pi` as a flake input and built from
+# Rust+Bun source via `inputs.oh-my-pi.overlays.default`. Now pulls the
+# prebuilt binary from `github.com/can1357/oh-my-pi/releases` — no flake
+# input, no build. Because dendritic's deploys are already `--impure`
+# (hardwareFromMachine), both the nix package and the HM activation track
+# `releases/latest` by default — no manual version/hash bumps.
 #
-# - Exposes `overlays.omp` (= upstream `overlays.default`) so consumers
-#   can add `omp` to any nixpkgs instance with tooling intact.
-# - Re-exports `packages.omp` / `apps.omp` per system from upstream.
-# - Wraps upstream's `homeManagerModules` (`programs.omp`) with the
-#   out-of-store `~/.omp` symlink (same pattern as home-manager-v3:
-#   tracked config lives in ./home, runtime state — dbs, sessions, logs —
-#   is written live into this checkout). The symlink target is the
-#   feature's `home/` directory inside THIS repo.
-# - Keeps a `programs.oh-my-pi` alias for backward compatibility with
-#   existing local imports, mapping to `programs.omp`.
+# - Binary package is `perSystem.packages.omp` (`_omp.pkg.nix`) with
+#   `autoUpdate = true` (default). It impurely fetches
+#   `releases/latest/download/<asset>` via `builtins.fetchurl` (no hash)
+#   and resolves `version` from the GitHub API. Set `autoUpdate = false`
+#   to use the pinned `version` + SRI hashes.
+# - `overlays.omp` / `overlays.default` expose the same binary as a
+#   nixpkgs overlay (`pkgs.omp`).
+# - `flake.nixosModules.omp` / `flake.homeManagerModules.omp` (plus
+#   `oh-my-pi` compat aliases) provide `programs.omp` with `package`,
+#   `settings`, and `useLatestBinary` (default true). When true, the
+#   module also downloads `releases/latest` imperatively to
+#   `~/.local/bin/omp` on each activation — true auto-update without
+#   waiting for a rebuild. The nix package itself already auto-updates.
+# - HM module keeps dendritic's out-of-store `~/.omp` symlink (same pattern
+#   as home-manager-v3: tracked config lives in ./home, runtime state —
+#   dbs, sessions, logs — is written live into this checkout). The symlink
+#   target is the feature's `home/` directory inside THIS repo.
 # - Declares current non-secret settings (from home/agent/config.yml and
 #   home/agent/mcp.json, 2026-09-03) via `programs.omp.settings` and
 #   `home.activation.ompMcp` — no API keys/tokens in Nix; provide
@@ -24,64 +32,22 @@
 # Opt in:
 #   imports = [ self.homeManagerModules.omp ];
 # then either `programs.omp.enable = true` or the compat `programs.oh-my-pi.enable`.
-{ inputs, self, ... }:
+# Auto-update is on by default; to pin:
+#   programs.omp.useLatestBinary = false;  # plus perSystem autoUpdate = false if you want pure
+{ self, ... }:
 {
   # ---------------------------------------------------------------------------
-  # Overlay: turn oh-my-pi source into a nixpkgs package with tooling.
-  # Upstream's overlay is `final: prev: { omp = self.packages.<system>.default; }`
-  # — building from source with Rust + Bun, not a prebuilt binary fetch.
-  # Dendritic re-exports it as `overlays.omp` and `overlays.default`.
-  # Upstream's `nix/package.nix` runs a `preInstallCheck` that executes
-  # `bun ${../scripts/fix-dt-verdef.ts}` — a separate store file copy
-  # (`/nix/store/*-fix-dt-verdef.ts`) that is not rooted by the source
-  # closure. When that file is GC'd the builder fails with
-  # `Module not found '...fix-dt-verdef.ts (deleted)'` (issue observed
-  # 2026-09-03 on NIXPC). The DT_VERDEF fix it performs only matters on
-  # aarch64-linux (upstream issue #9881); x86_64 is unaffected. Gate the
-  # override so ASAHI (aarch64) keeps the check and SIGSEGV protection.
+  # Overlay: expose prebuilt binary as `pkgs.omp`.
   # ---------------------------------------------------------------------------
-  flake.overlays.omp =
-    final: prev:
-    let
-      upstream = inputs.oh-my-pi.overlays.default final prev;
-      isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
-    in
-    if isX86Linux then
-      upstream
-      // {
-        omp = upstream.omp.overrideAttrs (_: {
-          doInstallCheck = false;
-          preInstallCheck = "";
-          installCheckPhase = "true";
-        });
-      }
-    else
-      upstream;
-  flake.overlays.default =
-    final: prev:
-    let
-      upstream = inputs.oh-my-pi.overlays.default final prev;
-      isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
-    in
-    if isX86Linux then
-      upstream
-      // {
-        omp = upstream.omp.overrideAttrs (_: {
-          doInstallCheck = false;
-          preInstallCheck = "";
-          installCheckPhase = "true";
-        });
-      }
-    else
-      upstream;
+  flake.overlays.omp = final: _prev: {
+    omp = self.packages.${final.stdenv.hostPlatform.system}.omp;
+  };
+  flake.overlays.default = final: _prev: {
+    omp = self.packages.${final.stdenv.hostPlatform.system}.omp;
+  };
 
   # ---------------------------------------------------------------------------
-  # NixOS / Home Manager modules — re-export upstream and wrap HM with
-  # dendritic's out-of-store symlink + alias. Upstream's nixos/home-manager
-  # modules set `programs.omp.package = self.packages.<system>.default` where
-  # `self` is `inputs.oh-my-pi` (unpatched). Override to dendritic's
-  # perSystem `self.packages.<system>.omp` (gated, GC-safe) so
-  # `nixos-rebuild` actually uses the patched drv.
+  # NixOS modules — `programs.omp` with binary package.
   # ---------------------------------------------------------------------------
   flake.nixosModules.omp =
     {
@@ -91,8 +57,73 @@
       ...
     }:
     {
-      imports = [ inputs.oh-my-pi.nixosModules.default ];
-      config.programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+      options.programs.omp = {
+        enable = lib.mkEnableOption "Oh My Pi (omp) — prebuilt binary from GitHub releases";
+        package = lib.mkOption {
+          type = lib.types.nullOr lib.types.package;
+          default = self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+          description = "OMP package (prebuilt GitHub release binary). Set to null with useLatestBinary to fetch latest imperatively.";
+        };
+        useLatestBinary = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "When true, also download latest release binary to /usr/local/bin/omp via activation (curl releases/latest) for instant auto-update. Package itself already auto-updates (--impure). Set false to pin.";
+        };
+        settings = lib.mkOption {
+          type = lib.types.attrs;
+          default = { };
+          description = "OMP settings merged into ~/.omp/agent/config.yml (YAML).";
+        };
+      };
+      options.programs.oh-my-pi = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Alias for programs.omp.enable (compat).";
+        };
+        package = lib.mkOption {
+          type = lib.types.nullOr lib.types.package;
+          default = null;
+          description = "Alias for programs.omp.package.";
+        };
+      };
+
+      config = lib.mkMerge [
+        (lib.mkIf config.programs.oh-my-pi.enable { programs.omp.enable = true; })
+        (lib.mkIf (config.programs.oh-my-pi.package != null) {
+          programs.omp.package = config.programs.oh-my-pi.package;
+        })
+        (lib.mkIf config.programs.omp.enable {
+          environment.systemPackages = lib.optionals (config.programs.omp.package != null) [
+            config.programs.omp.package
+          ];
+        })
+        (lib.mkIf (config.programs.omp.enable && config.programs.omp.useLatestBinary) {
+          system.activationScripts.ompLatestBinary = {
+            text = ''
+              mkdir -p /usr/local/bin
+              asset=""
+              os=$(uname -s 2>/dev/null || echo Linux)
+              arch=$(uname -m 2>/dev/null || echo x86_64)
+              case "$os-$arch" in
+                Linux-x86_64|Linux-x86-64) asset="omp-linux-musl-x64" ;;
+                Linux-aarch64|Linux-arm64) asset="omp-linux-musl-arm64" ;;
+                Darwin-x86_64|Darwin-x86-64) asset="omp-darwin-x64" ;;
+                Darwin-arm64|Darwin-aarch64) asset="omp-darwin-arm64" ;;
+                *) asset="omp-linux-musl-x64" ;;
+              esac
+              url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
+              dest="/usr/local/bin/omp"
+              if command -v curl >/dev/null 2>&1; then
+                curl -fsSL "$url" -o "$dest.tmp" && chmod +x "$dest.tmp" && mv -f "$dest.tmp" "$dest" || true
+              elif command -v wget >/dev/null 2>&1; then
+                wget -qO "$dest.tmp" "$url" && chmod +x "$dest.tmp" && mv -f "$dest.tmp" "$dest" || true
+              fi
+            '';
+            deps = [ ];
+          };
+        })
+      ];
     };
   flake.nixosModules.oh-my-pi =
     {
@@ -102,9 +133,13 @@
       ...
     }:
     {
-      imports = [ inputs.oh-my-pi.nixosModules.default ];
-      config.programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+      imports = [ self.nixosModules.omp ];
     };
+
+  # ---------------------------------------------------------------------------
+  # Home Manager modules — package + out-of-store symlink + settings + MCP +
+  # optional latest-binary fetch.
+  # ---------------------------------------------------------------------------
   flake.homeManagerModules.omp =
     {
       config,
@@ -113,7 +148,33 @@
       ...
     }:
     {
-      imports = [ inputs.oh-my-pi.homeManagerModules.default ];
+      options.programs.omp = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Enable Oh My Pi (omp) — prebuilt binary from GitHub releases.";
+        };
+        package = lib.mkOption {
+          type = lib.types.nullOr lib.types.package;
+          default = self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
+          defaultText = "self.packages.\${system}.omp (pinned GitHub release)";
+          description = "OMP package. Set to null to rely solely on useLatestBinary fetch.";
+        };
+        useLatestBinary = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = ''
+            When true, also download the latest GitHub release binary to ~/.local/bin/omp
+            on each activation (curl -fsSL https://github.com/can1357/oh-my-pi/releases/latest/download/...) for instant auto-update.
+            Package itself already auto-updates (--impure). Set false to pin to nix store.
+          '';
+        };
+        settings = lib.mkOption {
+          type = lib.types.attrs;
+          default = { };
+          description = "OMP settings written to ~/.omp/agent/config.yml (YAML).";
+        };
+      };
 
       options.programs.oh-my-pi = {
         enable = lib.mkOption {
@@ -129,28 +190,16 @@
       };
 
       config = lib.mkMerge [
-        # Alias: programs.oh-my-pi -> programs.omp when the old name is used.
         (lib.mkIf config.programs.oh-my-pi.enable { programs.omp.enable = true; })
         (lib.mkIf (config.programs.oh-my-pi.package != null) {
           programs.omp.package = config.programs.oh-my-pi.package;
         })
         # Dendritic default: enable omp, wire ~/.omp out-of-store, and
-        # declare current non-secret settings (migrated from
-        # modules/features/omp/home/agent/config.yml, 2026-09-03).
-        # Secrets (provider API keys, tokens) are intentionally NOT in Nix:
-        # provide them via env (e.g. ANTHROPIC_API_KEY), sops-nix, or
-        # `omp`'s own credential store. The file at
-        # ~/.omp/agent/config.yml is still written by HM's activation
+        # declare current non-secret settings.
         {
-          # Use dendritic's patched perSystem package (gated to x86_64) instead
-          # of upstream's `self.packages` (inputs.oh-my-pi) which still has
-          # `doInstallCheck=1` and the GC-fragile `fix-dt-verdef.ts` check.
-          # Upstream's `nix/home-manager.nix` sets `package = self.packages...`
-          # where `self` is `inputs.oh-my-pi`; that bypasses our overlay/perSystem.
           programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
-
           programs.omp.enable = lib.mkDefault true;
-
+          programs.omp.useLatestBinary = lib.mkDefault true;
           programs.omp.settings = {
             modelRoles = {
               default = "opencode-go/deepseek-v4-flash";
@@ -198,60 +247,89 @@
             astGrep.enabled = true;
           };
 
-          # Declarative mcp.json (no secrets). Upstream HM module only
-          # handles config.yml; mcp.json is managed here via activation
-          # into the same out-of-store dir. Secrets (tokens, keys) would
-          # be injected via sops-nix/env, not Nix.
-          home.activation.ompMcp = {
-            before = [ ];
-            after = [ "writeBoundary" ];
-            data = ''
-              run mkdir -p "$HOME/.omp/agent"
-              run cat > "$HOME/.omp/agent/mcp.json" <<'MCP_EOF'
-              ${builtins.toJSON {
-                "$schema" =
-                  "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
-                mcpServers = {
-                  hindsight = {
-                    type = "http";
-                    url = "http://localhost:8888/mcp";
-                  };
-                  scrapling = {
-                    type = "http";
-                    url = "http://127.0.0.1:8000/mcp";
-                  };
-                  agentwebsearch = {
-                    type = "sse";
-                    url = "http://127.0.0.1:8902/sse";
-                  };
-                  agent-browser = {
-                    type = "stdio";
-                    command = "agent-browser";
-                    args = [ "mcp" ];
-                  };
-                };
-              }}
-              MCP_EOF
-              run chmod 600 "$HOME/.omp/agent/mcp.json"
-            '';
-          };
-
           # Out-of-store symlink: omp mutates ~/.omp constantly (dbs,
           # sessions, logs, model caches). A store symlink would be read-only
-          # and break every launch. Same mechanism as home-manager-v3.
-          # HM's `programs.omp.settings` activation writes config.yml
-          # (install -m 600) *inside* this dir, so the file in the repo
-          # checkout will be overwritten on each switch — that is expected.
-          # To avoid a dirty git state, config.yml should be untracked
-          # (see home/.gitignore) once declarative is adopted.
+          # and break every launch.
           home.file.".omp".source =
             config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/omp/home";
         }
+        (lib.mkIf config.programs.omp.enable (
+          lib.mkMerge [
+            {
+              home.packages = lib.optionals (config.programs.omp.package != null) [
+                config.programs.omp.package
+              ];
+            }
+            # Write config.yml from settings (YAML) into the out-of-store dir.
+            # Upstream's HM module did this via programs.omp.settings activation;
+            # we replicate with a direct activation to avoid importing upstream.
+            {
+              home.activation.ompConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                run mkdir -p "$HOME/.omp/agent"
+                run cat > "$HOME/.omp/agent/config.yml" <<'OMP_EOF'
+                ${lib.generators.toYAML { } config.programs.omp.settings}
+                OMP_EOF
+                run chmod 600 "$HOME/.omp/agent/config.yml"
+              '';
+            }
+            {
+              home.activation.ompMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                run mkdir -p "$HOME/.omp/agent"
+                run cat > "$HOME/.omp/agent/mcp.json" <<'MCP_EOF'
+                ${builtins.toJSON {
+                  "$schema" =
+                    "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
+                  mcpServers = {
+                    hindsight = {
+                      type = "http";
+                      url = "http://localhost:8888/mcp";
+                    };
+                    scrapling = {
+                      type = "http";
+                      url = "http://127.0.0.1:8000/mcp";
+                    };
+                    agentwebsearch = {
+                      type = "sse";
+                      url = "http://127.0.0.1:8902/sse";
+                    };
+                    agent-browser = {
+                      type = "stdio";
+                      command = "agent-browser";
+                      args = [ "mcp" ];
+                    };
+                  };
+                }}
+                MCP_EOF
+                run chmod 600 "$HOME/.omp/agent/mcp.json"
+              '';
+            }
+            # Imperative latest-binary fetch (releases/latest/download).
+            (lib.mkIf config.programs.omp.useLatestBinary {
+              home.activation.ompLatestBinary = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                run mkdir -p "$HOME/.local/bin"
+                # Resolve asset name from uname; uses musl static for Linux.
+                asset=""
+                os=$(uname -s 2>/dev/null || echo Linux)
+                arch=$(uname -m 2>/dev/null || echo x86_64)
+                case "$os-$arch" in
+                  Linux-x86_64|Linux-x86-64) asset="omp-linux-musl-x64" ;;
+                  Linux-aarch64|Linux-arm64) asset="omp-linux-musl-arm64" ;;
+                  Darwin-x86_64|Darwin-x86-64) asset="omp-darwin-x64" ;;
+                  Darwin-arm64|Darwin-aarch64) asset="omp-darwin-arm64" ;;
+                  *) asset="omp-linux-musl-x64" ;;
+                esac
+                url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
+                dest="$HOME/.local/bin/omp"
+                run curl -fsSL "$url" -o "$dest.tmp" && run chmod +x "$dest.tmp" && run mv -f "$dest.tmp" "$dest"
+                verboseEcho "omp: fetched latest binary $asset to $dest"
+              '';
+            })
+          ]
+        ))
       ];
     };
 
-  # Compat alias: imports = [ self.homeManagerModules.oh-my-pi ] still works
-  # with the same out-of-store symlink and declarative settings.
+  # Compat alias: imports = [ self.homeManagerModules.oh-my-pi ] still works.
   flake.homeManagerModules.oh-my-pi =
     {
       config,
@@ -260,133 +338,28 @@
       ...
     }:
     {
-      imports = [ inputs.oh-my-pi.homeManagerModules.default ];
-      config = {
-        programs.omp.package = lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.omp;
-        programs.omp.enable = lib.mkDefault true;
-        programs.omp.settings = {
-          modelRoles = {
-            default = "opencode-go/deepseek-v4-flash";
-            task = "opencode-go/deepseek-v4-flash";
-            plan = "opencode-go/deepseek-v4-flash";
-            slow = "opencode-go/deepseek-v4-flash";
-            advisor = "opencode-go/deepseek-v4-flash";
-          };
-          providers = {
-            tinyModel = "lfm2-350m";
-            tinyModelDevice = "gpu";
-          };
-          symbolPreset = "nerd";
-          theme.dark = "dark-catppuccin";
-          setupVersion = 1;
-          hideThinkingBlock = true;
-          memory.backend = "off";
-          autolearn = {
-            enabled = true;
-            autoContinue = true;
-          };
-          bash.autoBackground.enabled = true;
-          bashInterceptor.enabled = true;
-          shellMinimizer.sourceOutlineLevel = "default";
-          github.enabled = true;
-          mcp = { };
-          task = {
-            eager = "default";
-            isolation.mode = "auto";
-          };
-          advisor = {
-            enabled = true;
-            subagents = true;
-            syncBacklog = "5";
-          };
-          steeringMode = "one-at-a-time";
-          compaction.handoffSaveToDisk = true;
-          browser.headless = false;
-          defaultThinkingLevel = "auto";
-          dev.autoqaConsent = "granted";
-          includeWorkspaceTree = true;
-          features.unexpectedStopDetection = true;
-          edit.mode = "hashline";
-          lsp.formatOnWrite = true;
-          astGrep.enabled = true;
-        };
-        home.activation.ompMcp = {
-          before = [ ];
-          after = [ "writeBoundary" ];
-          data = ''
-            run mkdir -p "$HOME/.omp/agent"
-            run cat > "$HOME/.omp/agent/mcp.json" <<'MCP_EOF'
-            ${builtins.toJSON {
-              "$schema" =
-                "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
-              mcpServers = {
-                hindsight = {
-                  type = "http";
-                  url = "http://localhost:8888/mcp";
-                };
-                scrapling = {
-                  type = "http";
-                  url = "http://127.0.0.1:8000/mcp";
-                };
-                agentwebsearch = {
-                  type = "sse";
-                  url = "http://127.0.0.1:8902/sse";
-                };
-                agent-browser = {
-                  type = "stdio";
-                  command = "agent-browser";
-                  args = [ "mcp" ];
-                };
-              };
-            }}
-            MCP_EOF
-            run chmod 600 "$HOME/.omp/agent/mcp.json"
-          '';
-        };
-        home.file.".omp".source =
-          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/omp/home";
-      };
+      imports = [ self.homeManagerModules.omp ];
     };
+
   # ---------------------------------------------------------------------------
-  # Per-system outputs — package, app, devShell.
-  # These front the upstream flake so dendritic IS a nix flake with tooling
-  # for oh-my-pi, without consumers needing to add a second input.
-  # The package override mirrors the overlay fix above: disable the GC-fragile
-  # preInstallCheck (DT_VERDEF fix) that fails with `(deleted)` when its
-  # separate store copy is GC'd. Gated to x86_64-linux so ASAHI
-  # (aarch64-linux) retains upstream's loader fix and SIGSEGV protection
-  # (issue #9881). Safe on x86_64 where the bug is not observed.
+  # Per-system outputs — binary package + apps.
   # ---------------------------------------------------------------------------
   perSystem =
-    {
-      inputs',
-      pkgs,
-      system,
-      ...
-    }:
+    { pkgs, ... }:
     let
-      base = inputs'.oh-my-pi.packages.default;
-      isX86Linux = system == "x86_64-linux" || pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-      patchedOmp =
-        if isX86Linux then
-          base.overrideAttrs (_: {
-            doInstallCheck = false;
-            preInstallCheck = "";
-            installCheckPhase = "true";
-          })
-        else
-          base;
+      ompPkg = pkgs.callPackage ./_omp.pkg.nix { };
     in
     {
-      packages.omp = patchedOmp;
-      packages.oh-my-pi = patchedOmp;
+      packages.omp = ompPkg;
+      packages.oh-my-pi = ompPkg;
 
-      apps.omp = inputs'.oh-my-pi.apps.default;
-      apps.oh-my-pi = inputs'.oh-my-pi.apps.default;
-
-      # Tooling: `nix develop .#omp` fronts upstream's devShell (Rust
-      # toolchain + Bun + bun2nix). The shell is defined in upstream
-      # nix/dev-shell.nix.
-      devShells.omp = inputs'.oh-my-pi.devShells.default;
+      apps.omp = {
+        type = "app";
+        program = "${ompPkg}/bin/omp";
+      };
+      apps.oh-my-pi = {
+        type = "app";
+        program = "${ompPkg}/bin/omp";
+      };
     };
 }
