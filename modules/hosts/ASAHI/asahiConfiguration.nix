@@ -26,20 +26,45 @@
       # the neutral branch.
       evalSystem = builtins.currentSystem or null;
       onMacAsRoot = evalSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
-      vendorfw = if onMacAsRoot then "/boot/vendorfw" else null;
+      # Use a Nix path (not a string) so `${peripheralFirmwareDirectory}/firmware.cpio`
+      # copies the ESP payload into the store at eval time — host path string
+      # "/boot/vendorfw" would be evaluated inside the sandbox where /boot is
+      # invisible (sandbox = true → "firmware.cpio missing!").
+      vendorfw = if onMacAsRoot then /boot/vendorfw else null;
     in
     {
       networking.hostName = "ASAHI";
 
-      # 8 GiB RAM: `nix.settings.max-jobs = auto` (nproc = 8) plus nested
-      # toplevel builds inside derivation buildPhases repeatedly OOM-killed
-      # `nixos-rebuild switch` (SIGKILL 9, cgroup OOM — issue #108). Cap
-      # concurrent builds and per-build cores; slower but completes.
-      # NIXPC is untouched (host-scoped).
+      # 8 GiB RAM + 5.5 GiB zram: `max-jobs = auto` (8) OOM-killed the build
+      # (earlyoom SIGTERM, issue #108). 2×4 still OOM-kills `jj-lib` rustc
+      # (913 MiB VmRSS, 2026-09-06 journalctl: earlyoom -m10 -s10 SIGTERM).
+      # 1×2 still OOM-kills `pi-natives` rustc (4695 MiB VmRSS, 2026-09-06
+      # 15:24:05 earlyoom SIGTERM with LTO=fat, codegen-units=1). Cap to
+      # 1 job × 1 core; cargo -j1 keeps peak <5 GiB (single rustc).
+      # NIXPC untouched (host-scoped).
       nix.settings = {
-        max-jobs = 2;
-        cores = 4;
+        max-jobs = 1;
+        cores = 1;
       };
+
+      # OOM guard tuning: default -m10 -s10 (10% mem+swap) is too aggressive
+      # for a single 4.7 GiB rustc + 2-3 GiB nix daemon on 7.3 GiB RAM.
+      # 5% lets the build use more of zram+disk swap before SIGTERM.
+      services.earlyoom.freeMemThreshold = 5;
+      services.earlyoom.freeSwapThreshold = 5;
+
+      # Keep zram at 75% (5.5 GiB) and add 8 GiB disk swap on nvme0n1p5
+      # (24G free, 158G total). Total swap ~13.5 GiB covers LTO peak +
+      # nix daemon without earlyoom. Kernel creates /swapfile at first
+      # activation if missing.
+      swapDevices = [
+        {
+          device = "/swapfile";
+          size = 8192;
+        }
+      ];
+      # Slight zram bump to 100% (7.3 GiB) for extra headroom alongside disk.
+      zramSwap.memoryPercent = lib.mkForce 100;
 
       # The Mac's existing login is "da" (carried over from hm-v3); unlike
       # NIXPC it must NOT default to "davr", or switch would create a second,
