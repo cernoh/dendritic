@@ -1,11 +1,13 @@
 -- dendritic-leetcode/browser.lua
 -- Headed-browser login: opens the system Chromium-family browser on an
 -- isolated profile, lets the user log in normally, and polls the
--- `dendritic-leet-login` helper (Python stdlib, reads the profile's
--- cookie SQLite) until LEETCODE_SESSION + csrftoken appear.
--- No Electron/bundled browser: reuses Brave/Chromium already on the host.
--- Callers must check M.available() first; on headless hosts or without
--- the helper, login.lua falls back to the cookie-paste form.
+-- `dendritic-leet-login` helper until LEETCODE_SESSION + csrftoken
+-- appear. The browser is launched with --remote-debugging-port=0 and
+-- the helper reads cookies over CDP (Network.getAllCookies returns
+-- plaintext — the on-disk Cookies store is encrypted, so no SQLite
+-- reads). No Electron/bundled browser: reuses Brave/Chromium already
+-- on the host. Callers must check M.available() first; on headless
+-- hosts or without the helper, login.lua falls back to cookie paste.
 
 local M = {}
 
@@ -22,6 +24,7 @@ local BROWSERS = {
 
 local POLL_MS = 2000
 local MAX_POLLS = 150 -- ~5 minutes, then time out
+local LAUNCH_TIMEOUT_MS = 20000
 
 local pending = nil -- active login attempt, or nil
 
@@ -64,15 +67,24 @@ function M.cancel()
   end
 end
 
-local function finish(raw, cb)
-  local state = pending
+local function fail(state, cb, err)
+  if pending ~= state or state.cancelled then
+    return
+  end
   pending = nil
-  if not state or state.cancelled then
+  if cb then
+    pcall(cb, false, err)
+  end
+end
+
+local function finish(state, raw, cb)
+  if pending ~= state or state.cancelled then
     if cb then
       pcall(cb, false, "cancelled")
     end
     return
   end
+  pending = nil
   -- Hand the raw header to leetcode.nvim's own validated setter.
   local ok, cookie = pcall(require, "leetcode.cache.cookie")
   if not ok then
@@ -99,31 +111,27 @@ local function finish(raw, cb)
   end
 end
 
-local function poll(cb)
-  local state = pending
-  if not state or state.cancelled then
+local function poll(state, cb)
+  if pending ~= state or state.cancelled then
     return
   end
   if state.tries >= MAX_POLLS then
-    pending = nil
+    fail(state, cb, "timed out waiting for login")
     notify("Browser login timed out after ~5 minutes", vim.log.levels.WARN)
-    if cb then
-      pcall(cb, false, "timed out waiting for login")
-    end
     return
   end
   state.tries = state.tries + 1
-  vim.system({ HELPER, "extract", "--profile-dir", state.profile }, { text = true }, function(res)
+  vim.system({ HELPER, "extract", "--port", tostring(state.port) }, { text = true }, function(res)
     vim.schedule(function()
-      if not pending or pending.cancelled then
+      if pending ~= state or state.cancelled then
         return
       end
       local out = res.stdout and vim.trim(res.stdout) or ""
       if res.code == 0 and out:match("LEETCODE_SESSION=") and out:match("csrftoken=") then
-        finish(out, cb)
+        finish(state, out, cb)
       else
         vim.defer_fn(function()
-          poll(cb)
+          poll(state, cb)
         end, POLL_MS)
       end
     end)
@@ -159,23 +167,52 @@ function M.login(cb)
 
   local profile = profile_dir()
   vim.fn.mkdir(profile, "p")
+  local state = { tries = 0, port = nil, cancelled = false }
+  pending = state
+
+  -- Chrome picks a free DevTools port for --remote-debugging-port=0 and
+  -- prints "DevTools listening on ws://127.0.0.1:PORT" to stderr.
+  local stderr_buf = ""
   local job = vim.fn.jobstart({
     browser,
     "--user-data-dir=" .. profile,
+    "--remote-debugging-port=0",
     "--no-first-run",
     "--no-default-browser-check",
     LOGIN_URL,
-  }, { detach = true })
+  }, {
+    on_stderr = function(_, data)
+      if pending ~= state or state.cancelled or state.port then
+        return
+      end
+      for _, line in ipairs(data or {}) do
+        stderr_buf = stderr_buf .. line .. "\n"
+      end
+      local port = stderr_buf:match("DevTools listening on ws://[^:/]+:(%d+)")
+      if port then
+        state.port = tonumber(port)
+        notify("Browser opened — log in at leetcode.com; cookies are captured automatically (:DendriticLeetCancel to stop)")
+        poll(state, cb)
+      end
+    end,
+    on_exit = function()
+      if pending == state and not state.cancelled then
+        fail(state, cb, "browser closed before login completed")
+      end
+    end,
+  })
   if job <= 0 then
-    if cb then
-      pcall(cb, false, "could not launch " .. browser)
-    end
+    fail(state, cb, "could not launch " .. browser)
     return
   end
+  state.job = job
 
-  pending = { tries = 0, profile = profile, cancelled = false }
-  notify("Browser opened — log in at leetcode.com; cookies are captured automatically (:DendriticLeetCancel to stop)")
-  poll(cb)
+  -- Launch watchdog: DevTools line should appear within seconds.
+  vim.defer_fn(function()
+    if pending == state and not state.cancelled and not state.port then
+      fail(state, cb, "browser did not expose DevTools endpoint")
+    end
+  end, LAUNCH_TIMEOUT_MS)
 end
 
 return M
