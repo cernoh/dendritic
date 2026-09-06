@@ -17,6 +17,7 @@ in
   flake.homeManagerModules.nvf =
     {
       pkgs,
+      lib,
       ...
     }:
     {
@@ -148,10 +149,126 @@ in
                 require('fzf-lua').register_ui_select()
               '';
             };
+            # --- LeetCode dependencies (plenary, nui, devicons) ---
+            # Explicitly declared so leetcode.nvim never fails to resolve
+            # its Lua requires at runtime. nvf's lz.n loader ensures they
+            # are on runtimepath before leetcode loads.
+            "plenary.nvim" = {
+              package = pkgs.vimPlugins.plenary-nvim;
+              lazy = false;
+            };
+            "nui.nvim" = {
+              package = pkgs.vimPlugins.nui-nvim;
+              lazy = false;
+            };
+            "nvim-web-devicons" = {
+              package = lib.mkForce pkgs.vimPlugins.nvim-web-devicons;
+              lazy = false;
+            };
+            # --- LeetCode runner (kawre/leetcode.nvim) ---
+            # Advice from https://github.com/kawre/leetcode.nvim:
+            #   * plenary + nui required, html treesitter recommended
+            #   * picker auto-resolves; we pin to fzf-lua (already enabled)
+            #   * non_standalone = true lets :Leet work inside any session
+            "leetcode.nvim" = {
+              package = pkgs.vimPlugins.leetcode-nvim;
+              setupModule = "leetcode";
+              setupOpts = {
+                arg = "leetcode.nvim";
+                lang = "python3";
+                plugins = {
+                  non_standalone = true;
+                };
+                logging = true;
+                cache = {
+                  update_interval = 60 * 60 * 24 * 7;
+                };
+                editor = {
+                  reset_previous_code = true;
+                  fold_imports = true;
+                };
+                console = {
+                  open_on_runcode = true;
+                  dir = "row";
+                  size = {
+                    width = "90%";
+                    height = "75%";
+                  };
+                  result = {
+                    size = "60%";
+                  };
+                  testcase = {
+                    virt_text = true;
+                    size = "40%";
+                  };
+                };
+                description = {
+                  position = "left";
+                  width = "40%";
+                  show_stats = true;
+                };
+                picker = {
+                  provider = "fzf-lua";
+                };
+                hooks = { };
+                keys = {
+                  toggle = [ "q" ];
+                  confirm = [ "<CR>" ];
+                  reset_testcases = "r";
+                  use_testcase = "U";
+                  focus_testcases = "H";
+                  focus_result = "L";
+                };
+                theme = { };
+                image_support = false;
+              };
+              cmd = [ "Leet" ];
+              # self-contained login overlay is patched by dendritic-leetcode below;
+              # keep after minimal to avoid double-setup
+              after = ''
+                -- If dendritic-leetcode already loaded, patch immediately
+                pcall(function()
+                  local login = require("dendritic-leetcode.login")
+                  local cmd = require("leetcode.command")
+                  if cmd and login then
+                    cmd.cookie_prompt = login.cookie_prompt
+                  end
+                end)
+              '';
+            };
+            # --- Self-contained login UI (dendritic) ---
+            # Provides :DendriticLeetLogin / :LeetLogin with an embedded
+            # help buffer + NUI form — no external browser window.
+            # See modules/features/nvf/_dendritic-leetcode/lua/dendritic-leetcode/login.lua
+            "dendritic-leetcode" = {
+              package = pkgs.vimUtils.buildVimPlugin {
+                pname = "dendritic-leetcode";
+                version = "0.1.0";
+                src = ./_dendritic-leetcode;
+              };
+              setupModule = "dendritic-leetcode";
+              setupOpts = { };
+              lazy = false;
+            };
           };
-
           # --- Languages ---
-          languages = languagesConfig.languages;
+          # `pkgs.flutter` (default `flutterPackage` for flutter-tools) pulls
+          # `aapt` via `flutter.nix:NIX_AAPT2_BINARY_PATH`, but `aapt`
+          # is only available on x86_64-linux + darwin (aapt/package.nix
+          # meta.platforms). On aarch64-linux this makes the nvf module
+          # un-evaluatable — `nixos-rebuild switch --flake .#ASAHI` failed
+          # with: flutter-tools → flutter → aapt → "not available on aarch64-linux".
+          # Gate flutter-tools there; Dart LSP/treesitter stay enabled. On
+          # x86_64-linux (NIXPC) flutter-tools remains enabled.
+          languages =
+            languagesConfig.languages
+            // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isAarch64 && pkgs.stdenv.hostPlatform.isLinux) {
+              dart = languagesConfig.languages.dart // {
+                flutter-tools = languagesConfig.languages.dart.flutter-tools // {
+                  enable = lib.mkForce false;
+                };
+              };
+            };
         };
       };
     };

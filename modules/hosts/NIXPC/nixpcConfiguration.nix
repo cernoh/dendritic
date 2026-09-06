@@ -18,6 +18,10 @@
       # nixos-unstable pin). The default nixos-unstable kernel (6.18.x) is too
       # old for this host's hardware/driver requirements.
       boot.kernelPackages = pkgs.linuxPackages_latest;
+      # Register qemu-aarch64 via binfmt_misc so NIXPC can build ASAHI
+      # (aarch64-linux) derivations locally; cross builds run foreign
+      # fixup binaries under emulation.
+      boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
       # Spare SATA data disks (sda2 NTFS "2tb storage", sdc1 ext4), pinned by
       # UUID. nofail keeps boot green if a disk is absent or unmountable;
       # uid/gid give davr ownership on ntfs3 (in-kernel driver).
