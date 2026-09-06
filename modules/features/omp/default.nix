@@ -101,24 +101,42 @@
         (lib.mkIf (config.programs.omp.enable && config.programs.omp.useLatestBinary) {
           system.activationScripts.ompLatestBinary = {
             text = ''
+              # Activation PATH is minimal — pin fetchers and friends to the store.
+              export PATH="${
+                lib.makeBinPath [
+                  pkgs.curl
+                  pkgs.wget
+                  pkgs.coreutils
+                ]
+              }:$PATH"
               mkdir -p /usr/local/bin
               asset=""
               os=$(uname -s 2>/dev/null || echo Linux)
               arch=$(uname -m 2>/dev/null || echo x86_64)
               case "$os-$arch" in
-                Linux-x86_64|Linux-x86-64) asset="omp-linux-musl-x64" ;;
-                Linux-aarch64|Linux-arm64) asset="omp-linux-musl-arm64" ;;
+                Linux-x86_64|Linux-x86-64) asset="omp-linux-x64" ;;
+                Linux-aarch64|Linux-arm64) asset="omp-linux-arm64" ;;
                 Darwin-x86_64|Darwin-x86-64) asset="omp-darwin-x64" ;;
                 Darwin-arm64|Darwin-aarch64) asset="omp-darwin-arm64" ;;
-                *) asset="omp-linux-musl-x64" ;;
+                *) asset="omp-linux-x64" ;;
               esac
               url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
               dest="/usr/local/bin/omp"
-              if command -v curl >/dev/null 2>&1; then
-                curl -fsSL "$url" -o "$dest.tmp" && chmod +x "$dest.tmp" && mv -f "$dest.tmp" "$dest" || true
-              elif command -v wget >/dev/null 2>&1; then
-                wget -qO "$dest.tmp" "$url" && chmod +x "$dest.tmp" && mv -f "$dest.tmp" "$dest" || true
+              # Activation PATH is minimal — use store absolute paths.
+              if ${pkgs.curl}/bin/curl -fsSL "$url" -o "$dest.tmp" 2>/dev/null; then
+                chmod +x "$dest.tmp" || true
+              elif ${pkgs.wget}/bin/wget -qO "$dest.tmp" "$url" 2>/dev/null; then
+                chmod +x "$dest.tmp" || true
               fi
+              # Repoint the ELF interpreter at the store libc (NixOS has no
+              # /lib64); skip static assets — see _omp.pkg.nix.
+              if [ -f "$dest.tmp" ] && ${pkgs.patchelf}/bin/patchelf --print-interpreter "$dest.tmp" >/dev/null 2>&1; then
+                ${pkgs.patchelf}/bin/patchelf \
+                  --set-interpreter "$(echo ${pkgs.stdenv.cc.libc.out}/lib/ld-linux-*.so*)" \
+                  --set-rpath "${pkgs.stdenv.cc.libc.out}/lib" \
+                  "$dest.tmp" || true
+              fi
+              [ -f "$dest.tmp" ] && mv -f "$dest.tmp" "$dest" || true
             '';
             deps = [ ];
           };
@@ -310,22 +328,55 @@
             # Imperative latest-binary fetch (releases/latest/download).
             (lib.mkIf config.programs.omp.useLatestBinary {
               home.activation.ompLatestBinary = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                # Activation PATH is minimal (coreutils present, curl/wget are
+                # not) — pin fetchers and friends to the store.
+                export PATH="${
+                  lib.makeBinPath [
+                    pkgs.curl
+                    pkgs.wget
+                    pkgs.coreutils
+                  ]
+                }:$PATH"
                 run mkdir -p "$HOME/.local/bin"
-                # Resolve asset name from uname; uses musl static for Linux.
+                # Resolve asset name from uname; glibc build on Linux,
+                # patched to the store libc after download.
                 asset=""
                 os=$(uname -s 2>/dev/null || echo Linux)
                 arch=$(uname -m 2>/dev/null || echo x86_64)
                 case "$os-$arch" in
-                  Linux-x86_64|Linux-x86-64) asset="omp-linux-musl-x64" ;;
-                  Linux-aarch64|Linux-arm64) asset="omp-linux-musl-arm64" ;;
+                  Linux-x86_64|Linux-x86-64) asset="omp-linux-x64" ;;
+                  Linux-aarch64|Linux-arm64) asset="omp-linux-arm64" ;;
                   Darwin-x86_64|Darwin-x86-64) asset="omp-darwin-x64" ;;
                   Darwin-arm64|Darwin-aarch64) asset="omp-darwin-arm64" ;;
-                  *) asset="omp-linux-musl-x64" ;;
+                  *) asset="omp-linux-x64" ;;
                 esac
                 url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
                 dest="$HOME/.local/bin/omp"
-                run curl -fsSL "$url" -o "$dest.tmp" && run chmod +x "$dest.tmp" && run mv -f "$dest.tmp" "$dest"
-                verboseEcho "omp: fetched latest binary $asset to $dest"
+                tmp="$dest.tmp"
+                # Activation PATH lacks curl/wget — use store absolute paths.
+                # Keep failures non-fatal (offline) so activation never breaks.
+                downloaded=0
+                if run ${pkgs.curl}/bin/curl -fsSL "$url" -o "$tmp"; then
+                  downloaded=1
+                elif run ${pkgs.wget}/bin/wget -qO "$tmp" "$url"; then
+                  downloaded=1
+                fi
+                if [ "$downloaded" = 1 ] && [ -f "$tmp" ]; then
+                  run chmod +x "$tmp"
+                  # Repoint the ELF interpreter at the store libc (NixOS has
+                  # no /lib64); probe skips static assets.
+                  if [ "$os" = "Linux" ] && ${pkgs.patchelf}/bin/patchelf --print-interpreter "$tmp" >/dev/null 2>&1; then
+                    run ${pkgs.patchelf}/bin/patchelf \
+                      --set-interpreter "$(echo ${pkgs.stdenv.cc.libc.out}/lib/ld-linux-*.so*)" \
+                      --set-rpath "${pkgs.stdenv.cc.libc.out}/lib" \
+                      "$tmp"
+                  fi
+                  run mv -f "$tmp" "$dest"
+                  verboseEcho "omp: fetched latest binary $asset to $dest"
+                else
+                  verboseEcho "omp: failed to fetch latest binary, keeping existing"
+                  rm -f "$tmp" || true
+                fi
               '';
             })
           ]

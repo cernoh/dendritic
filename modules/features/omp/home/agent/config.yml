@@ -1,1 +1,60 @@
-{"advisor":{"enabled":true,"subagents":true,"syncBacklog":"5"},"astGrep":{"enabled":true},"autolearn":{"autoContinue":true,"enabled":true},"bash":{"autoBackground":{"enabled":true}},"bashInterceptor":{"enabled":true},"browser":{"headless":false},"compaction":{"handoffSaveToDisk":true},"defaultThinkingLevel":"auto","dev":{"autoqaConsent":"granted"},"edit":{"mode":"hashline"},"features":{"unexpectedStopDetection":true},"github":{"enabled":true},"hideThinkingBlock":true,"includeWorkspaceTree":true,"lsp":{"formatOnWrite":true},"mcp":{},"memory":{"backend":"off"},"modelRoles":{"advisor":"opencode-go/deepseek-v4-flash","default":"opencode-go/deepseek-v4-flash","plan":"opencode-go/deepseek-v4-flash","slow":"opencode-go/deepseek-v4-flash","task":"opencode-go/deepseek-v4-flash"},"providers":{"tinyModel":"lfm2-350m","tinyModelDevice":"gpu"},"setupVersion":1,"shellMinimizer":{"sourceOutlineLevel":"default"},"steeringMode":"one-at-a-time","symbolPreset":"nerd","task":{"eager":"default","isolation":{"mode":"auto"}},"theme":{"dark":"dark-catppuccin"}}
+advisor:
+  enabled: true
+  syncBacklog: "5"
+astGrep:
+  enabled: true
+autolearn:
+  autoContinue: true
+  enabled: true
+bash:
+  autoBackground:
+    enabled: true
+bashInterceptor:
+  enabled: true
+browser:
+  headless: false
+compaction:
+  handoffSaveToDisk: true
+defaultThinkingLevel: auto
+dev:
+  autoqaConsent: granted
+edit:
+  mode: hashline
+features:
+  unexpectedStopDetection: smart
+github:
+  enabled: true
+hideThinkingBlock: true
+includeWorkspaceTree: true
+lsp:
+  formatOnWrite: true
+mcp:
+  {}
+memory:
+  backend: "off"
+modelRoles:
+  advisor: opencode-go/muse-spark-1.3-contributor
+  default: opencode-go/muse-spark-1.3-contributor
+  plan: opencode-go/deepseek-v4-flash
+  slow: opencode-go/deepseek-v4-flash
+  task: opencode-go/deepseek-v4-flash
+providers:
+  tinyModel: lfm2-350m
+  tinyModelDevice: gpu
+setupVersion: 2
+shellMinimizer:
+  sourceOutlineLevel: default
+steeringMode: one-at-a-time
+symbolPreset: nerd
+task:
+  eager: default
+  isolation:
+    enabled: true
+  agentAdvisor:
+    task: "on"
+theme:
+  dark: dark-catppuccin
+isolation:
+  backend: auto
+composer:
+  shape: rail

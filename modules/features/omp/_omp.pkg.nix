@@ -22,6 +22,7 @@
   lib,
   stdenv,
   fetchurl,
+  patchelf,
   autoUpdate ? true,
 }:
 let
@@ -29,12 +30,12 @@ let
 
   pinnedSources = {
     "x86_64-linux" = {
-      url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-musl-x64";
-      hash = "sha256-o4eZU75G2A3XYC0JQVvzPIekSW/O5DwMJ4DDQkkZvns=";
+      url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-x64";
+      hash = "sha256-9UMQCPcdLzlxYXIFz86csifB0TVmWTAIgkTHbYay+0I=";
     };
     "aarch64-linux" = {
-      url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-musl-arm64";
-      hash = "sha256-UQZEBGpk5VYR6A5rMnSfHdeOcQALIKh48lN2C6326WU=";
+      url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-arm64";
+      hash = "sha256-Eox5SY5bnTKF1Xt7Q9RhOarVRzpph2cxT/vmDHxd4xQ=";
     };
     "x86_64-darwin" = {
       url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-darwin-x64";
@@ -46,10 +47,12 @@ let
     };
   };
 
-  # Asset name for `releases/latest/download` (musl static on Linux).
+  # Asset name for `releases/latest/download` (glibc build on Linux;
+  # its ELF interpreter is patched to the Nix store libc below — musl
+  # assets are Alpine-linked and unresolvable on NixOS).
   latestAssets = {
-    "x86_64-linux" = "omp-linux-musl-x64";
-    "aarch64-linux" = "omp-linux-musl-arm64";
+    "x86_64-linux" = "omp-linux-x64";
+    "aarch64-linux" = "omp-linux-arm64";
     "x86_64-darwin" = "omp-darwin-x64";
     "aarch64-darwin" = "omp-darwin-arm64";
   };
@@ -103,11 +106,30 @@ stdenv.mkDerivation {
     runHook preInstall
     mkdir -p $out/bin
     cp $src $out/bin/omp
+    # Fetched sources are mode 444; patchelf below needs write access.
+    chmod u+w $out/bin/omp
+  ''
+  + lib.optionalString (stdenv.hostPlatform.isLinux && stdenv.hostPlatform.libc == "glibc") ''
+    # Upstream Linux assets are dynamically linked and request
+    # /lib64/ld-linux-*.so.* — absent on NixOS. Repoint the interpreter
+    # at the stdenv libc loader and rpath it into the same libc (its
+    # only NEEDED family). The probe skips statically linked assets,
+    # which need no fixup.
+    loader=$(echo ${stdenv.cc.libc.out}/lib/ld-linux-*.so*)
+    if ${patchelf}/bin/patchelf --print-interpreter $out/bin/omp >/dev/null 2>&1; then
+      ${patchelf}/bin/patchelf \
+        --set-interpreter "$loader" \
+        --set-rpath "${stdenv.cc.libc.out}/lib" \
+        $out/bin/omp
+    fi
+  ''
+  + ''
     chmod +x $out/bin/omp
     runHook postInstall
   '';
 
-  # Binary is prebuilt (musl static on Linux); no ELF patching needed.
+  # Prebuilt binary: keep as-is; the interpreter fixup above is the only
+  # mutation. dontPatchELF keeps stdenv fixup from re-patching.
   dontStrip = true;
   dontPatchELF = true;
 

@@ -5,13 +5,13 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 
 ## Ownership
 - `default.nix` — overlay + NixOS/HM modules (binary package, settings, symlink, MCP, latest-binary activation)
-- `_omp.pkg.nix` — prebuilt binary (`fetchurl` per-system, `autoUpdate = true` via `builtins.fetchurl` without hash; pinned fallback with `autoUpdate = false`)
+- `_omp.pkg.nix` — prebuilt binary (`fetchurl` per-system, `autoUpdate = true` via `builtins.fetchurl` without hash; pinned fallback with `autoUpdate = false`; patchelf interpreter fixup to store libc on Linux)
 - `home/` — tracked omp config: `agent/` (RULES.md, managed-skills/, plugins/, prompts), out-of-store target for `~/.omp`
 - `home/agent/managed-skills/` — 18 versioned skills each with `SKILL.md`
 - `home/agent/plugins/` — `omp-plugins.lock.json`, `bun.lock`, `package.json` (Bun plugin set)
 
 ## Local Contracts
-- **Binary, not source-built:** `flake.overlays.omp` and `perSystem.packages.omp` are `https://github.com/can1357/oh-my-pi/releases/latest/download/omp-*` (musl static on Linux) fetched impurely via `builtins.fetchurl` (no hash). No `inputs.oh-my-pi` flake input.
+- **Binary, not source-built:** `flake.overlays.omp` and `perSystem.packages.omp` are `https://github.com/can1357/oh-my-pi/releases/latest/download/omp-*` fetched impurely via `builtins.fetchurl` (no hash). Linux uses the **glibc** assets (`omp-linux-x64` / `omp-linux-arm64`) — NOT the musl assets, which are Alpine-linked (`/lib/ld-musl-*`, `libc.musl-*.so.1`) and unresolvable on NixOS. Linux ELF interpreter is patchelf'd to the Nix store libc (NixOS has no `/lib64`) in `_omp.pkg.nix` and in both activation scripts (HM `~/.local/bin/omp`, NixOS `/usr/local/bin/omp`) after download. No `inputs.oh-my-pi` flake input.
 - **Auto-update by default:** `_omp.pkg.nix:autoUpdate = true` resolves `version` from GitHub API and fetches latest binary impurely (requires `--impure`, which dendritic already uses). `programs.omp.useLatestBinary = true` also `curl`s latest to `~/.local/bin/omp` (HM) / `/usr/local/bin/omp` (NixOS) on each activation for instant update without rebuild.
 - **Out-of-store `~/.omp`:** HM module symlinks `~/.omp` to `features/omp/home` in this checkout. Runtime state (dbs, sessions, logs) is written live into the checkout; only tracked config is committed.
 - **Compat alias:** `flake.homeManagerModules.oh-my-pi` and `flake.nixosModules.oh-my-pi` mirror `omp` for existing local imports; `programs.oh-my-pi` maps to `programs.omp`.
@@ -20,6 +20,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 
 ## Work Guidance
 - Auto-update is default; no manual bump needed. To pin: set `pkgs.callPackage ./_omp.pkg.nix { autoUpdate = false; }` and `programs.omp.useLatestBinary = false`, then update `version` + per-system `hash` in `_omp.pkg.nix` (query `https://api.github.com/repos/can1357/oh-my-pi/releases/latest`, convert hex digests to SRI via `nix store prefetch-file <url>`).
+- Upstream asset linkage may change; the interpreter patch is probe-guarded (`--print-interpreter`) and skips statically linked binaries. Keep glibc asset names; never switch Linux back to `*-musl-*` assets.
 - Add/rename a skill: add directory under `home/agent/managed-skills/<name>/SKILL.md`; wire through `default.nix` if needed.
 - Keep `home/` focused on tracked config; runtime artifacts (`.db`, `sessions/`, `logs/`) are gitignored via `home/.gitignore`.
 
