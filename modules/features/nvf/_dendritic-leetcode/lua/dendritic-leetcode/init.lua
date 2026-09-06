@@ -51,12 +51,17 @@ function M.setup(opts)
         vim.notify("[dendritic-leetcode] Login complete — try :Leet", vim.log.levels.INFO)
       end
     end)
-  end, { desc = "Self-contained LeetCode login (no external browser)" })
+  end, { desc = "LeetCode login (browser auto-capture, cookie-paste fallback)" })
 
   -- Also alias to :LeetLogin for ergonomics
   pcall(vim.api.nvim_create_user_command, "LeetLogin", function()
     vim.cmd("DendriticLeetLogin")
   end, { desc = "Alias for DendriticLeetLogin" })
+
+  -- Cancel an in-progress browser login poll
+  pcall(vim.api.nvim_create_user_command, "DendriticLeetCancel", function()
+    require("dendritic-leetcode.browser").cancel()
+  end, { desc = "Cancel in-progress browser login" })
 
   -- Keymap hint (not bound by default to avoid conflict; user can map)
   if opts.auto_patch_signin ~= false then
