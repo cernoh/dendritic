@@ -17,6 +17,7 @@ in
   flake.homeManagerModules.nvf =
     {
       pkgs,
+      lib,
       ...
     }:
     {
@@ -149,9 +150,24 @@ in
               '';
             };
           };
-
           # --- Languages ---
-          languages = languagesConfig.languages;
+          # `pkgs.flutter` (default `flutterPackage` for flutter-tools) pulls
+          # `aapt` via `flutter.nix:NIX_AAPT2_BINARY_PATH`, but `aapt`
+          # is only available on x86_64-linux + darwin (aapt/package.nix
+          # meta.platforms). On aarch64-linux this makes the nvf module
+          # un-evaluatable — `nixos-rebuild switch --flake .#ASAHI` failed
+          # with: flutter-tools → flutter → aapt → "not available on aarch64-linux".
+          # Gate flutter-tools there; Dart LSP/treesitter stay enabled. On
+          # x86_64-linux (NIXPC) flutter-tools remains enabled.
+          languages =
+            languagesConfig.languages
+            // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isAarch64 && pkgs.stdenv.hostPlatform.isLinux) {
+              dart = languagesConfig.languages.dart // {
+                flutter-tools = languagesConfig.languages.dart.flutter-tools // {
+                  enable = lib.mkForce false;
+                };
+              };
+            };
         };
       };
     };

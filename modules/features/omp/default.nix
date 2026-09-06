@@ -40,10 +40,12 @@
   # aarch64-linux (upstream issue #9881); x86_64 is unaffected. Gate the
   # override so ASAHI (aarch64) keeps the check and SIGSEGV protection.
   # ---------------------------------------------------------------------------
-  flake.overlays.omp = final: prev: let
-    upstream = inputs.oh-my-pi.overlays.default final prev;
-    isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
-  in
+  flake.overlays.omp =
+    final: prev:
+    let
+      upstream = inputs.oh-my-pi.overlays.default final prev;
+      isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
+    in
     if isX86Linux then
       upstream
       // {
@@ -53,11 +55,14 @@
           installCheckPhase = "true";
         });
       }
-    else upstream;
-  flake.overlays.default = final: prev: let
-    upstream = inputs.oh-my-pi.overlays.default final prev;
-    isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
-  in
+    else
+      upstream;
+  flake.overlays.default =
+    final: prev:
+    let
+      upstream = inputs.oh-my-pi.overlays.default final prev;
+      isX86Linux = prev.stdenv.hostPlatform.system == "x86_64-linux";
+    in
     if isX86Linux then
       upstream
       // {
@@ -67,7 +72,8 @@
           installCheckPhase = "true";
         });
       }
-    else upstream;
+    else
+      upstream;
 
   # ---------------------------------------------------------------------------
   # NixOS / Home Manager modules — re-export upstream and wrap HM with
@@ -203,7 +209,8 @@
               run mkdir -p "$HOME/.omp/agent"
               run cat > "$HOME/.omp/agent/mcp.json" <<'MCP_EOF'
               ${builtins.toJSON {
-                "$schema" = "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
+                "$schema" =
+                  "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
                 mcpServers = {
                   hindsight = {
                     type = "http";
@@ -310,7 +317,8 @@
             run mkdir -p "$HOME/.omp/agent"
             run cat > "$HOME/.omp/agent/mcp.json" <<'MCP_EOF'
             ${builtins.toJSON {
-              "$schema" = "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
+              "$schema" =
+                "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
               mcpServers = {
                 hindsight = {
                   type = "http";
@@ -366,7 +374,8 @@
             preInstallCheck = "";
             installCheckPhase = "true";
           })
-        else base;
+        else
+          base;
     in
     {
       packages.omp = patchedOmp;
