@@ -1,9 +1,6 @@
-%YAML 1.1
----
 advisor:
   enabled: true
-  subagents: true
-  syncBacklog: '5'
+  syncBacklog: "5"
 astGrep:
   enabled: true
 autolearn:
@@ -24,26 +21,27 @@ dev:
 edit:
   mode: hashline
 features:
-  unexpectedStopDetection: true
+  unexpectedStopDetection: smart
 github:
   enabled: true
 hideThinkingBlock: true
 includeWorkspaceTree: true
 lsp:
   formatOnWrite: true
-mcp: {}
+mcp:
+  {}
 memory:
-  backend: 'off'
+  backend: "off"
 modelRoles:
-  advisor: opencode-go/deepseek-v4-flash
-  default: opencode-go/deepseek-v4-flash
+  advisor: opencode-go/muse-spark-1.3-contributor:auto
   plan: opencode-go/deepseek-v4-flash
   slow: opencode-go/deepseek-v4-flash
   task: opencode-go/deepseek-v4-flash
+  default: opencode-go/muse-spark-1.3-contributor
 providers:
   tinyModel: lfm2-350m
   tinyModelDevice: gpu
-setupVersion: 1
+setupVersion: 2
 shellMinimizer:
   sourceOutlineLevel: default
 steeringMode: one-at-a-time
@@ -51,6 +49,12 @@ symbolPreset: nerd
 task:
   eager: default
   isolation:
-    mode: auto
+    enabled: true
+  agentAdvisor:
+    task: "on"
 theme:
   dark: dark-catppuccin
+isolation:
+  backend: auto
+composer:
+  shape: rail
