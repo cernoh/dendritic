@@ -62,11 +62,18 @@
       enable = true;
       extensions.crates-nvim.enable = true;
       lsp.enable = true;
+      lsp.servers = [ "rust-analyzer" ];
       dap.enable = true;
       dap.debugger = [ "lldb" ];
       format.enable = true;
     };
-    go.enable = true;
+    go = {
+      enable = true;
+      # LSP is enabled explicitly (like rust above) so gopls does not depend
+      # on the global vim.lsp.enable default staying on.
+      lsp.enable = true;
+      lsp.servers = [ "gopls" ];
+    };
     clang.enable = true;
     java.enable = true;
     markdown = {
