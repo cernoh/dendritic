@@ -27,6 +27,7 @@
         users.${userName} = {
           imports = with self.homeManagerModules; [
             nvf
+            leetcode
             omp
             agent-browser
             programming

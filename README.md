@@ -42,6 +42,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `gaming-tools` | Lutris, MangoHud, Wine, Vulkan tooling and friends — beyond Steam |
 | `ghostty` | Ghostty terminal with live-editable out-of-store config |
 | `lazygit` | lazygit built by this flake, into `environment.systemPackages` |
+| `leetcode` | LeetCode runner (kawre/leetcode.nvim) inside nvf: fzf-lua picker + plenary/nui/devicons bundled, `<leader>l*` bindings, login via `:Leet cookie update` |
 | `mango` | MangoWM session + its home-manager user config |
 | `niri` | Niri compositor + session, live-editable `config.kdl` |
 | `nixpc-desktop` | NIXPC desktop application suite (browsers, media, utilities) |
