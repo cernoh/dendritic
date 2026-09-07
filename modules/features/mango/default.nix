@@ -68,11 +68,13 @@
           "SDL_VIDEODRIVER,wayland,x11"
           "STEAM_USE_DYNAMIC_VGUI,1"
         ];
-        # DP-2 is the AOC; place it at the center/left of the two connected outputs.
+        # EDID-verified 2026-09-07 via wlr-randr: DP-1 = AOC 24G2W1G3-,
+        # DP-2 = HUAWEI AD80HW (earlier comments had these reversed).
+        # DP-1 is the AOC; place it at the center/left of the two connected outputs.
         monitorrule = [
-          "name:^DP-2$,x:0,y:0,scale:1"
-          # DP-1 is the HUAWEI; place it immediately to the right.
-          "name:^DP-1$,x:1920,y:0,scale:1"
+          "name:^DP-1$,x:0,y:0,scale:1"
+          # DP-2 is the HUAWEI; place it immediately to the right.
+          "name:^DP-2$,x:1920,y:0,scale:1"
         ];
 
         repeat_rate = 35;
@@ -151,10 +153,10 @@
           "SUPER,DOWN,viewtoright_have_client"
         ];
 
-        # Move the focused client to the HUAWEI (DP-1, right) or AOC (DP-2, left) monitor.
+        # Move the focused client to the AOC (DP-1, left) or HUAWEI (DP-2, right) monitor.
         bind = [
-          "SUPER+ALT,H,tagmon,DP-2,1"
-          "SUPER+ALT,L,tagmon,DP-1,1"
+          "SUPER+ALT,H,tagmon,DP-1,1"
+          "SUPER+ALT,L,tagmon,DP-2,1"
           "SUPER,T,spawn_shell,$TERMINAL"
           "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
           "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
