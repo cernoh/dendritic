@@ -18,8 +18,14 @@
 #   `oh-my-pi` compat aliases) provide `programs.omp` with `package`,
 #   `settings`, and `useLatestBinary` (default true). When true, the
 #   module also downloads `releases/latest` imperatively to
-#   `~/.local/bin/omp` on each activation — true auto-update without
-#   waiting for a rebuild. The nix package itself already auto-updates.
+#   `~/.local/bin/omp.bin` (pristine) + `~/.local/bin/omp` (loader
+#   wrapper) on each activation — true auto-update without waiting for
+#   a rebuild. The nix package itself already auto-updates.
+# - Linux binaries are Bun single-file executables and must stay pristine:
+#   both the nix package and the activation scripts ship the untouched
+#   download and exec it through the Nix glibc loader from a small
+#   wrapper (rewriting INTERP/RPATH with patchelf corrupts the embedded
+#   payload lookup → SIGSEGV at startup).
 # - HM module keeps dendritic's out-of-store `~/.omp` symlink (same pattern
 #   as home-manager-v3: tracked config lives in ./home, runtime state —
 #   dbs, sessions, logs — is written live into this checkout). The symlink
@@ -122,21 +128,35 @@
               esac
               url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
               dest="/usr/local/bin/omp"
+              bin="/usr/local/bin/omp.bin"
               # Activation PATH is minimal — use store absolute paths.
-              if ${pkgs.curl}/bin/curl -fsSL "$url" -o "$dest.tmp" 2>/dev/null; then
-                chmod +x "$dest.tmp" || true
-              elif ${pkgs.wget}/bin/wget -qO "$dest.tmp" "$url" 2>/dev/null; then
-                chmod +x "$dest.tmp" || true
+              if ${pkgs.curl}/bin/curl -fsSL "$url" -o "$bin.tmp" 2>/dev/null; then
+                chmod +x "$bin.tmp" || true
+              elif ${pkgs.wget}/bin/wget -qO "$bin.tmp" "$url" 2>/dev/null; then
+                chmod +x "$bin.tmp" || true
               fi
-              # Repoint the ELF interpreter at the store libc (NixOS has no
-              # /lib64); skip static assets — see _omp.pkg.nix.
-              if [ -f "$dest.tmp" ] && ${pkgs.patchelf}/bin/patchelf --print-interpreter "$dest.tmp" >/dev/null 2>&1; then
-                ${pkgs.patchelf}/bin/patchelf \
-                  --set-interpreter "$(echo ${pkgs.stdenv.cc.libc.out}/lib/ld-linux-*.so*)" \
-                  --set-rpath "${pkgs.stdenv.cc.libc.out}/lib" \
-                  "$dest.tmp" || true
+              # The Linux binary is a Bun single-file executable: it must run
+              # pristine (patchelf corrupts it and segfaults). Keep the
+              # download untouched as omp.bin and exec it through the Nix
+              # glibc loader from a small omp wrapper (NixOS has no /lib).
+              if [ -f "$bin.tmp" ]; then
+                mv -f "$bin.tmp" "$bin" || true
+                chmod +x "$bin" || true
+                if [ "$os" = "Linux" ]; then
+                  cat > "$dest" <<WRAP_EOF
+              #!${pkgs.stdenv.shell}
+              exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
+                lib.makeLibraryPath [
+                  pkgs.stdenv.cc.libc
+                  (lib.getLib pkgs.stdenv.cc.cc)
+                ]
+              }" "$bin" "\$@"
+              WRAP_EOF
+                  chmod +x "$dest" || true
+                else
+                  mv -f "$bin" "$dest" || true
+                fi
               fi
-              [ -f "$dest.tmp" ] && mv -f "$dest.tmp" "$dest" || true
             '';
             deps = [ ];
           };
@@ -339,7 +359,8 @@
                 }:$PATH"
                 run mkdir -p "$HOME/.local/bin"
                 # Resolve asset name from uname; glibc build on Linux,
-                # patched to the store libc after download.
+                # shipped pristine behind a loader wrapper (see _omp.pkg.nix:
+                # patchelf corrupts this Bun executable and segfaults it).
                 asset=""
                 os=$(uname -s 2>/dev/null || echo Linux)
                 arch=$(uname -m 2>/dev/null || echo x86_64)
@@ -352,7 +373,8 @@
                 esac
                 url="https://github.com/can1357/oh-my-pi/releases/latest/download/$asset"
                 dest="$HOME/.local/bin/omp"
-                tmp="$dest.tmp"
+                bin="$HOME/.local/bin/omp.bin"
+                tmp="$bin.tmp"
                 # Activation PATH lacks curl/wget — use store absolute paths.
                 # Keep failures non-fatal (offline) so activation never breaks.
                 downloaded=0
@@ -363,16 +385,22 @@
                 fi
                 if [ "$downloaded" = 1 ] && [ -f "$tmp" ]; then
                   run chmod +x "$tmp"
-                  # Repoint the ELF interpreter at the store libc (NixOS has
-                  # no /lib64); probe skips static assets.
-                  if [ "$os" = "Linux" ] && ${pkgs.patchelf}/bin/patchelf --print-interpreter "$tmp" >/dev/null 2>&1; then
-                    run ${pkgs.patchelf}/bin/patchelf \
-                      --set-interpreter "$(echo ${pkgs.stdenv.cc.libc.out}/lib/ld-linux-*.so*)" \
-                      --set-rpath "${pkgs.stdenv.cc.libc.out}/lib" \
-                      "$tmp"
+                  run mv -f "$tmp" "$bin"
+                  if [ "$os" = "Linux" ]; then
+                    run cat > "$dest" <<WRAP_EOF
+                  #!${pkgs.stdenv.shell}
+                  exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
+                    lib.makeLibraryPath [
+                      pkgs.stdenv.cc.libc
+                      (lib.getLib pkgs.stdenv.cc.cc)
+                    ]
+                  }" "$bin" "\$@"
+                  WRAP_EOF
+                    run chmod +x "$dest"
+                  else
+                    run mv -f "$bin" "$dest"
                   fi
-                  run mv -f "$tmp" "$dest"
-                  verboseEcho "omp: fetched latest binary $asset to $dest"
+                  verboseEcho "omp: fetched latest binary $asset to $bin"
                 else
                   verboseEcho "omp: failed to fetch latest binary, keeping existing"
                   rm -f "$tmp" || true
