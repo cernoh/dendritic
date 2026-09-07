@@ -26,6 +26,11 @@
 #   download and exec it through the Nix glibc loader from a small
 #   wrapper (rewriting INTERP/RPATH with patchelf corrupts the embedded
 #   payload lookup → SIGSEGV at startup).
+#   Heredoc trap: inside an indented string, the WRAP_EOF delimiter and the
+#   wrapper's `#!` line must sit at the string's MINIMUM indentation. Nix
+#   dedents content by the common prefix, so a deeper-indented delimiter
+#   never reaches column 0 and the heredoc swallows the rest of the
+#   activation script (build fails in the bash syntax check).
 # - HM module keeps dendritic's out-of-store `~/.omp` symlink (same pattern
 #   as home-manager-v3: tracked config lives in ./home, runtime state —
 #   dbs, sessions, logs — is written live into this checkout). The symlink
@@ -388,14 +393,14 @@
                   run mv -f "$tmp" "$bin"
                   if [ "$os" = "Linux" ]; then
                     run cat > "$dest" <<WRAP_EOF
-                  #!${pkgs.stdenv.shell}
-                  exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
-                    lib.makeLibraryPath [
-                      pkgs.stdenv.cc.libc
-                      (lib.getLib pkgs.stdenv.cc.cc)
-                    ]
-                  }" "$bin" "\$@"
-                  WRAP_EOF
+                #!${pkgs.stdenv.shell}
+                exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
+                  lib.makeLibraryPath [
+                    pkgs.stdenv.cc.libc
+                    (lib.getLib pkgs.stdenv.cc.cc)
+                  ]
+                }" "$bin" "\$@"
+                WRAP_EOF
                     run chmod +x "$dest"
                   else
                     run mv -f "$bin" "$dest"
