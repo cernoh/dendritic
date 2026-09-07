@@ -3,11 +3,11 @@
 # Opt in from a home-manager configuration:
 #   imports = [ self.homeManagerModules.nvf ];
 #
-# The LeetCode runner lives in features/leetcode (own HM module, composed
-# alongside this one) — not here. Data siblings (_languages.nix, _keymaps.nix,
-# _nixd.nix) are prefixed with `_` because import-tree ignores paths
-# containing `/_`; they hold plain attrsets, not modules, and are imported
-# explicitly below.
+# The LeetCode runner composes from features/leetcode: this module imports
+# `self.homeManagerModules.leetcode`, so enabling nvf also enables LeetCode.
+# Data siblings (_languages.nix, _keymaps.nix, _nixd.nix) are prefixed
+# with `_` because import-tree ignores paths containing `/_`; they hold
+# plain attrsets, not modules, and are imported explicitly below.
 { self, inputs, ... }:
 let
   languagesConfig = import ./_languages.nix;
@@ -23,8 +23,13 @@ in
       ...
     }:
     {
-      # Provides the programs.nvf options.
-      imports = [ inputs.nvf.homeManagerModules.default ];
+      # Provides the programs.nvf options and composes the LeetCode runner
+      # from features/leetcode. LeetCode config targets programs.nvf, so it
+      # only makes sense inside this module, not as a standalone import.
+      imports = [
+        inputs.nvf.homeManagerModules.default
+        self.homeManagerModules.leetcode
+      ];
 
       programs.nvf = {
         enable = true;

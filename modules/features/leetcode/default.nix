@@ -1,8 +1,14 @@
 # LeetCode runner (kawre/leetcode.nvim) for the nvf editor.
 #
-# Opt in alongside nvf from a home-manager configuration:
-#   imports = [ self.homeManagerModules.nvf self.homeManagerModules.leetcode ];
-# Both hosts get it via the homeManager system module's default set.
+# Composed by the nvf feature module (features/nvf imports
+# `self.homeManagerModules.leetcode`), so enabling nvf brings LeetCode:
+#   imports = [ self.homeManagerModules.nvf ];
+# Both hosts get nvf via the homeManager system module's default set.
+#
+# Languages: Go is the session default (`lang = "golang"`, the upstream slug);
+# Rust and Python3 stay selectable from the `:Leet` lang UI. Go/Rust editor
+# support is not ensured here — features/nvf/_languages.nix (the source of
+# truth) already enables both, and this module is only ever composed inside nvf.
 #
 # Homeless (policy #93): no `home.file` / `xdg.configFile` entries. Question
 # cache, cookie, and workspace live under Neovim's runtime stdpaths
@@ -59,7 +65,10 @@
             setupModule = "leetcode";
             setupOpts = {
               arg = "leetcode.nvim";
-              lang = "python3";
+              # Session default: Go. Upstream slug is `golang` (LeetCode API
+              # key) — `go` fails the plugin's lang validation. Rust (`rust`)
+              # and Python3 stay selectable via the `:Leet` lang UI.
+              lang = "golang";
               plugins = {
                 non_standalone = true;
               };
