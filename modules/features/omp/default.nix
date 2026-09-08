@@ -143,15 +143,14 @@
                 mv -f "$bin.tmp" "$bin" || true
                 chmod +x "$bin" || true
                 if [ "$os" = "Linux" ]; then
-                  cat > "$dest" <<WRAP_EOF
-              #!${pkgs.stdenv.shell}
-              exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
-                lib.makeLibraryPath [
-                  pkgs.stdenv.cc.libc
-                  (lib.getLib pkgs.stdenv.cc.cc)
-                ]
-              }" "$bin" "\$@"
-              WRAP_EOF
+                  # No heredoc here: nixfmt reindents string bodies, which
+                  # would indent the terminator and break the script.
+                  printf '%s\n' "#!${pkgs.stdenv.shell}" "exec \"${pkgs.stdenv.cc.bintools.dynamicLinker}\" --library-path \"${
+                    lib.makeLibraryPath [
+                      pkgs.stdenv.cc.libc
+                      (lib.getLib pkgs.stdenv.cc.cc)
+                    ]
+                  }\" \"$bin\" \"\$@\"" > "$dest" || true
                   chmod +x "$dest" || true
                 else
                   mv -f "$bin" "$dest" || true
@@ -387,15 +386,14 @@
                   run chmod +x "$tmp"
                   run mv -f "$tmp" "$bin"
                   if [ "$os" = "Linux" ]; then
-                    run cat > "$dest" <<WRAP_EOF
-                  #!${pkgs.stdenv.shell}
-                  exec "${pkgs.stdenv.cc.bintools.dynamicLinker}" --library-path "${
-                    lib.makeLibraryPath [
-                      pkgs.stdenv.cc.libc
-                      (lib.getLib pkgs.stdenv.cc.cc)
-                    ]
-                  }" "$bin" "\$@"
-                  WRAP_EOF
+                    # No heredoc here: nixfmt reindents string bodies, which
+                    # would indent the terminator and break the script.
+                    printf '%s\n' "#!${pkgs.stdenv.shell}" "exec \"${pkgs.stdenv.cc.bintools.dynamicLinker}\" --library-path \"${
+                      lib.makeLibraryPath [
+                        pkgs.stdenv.cc.libc
+                        (lib.getLib pkgs.stdenv.cc.cc)
+                      ]
+                    }\" \"$bin\" \"\$@\"" > "$dest" || true
                     run chmod +x "$dest"
                   else
                     run mv -f "$bin" "$dest"

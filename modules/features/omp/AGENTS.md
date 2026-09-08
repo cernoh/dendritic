@@ -23,6 +23,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - Auto-update is default; no manual bump needed. To pin: set `pkgs.callPackage ./_omp.pkg.nix { autoUpdate = false; }` and `programs.omp.useLatestBinary = false`, then update `version` + per-system `hash` in `_omp.pkg.nix` (query `https://api.github.com/repos/can1357/oh-my-pi/releases/latest`, convert hex digests to SRI via `nix store prefetch-file <url>`).
 - Upstream asset linkage may change; the wrapper needs no linkage probing. Keep glibc asset names; musl assets are dynamically linked, not static.
 - Pinned hashes are SRI (`sha256-<b64>`) converted from upstream `SHA256SUMS.txt` hex via `echo <hex> | xxd -r -p | base64` (verify one with `nix hash file --sri <download>`).
+- No heredocs in activation scripts: nixfmt reindents `''`-string bodies, which indents the terminator and breaks the script at activation time (2026-09-08: `WRAP_EOF` never matched). Write small files with single-line `printf '%s\n' …`. No literal `''` inside `''` strings either (it terminates the string). After editing, render the entry (`nix eval …home.activation.<name>.data --impure --raw`) and check it with `bash -n` — parse/eval alone do not catch shell breakage.
 - Add/rename a skill: add directory under `home/agent/managed-skills/<name>/SKILL.md`; wire through `default.nix` if needed.
 - Keep `home/` focused on tracked config; runtime artifacts (`.db`, `sessions/`, `logs/`) are gitignored via `home/.gitignore`.
 
