@@ -239,11 +239,11 @@
           programs.omp.useLatestBinary = lib.mkDefault true;
           programs.omp.settings = {
             modelRoles = {
-              default = "opencode-go/deepseek-v4-flash";
-              task = "opencode-go/deepseek-v4-flash";
-              plan = "opencode-go/deepseek-v4-flash";
-              slow = "opencode-go/deepseek-v4-flash";
-              advisor = "opencode-go/deepseek-v4-flash";
+              default = "opencode-go/deepseek-flash";
+              task = "opencode-go/deepseek-flash";
+              plan = "opencode-go/deepseek-flash";
+              slow = "opencode-go/deepseek-flash";
+              advisor = "opencode-go/deepseek-flash";
             };
             providers = {
               tinyModel = "lfm2-350m";
