@@ -1,6 +1,6 @@
 ---
 name: opencode-go
-description: "Work with OpenCode Go (opencode-go) models in omp: the doc fact sheet (models, ids, endpoints, plan limits, DeepSeek peak hours, privacy), omp provider wiring and live discovery, model id vs display name traps, and how to pin opencode-go model roles in the dendritic flake."
+description: "Work with OpenCode Go (opencode-go) models in omp: the doc fact sheet (models, ids, endpoints, plan limits, DeepSeek peak hours, privacy), omp provider wiring and live discovery, model id vs display name traps, the cheap per-role model picks, fallback chains, and how to write it all into the dendritic flake."
 ---
 
 Trawled from <https://opencode.ai/docs/go/> plus local verification on NIXPC, 2026-09-10.
@@ -76,13 +76,58 @@ FROM model_cache, json_each(models)
 WHERE provider_id LIKE 'opencode-go%' AND value->>'name' LIKE '%4.1%';
 ```
 
-## Pin an opencode-go model in the dendritic flake
+## Role picks: cheapest capable model per role
 
-1. Edit `modules/features/omp/default.nix`, key `programs.omp.settings.modelRoles`. Example: `default = "opencode-go/deepseek-flash";`.
-2. Apply it to the running install without a rebuild. Records take one JSON value, and dotted record paths fail with "Unknown setting".
+Verified 2026-09-10 against the live registry. Prices are $ per 1M tokens.
+
+```text
+role      model                     in / out      ctx / max-out   vision  cap/mo
+default   deepseek-flash            0.15 / 0.60   1.0M / 384K     yes     $15
+plan      deepseek-v4-pro           0.66 / 1.98   1.0M / 384K     no      $15
+slow      glm-5.3                   1.40 / 4.40   1.0M / 131K     no      $15
+task      glm-5.3-flash             0.075 / 0.25  1.0M / 131K     yes     $60
+smol      glm-5.3-flash             0.075 / 0.25  1.0M / 131K     yes     $60
+advisor   mimo-v2.5                 0.14 / 0.28   1.0M / 128K     yes     $60
+commit    mimo-v2.5                 0.14 / 0.28   1.0M / 128K     yes     $60
+vision    qwen3.8-flash             0.15 / 0.47   1.0M / 131K     yes     $30
+```
+
+Why this shape:
+
+- `task`, `smol`, `advisor`, and `commit` run often, so they take the cheapest models that still do the job, and they sit on the two largest caps (GLM-5.3-Flash, MiMo V2.5).
+- The visible roles take the strongest model that stays cheap: DeepSeek V4.1 Flash for the driver seat, DeepSeek V4 Pro for planning, GLM-5.3 for deep sessions.
+- Four roles keep vision support, so paste-a-screenshot flows work without a manual model switch.
+- Never assign `muse-spark-1.2-contributor` or `muse-spark-1.3-contributor`: Meta trains on your prompts, and availability is region-limited.
+- Leave `modelRoles.tiny` unset while `providers.tinyModel` runs a local model. The local model costs nothing.
+
+## Fallback chains
+
+`retry.modelFallback` is the enable switch, and it defaults to `true`. `retry.fallbackChains` maps a role, an exact `provider/model-id`, or a `provider/*` wildcard to an ordered selector list. A `default` chain covers every role without its own entry.
+
+Pick hops that own separate monthly caps, so a cap wall or an outage fails over instead of blocking the turn.
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-flash","task":"opencode-go/deepseek-flash","plan":"opencode-go/deepseek-flash","slow":"opencode-go/deepseek-flash","advisor":"opencode-go/deepseek-flash"}'
+omp config set retry.fallbackChains '{"default":["opencode-go/deepseek-v4-flash","opencode-go/glm-5.3-flash"],"slow":["opencode-go/qwen3.8-max","opencode-go/deepseek-v4-pro"]}'
+omp config get retry.fallbackChains
+omp config get retry.fallbackRevertPolicy
+```
+
+`fallbackRevertPolicy` defaults to `cooldown-expiry`, which returns to the primary model once the suppression window ends.
+
+Check every selector against the live registry, and check that the registry kept every chain entry. It drops unknown models.
+
+```bash
+omp models --json opencode-go > /tmp/m.json
+omp config get retry.fallbackChains --json
+```
+
+## Write it into the dendritic flake
+
+1. Edit `modules/features/omp/default.nix`, keys `programs.omp.settings.modelRoles` and `programs.omp.settings.retry.fallbackChains`.
+2. Apply to the running install without a rebuild. Records take one JSON value, and dotted record paths fail with "Unknown setting".
+
+```bash
+omp config set modelRoles '{"default":"opencode-go/deepseek-flash","plan":"opencode-go/deepseek-v4-pro","slow":"opencode-go/glm-5.3","task":"opencode-go/glm-5.3-flash"}'
 ```
 
 3. Never commit `modules/features/omp/home/agent/config.yml`. Home Manager regenerates it wholesale from the settings through `home.activation.ompConfig`, and the live copy carries drift from `/settings` and migrations. Commit `default.nix` only.
@@ -97,7 +142,8 @@ nix-instantiate --parse modules/features/omp/default.nix
 nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.activation.ompConfig.data'
 nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath'
 omp config get modelRoles
+omp config get retry.fallbackChains
 omp models find deepseek-flash
 ```
 
-The first eval line prints the generated YAML, so it proves the rendered roles. For format and PR mechanics, use `dendritic-feature-change-verification` and `dendritic-stacked-prs-and-worktrees`. CI `Evaluate NIXPC` and `Evaluate ASAHI` fail from the pre-existing pure-eval manpath `fetchurl` break, so watch `Flake check`, `Format Nix`, and `Lint prose` instead.
+The activation-script eval prints the generated YAML, so it proves the rendered roles and chains in one step. For format and PR mechanics, use `dendritic-feature-change-verification` and `dendritic-stacked-prs-and-worktrees`. CI `Evaluate NIXPC` and `Evaluate ASAHI` fail from the pre-existing pure-eval manpath `fetchurl` break, so watch `Flake check`, `Format Nix`, and `Lint prose` instead.
