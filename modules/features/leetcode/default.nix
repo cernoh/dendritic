@@ -18,8 +18,9 @@
 # header); no session material ever enters the store.
 #
 # Contained: every Lua dependency the plugin requires travels with this
-# feature — plenary + nui (required), nvim-web-devicons (optional icons), and
-# the fzf-lua picker provider (pinned via `picker.provider`, ensured with
+# feature — plenary + nui (required, resolved by mnw from leetcode.nvim's
+# own dependency list), nvim-web-devicons (optional icons, declared below),
+# and the fzf-lua picker provider (pinned via `picker.provider`, ensured with
 # `mkDefault` so the feature keeps working even if nvf core drops its own
 # fzf-lua). Description rendering uses treesitter-html (ensured the same way).
 { ... }:
@@ -39,18 +40,11 @@
         languages.html.enable = lib.mkDefault true;
 
         lazy.plugins = {
-          # --- LeetCode dependencies (plenary, nui, devicons) ---
-          # Explicitly declared so leetcode.nvim never fails to resolve
-          # its Lua requires at runtime. nvf's lz.n loader ensures they
-          # are on runtimepath before leetcode loads.
-          "plenary.nvim" = {
-            package = pkgs.vimPlugins.plenary-nvim;
-            lazy = false;
-          };
-          "nui.nvim" = {
-            package = pkgs.vimPlugins.nui-nvim;
-            lazy = false;
-          };
+          # --- LeetCode dependency (devicons) ---
+          # plenary.nvim and nui.nvim are NOT declared here: mnw installs
+          # both from leetcode.nvim's own upstream dependency list. Extra
+          # start-plugin declarations put the same plugin in /opt and
+          # /start, which made mnw warn on every host eval (issue #147).
           "nvim-web-devicons" = {
             package = lib.mkForce pkgs.vimPlugins.nvim-web-devicons;
             lazy = false;

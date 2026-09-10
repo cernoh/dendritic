@@ -28,7 +28,7 @@ Use when changing monitor arrangement in `modules/features/mango/default.nix` (N
    - `nix-instantiate --parse modules/features/mango/default.nix`
    - `nix build --impure .#nixosConfigurations.NIXPC.config.programs.mango.package` — the configFile derivation runs `mango -c -p` (build-time config validation)
    - Grep the built config (path is inside the wrapper at `<out>/bin/mango` or from the build log) for the `monitorrule = name:^DP-x$,x:...` lines and `bind = SUPER+ALT,...` lines to confirm content
-   - `nix run nixpkgs#nixfmt-rfc-style -- --check modules/features/mango/default.nix`
+   - `nix run nixpkgs#nixfmt -- --check modules/features/mango/default.nix`
 7. Repo flow: worktree under `.worktrees/`, issue-linked PR, STE-lint title+body (`.github/scripts/ste-lint.py` via `nix run nixpkgs#python3`), PR title tagged `(#N)`.
 
 ## Pitfalls

@@ -18,6 +18,9 @@
   config.perSystem =
     { pkgs, ... }:
     {
-      formatter = pkgs.nixfmt-rfc-style;
+      # nixfmt 1.x IS the RFC-style formatter. The old `nixfmt-rfc-style`
+      # alias still resolves, but it prints a deprecation warning on every
+      # eval of this attribute (issue #147).
+      formatter = pkgs.nixfmt;
     };
 }
