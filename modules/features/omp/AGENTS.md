@@ -7,7 +7,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - `default.nix` — overlay + NixOS/HM modules (binary package, settings, symlink, MCP, latest-binary activation)
 - `_omp.pkg.nix` — prebuilt binary (`fetchurl` per-system, `autoUpdate = true` via `builtins.fetchurl` without hash; pinned fallback with `autoUpdate = false`; pristine binary + glibc-loader wrapper on Linux, never patchelf'd)
 - `home/` — tracked omp config: `agent/` (RULES.md, managed-skills/, plugins/, prompts), out-of-store target for `~/.omp`
-- `home/agent/managed-skills/` — 18 versioned skills each with `SKILL.md`
+- `home/agent/managed-skills/` — versioned skills, each with `SKILL.md`
 - `home/agent/plugins/` — `omp-plugins.lock.json`, `bun.lock`, `package.json` (Bun plugin set)
 
 ## Local Contracts
