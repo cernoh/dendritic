@@ -4,7 +4,7 @@
 One directory per machine producing `flake.nixosConfigurations.<HOST>`. Assembles `self.nixosModules` bundles + features into a concrete NixOS system. Two hosts: `NIXPC` (`x86_64-linux`, MangoWM, NVIDIA) and `ASAHI` (`aarch64-linux`, Niri, Apple Silicon).
 
 ## Ownership
-- `NIXPC/` — `default.nix` (system assembly), `nixpcConfiguration.nix` (host-specific NixOS config), `RESCUE.md` if present.
+- `NIXPC/` — `default.nix` (system assembly), `nixpcConfiguration.nix` (host-specific NixOS config), `_noctalia-settings.nix` (per-host Noctalia settings), `RESCUE.md` if present.
 - `ASAHI/` — `default.nix`, `asahiConfiguration.nix`, `RESCUE.md`, `_noctalia-settings.nix` (per-host Noctalia settings).
 
 ## Local Contracts
