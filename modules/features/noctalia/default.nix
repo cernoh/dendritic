@@ -7,9 +7,11 @@
 #   from here).
 # - HM module renders `programs.noctalia.settings` into ~/.config/noctalia/.
 #
-# Settings themselves are PER-HOST values: ASAHI keeps the full set from
-# hm-v3's shared config/noctalia.nix (hosts/ASAHI/_noctalia-settings.nix);
-# NIXPC carries its compact bar-layout variant inline in nixpcConfiguration.
+# Settings themselves are PER-HOST values, each in a `_noctalia-settings.nix`
+# beside its host config and imported by that host from its HM submodule:
+# hosts/ASAHI/_noctalia-settings.nix (the full set from hm-v3) and
+# hosts/NIXPC/_noctalia-settings.nix (a verbatim translation of this host's
+# exported config.toml, so a rebuild keeps the tuned live shell).
 #
 # The cernoh/terminal plugin (panel/bar widget driving $TERMINAL) is symlinked
 # out-of-store; hosts that want it list it in plugins.enabled.
