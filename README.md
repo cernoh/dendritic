@@ -36,6 +36,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | Feature | What importing it enables |
 |---|---|
 | `act` | GitHub Actions local runner via [nektos/act](https://github.com/nektos/act); composes `docker`, ships a default runner image in `~/.actrc`. Enabled by the `desktop` bundle |
+| `computer-use` | Wayland desktop-control toolchain: `grim`, `slurp`, `wtype`, `wlrctl`, `wlr-randr`, `wayland-utils`. Enabled by the `desktop` bundle |
 | `davinci` | DaVinci Resolve (from the `davinci` input) |
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902, hindsight host-networked) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
@@ -46,7 +47,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `mango` | MangoWM session + its home-manager user config |
 | `niri` | Niri compositor + session, live-editable `config.kdl` |
 | `nixpc-desktop` | NIXPC desktop application suite (browsers, media, utilities) |
-| `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host |
+| `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host. Includes the `cernoh/terminal` panel plugin and its `ghostty-term` helper (libghostty-vt) |
 | `noctalia-greeter` | greetd login UI matching Noctalia; each host picks `--session <compositor>` inline |
 | `nushell` | nushell as secondary interactive shell, incl. `nixpc-rebuild` / `asahi-rebuild` helpers |
 | `nvf` | Neovim via [nvf](https://github.com/notashelf/nvf) (languages, keymaps, nixd config) |

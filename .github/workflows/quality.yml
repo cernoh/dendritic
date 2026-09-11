@@ -53,7 +53,7 @@ jobs:
           echo "files=$files" >> "$GITHUB_OUTPUT"
       - name: Check formatting
         if: steps.changed.outputs.files != ''
-        run: nix run nixpkgs#nixfmt-rfc-style -- --check ${{ steps.changed.outputs.files }}
+        run: nix run nixpkgs#nixfmt -- --check ${{ steps.changed.outputs.files }}
       - name: No changed Nix files
         if: steps.changed.outputs.files == ''
         run: echo 'No changed Nix files; quality checks skipped.'

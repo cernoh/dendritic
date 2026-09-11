@@ -19,7 +19,7 @@
           {
             nativeBuildInputs = with pkgs; [
               nix
-              nixfmt-rfc-style
+              nixfmt
               git
               findutils
               gawk
@@ -66,9 +66,9 @@
       '';
       gateFmt = mkGate "fmt" ''
         files=$(find "$FLAKE_ROOT" -name '*.nix')
-        if ! ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check $files 2>&1; then
+        if ! ${pkgs.nixfmt}/bin/nixfmt --check $files 2>&1; then
           echo "FAIL fmt"
-          ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check $files || true
+          ${pkgs.nixfmt}/bin/nixfmt --check $files || true
           exit 1
         fi
         echo "PASS fmt"
@@ -93,7 +93,7 @@
         checkPhase = "";
         runtimeInputs = with pkgs; [
           nix
-          nixfmt-rfc-style
+          nixfmt
           git
           findutils
           gawk
@@ -227,7 +227,7 @@
           echo ""
           echo "── Gate 4: fmt ──"
           files=$(find "$FLAKE_ROOT" -name '*.nix')
-          if ${pkgs.nixfmt-rfc-style}/bin/nixfmt --check $files 2>&1; then echo "PASS fmt"; else echo "FAIL fmt"; exit 1; fi
+          if ${pkgs.nixfmt}/bin/nixfmt --check $files 2>&1; then echo "PASS fmt"; else echo "FAIL fmt"; exit 1; fi
           echo ""
           echo "VERIFY PASSED"
         '';

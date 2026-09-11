@@ -1,13 +1,12 @@
 id = "cernoh/terminal"
 name = "Terminal"
-version = "1.0.0"
+version = "2.0.0"
 plugin_api = 21
 author = "cernoh"
 license = "MIT"
-dependencies = ["script"]
 tags = ["terminal", "shell", "productivity"]
 icon = "terminal-2"
-description = "A persistent shell panel attached to the Noctalia bar."
+description = "A real terminal panel, backed by libghostty-vt."
 
 [[service]]
 id = "shell"
@@ -29,3 +28,19 @@ height = 560
 placement = "attached"
 keyboard_focus = "exclusive"
 dismiss_on_outside_click = false
+
+# Chords the panel forwards to the shell. Every name here is one the helper's
+# key table knows, and one Noctalia documents as a valid chord. Escape is left
+# out on purpose: Noctalia keeps it as the panel-close action, so it can never
+# be captured.
+capture_keys = [
+  "up",
+  "down",
+  "left",
+  "right",
+  "tab",
+  "shift+tab",
+  "del",
+  "ctrl+c",
+  "ctrl+s",
+]

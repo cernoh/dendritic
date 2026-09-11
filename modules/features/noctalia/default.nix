@@ -13,14 +13,32 @@
 # hosts/NIXPC/_noctalia-settings.nix (a verbatim translation of this host's
 # exported config.toml, so a rebuild keeps the tuned live shell).
 #
-# The cernoh/terminal plugin (panel/bar widget driving $TERMINAL) is symlinked
-# out-of-store; hosts that want it list it in plugins.enabled.
+# The cernoh/terminal plugin (panel/bar widget) is symlinked out-of-store;
+# hosts that want it list it in plugins.enabled. The plugin itself runs in a
+# Luau sandbox with no foreign function interface, so it cannot link a C
+# library. `ghostty-term` is the helper that bridges the two: it owns the
+# pseudo-terminal and a libghostty-vt terminal, and reports the screen to the
+# plugin as JSON frames. The helper is a separate derivation rather than part
+# of this module because a plugin directory holds only Luau and TOML.
 {
   self,
   inputs,
+  moduleWithSystem,
   ...
 }:
 {
+  # Built from the flake's own nixpkgs; libghostty-vt is a standalone package
+  # there, separate from pkgs.ghostty, which ships only the sequence parsers
+  # under the same soname. libghostty-vt has no x86_64-darwin build, so the
+  # helper is offered only where the library is available.
+  perSystem =
+    { pkgs, lib, ... }:
+    {
+      packages = lib.optionalAttrs (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.libghostty-vt) {
+        ghostty-term = pkgs.callPackage ./_ghostty-term.pkg.nix { };
+      };
+    };
+
   flake.nixosModules.noctalia =
     {
       lib,
@@ -35,7 +53,8 @@
       };
     };
 
-  flake.homeManagerModules.noctalia =
+  flake.homeManagerModules.noctalia = moduleWithSystem (
+    { self', ... }:
     {
       config,
       ...
@@ -48,8 +67,13 @@
         systemd.enable = true;
       };
 
+      # The terminal plugin drives this helper, so it must be on PATH for the
+      # user session whether or not the plugin is enabled for this host.
+      home.packages = [ self'.packages.ghostty-term ];
+
       # Plugin runtime data must be writable/live, hence out-of-store.
       home.file.".local/share/noctalia/plugins/terminal".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/terminal";
-    };
+    }
+  );
 }

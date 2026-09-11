@@ -2,7 +2,7 @@
 
 dendritic-pattern master flake for `NIXPC` (x86_64-linux, MangoWM) and `ASAHI` (aarch64-linux, Niri). Every `modules/**/*.nix` is a flake-parts module auto-registered by `import-tree`; `flake.nix` re-exports `nixosConfigurations`, `overlays`, `packages`, and `checks`.
 
-Project-wide contracts: dendritic pattern (`modules/` auto-registration, `/_` exclusion, `flake.nixosModules`/`flake.homeManagerModules` as values), `--impure` required for deploy (`hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`), dual-homed `nixConfig` caches (`flake.nix` + `modules/system/core/nix-settings.nix` stay in sync), `nixfmt-rfc-style` formatting.
+Project-wide contracts: dendritic pattern (`modules/` auto-registration, `/_` exclusion, `flake.nixosModules`/`flake.homeManagerModules` as values), `--impure` required for deploy (`hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`), dual-homed `nixConfig` caches (`flake.nix` + `modules/system/core/nix-settings.nix` stay in sync), `nixfmt` (RFC style) formatting.
 
 Verification ladder (cheapest first): `nix-instantiate --parse <file>` → `nix eval .#nixosConfigurations.<HOST>.config.<option> --impure` → `nix run .#verify` / `nix flake check --impure` (parse, eval-pure, hardware, fmt, aggregate gates from `modules/verify.nix`).
 
@@ -112,6 +112,7 @@ relevant child AGENTS.md
 - `modules/` — dendritic flake-parts tree (auto-registration, `parts.nix`, `verify.nix`, `_` exclusion) → `modules/AGENTS.md`
   - `modules/attrs/` — machine-class bundles (`desktop`, `gaming`, `programming`) → `modules/attrs/AGENTS.md`
   - `modules/features/` — opt-in feature modules (import = enable, HM vs NixOS, out-of-store symlinks) → `modules/features/AGENTS.md`
+    - `modules/features/noctalia/` — Noctalia shell, `cernoh/terminal` plugin, `ghostty-term` helper → `modules/features/noctalia/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`

@@ -33,4 +33,4 @@ Facts verified on the `cernoh/dendritic` flake (PR #83, 2026-08-28).
 
 - NEW (untracked) module files are invisible to `nix eval` on a local git flake — the flake sources only git-tracked files. `git add` the new file (or commit) BEFORE eval, or you get "flake does not provide attribute".
 - Verify a wired consumer: `nix eval --raw .#nixosConfigurations.NIXPC.config.home-manager.users.davr.programs.zellij.settings.theme` → `catppuccin-mocha`. tmux plugin flavor lives in the rendered conf: `nix eval .#nixosConfigurations.NIXPC.config.home-manager.users.davr.xdg.configFile.'"tmux/tmux.conf"'.text | grep catppuccin_flavor`. ASAHI user is `da`, not `davr`.
-- CI "Format Nix (changed files)" runs `nixfmt-rfc-style --check` on changed files only — but per-file, so touching a legacy-formatted file requires a FULL reflow (`nix run nixpkgs#nixfmt-rfc-style -- <files>`); nixfmt-rfc-style is now identical to pkgs.nixfmt.
+- CI "Format Nix (changed files)" runs `nixfmt --check` on changed files only — but per-file, so touching a legacy-formatted file requires a FULL reflow (`nix run nixpkgs#nixfmt -- <files>`).
