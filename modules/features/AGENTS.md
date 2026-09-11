@@ -29,4 +29,5 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 - `nix flake check --impure` covers all features through host `imports`.
 
 ## Child DOX Index
+- `noctalia/` — Noctalia shell feature, `cernoh/terminal` plugin, `ghostty-term` helper and its frame protocol → `modules/features/noctalia/AGENTS.md`
 - `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent config, plugins → `modules/features/omp/AGENTS.md`
