@@ -69,64 +69,10 @@
             file:///mnt/2tb-storage 2tb-storage
             file:///mnt/2tb-ext4 2tb-ext4
           '';
-          # Compact Noctalia variant from hm-v3 config/nixpc-noctalia.nix:
-          # top-bar widget layout, cernoh/terminal plugin, Catppuccin.
-          programs.noctalia.settings = {
-            shell = {
-              panel_anchor_bar = "main";
-              panel.launcher_placement = "attached";
-              launcher = {
-                categories = true;
-                show_icons = true;
-                sort_by_usage = true;
-              };
-            };
-            bar.main = {
-              position = "top";
-              thickness = 34;
-              start = [
-                "launcher"
-                "cernoh/terminal:bar"
-                "wallpaper"
-                "workspaces"
-              ];
-              center = [ "clock" ];
-              end = [
-                "media"
-                "tray"
-                "notifications"
-                "clipboard"
-                "network"
-                "bluetooth"
-                "volume"
-                "brightness"
-                "battery"
-                "control-center"
-                "session"
-              ];
-            };
-            # Notifications go through Noctalia's built-in daemon (claims
-            # org.freedesktop.Notifications) since the mango session no
-            # longer starts dunst (issue #112). Default is already true;
-            # explicit so the contract survives upstream default changes.
-            notification = {
-              enable_daemon = true;
-            };
-            plugins = {
-              enabled = [ "cernoh/terminal" ];
-              auto_update = "none";
-            };
-            wallpaper = {
-              enabled = true;
-              directory = "~/Pictures/Wallpapers";
-              default.path = "";
-            };
-            theme = {
-              mode = "dark";
-              source = "builtin";
-              builtin = "Catppuccin";
-            };
-          };
+          # Noctalia shell settings: the full exported shell configuration of
+          # this host lives in _noctalia-settings.nix (the same convention as
+          # hosts/ASAHI/_noctalia-settings.nix).
+          programs.noctalia.settings = import ./_noctalia-settings.nix;
         };
     };
 }

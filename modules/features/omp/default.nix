@@ -239,11 +239,65 @@
           programs.omp.useLatestBinary = lib.mkDefault true;
           programs.omp.settings = {
             modelRoles = {
-              default = "opencode-go/deepseek-v4-flash";
-              task = "opencode-go/deepseek-v4-flash";
-              plan = "opencode-go/deepseek-v4-flash";
-              slow = "opencode-go/deepseek-v4-flash";
-              advisor = "opencode-go/deepseek-v4-flash";
+              # DeepSeek V4.1 Flash: 1M ctx, 384K out, vision, $0.15/$0.60.
+              default = "opencode-go/deepseek-flash";
+              # GLM-5.3-Flash: cheapest capable tool-use model, $60 cap.
+              task = "opencode-go/glm-5.3-flash";
+              # DeepSeek V4 Pro: deepest cheap reasoning, 384K out.
+              plan = "opencode-go/deepseek-v4-pro";
+              # GLM-5.3: flagship tier for long, hard sessions.
+              slow = "opencode-go/glm-5.3";
+              # MiMo V2.5: cheap enough to review every turn, own $60 cap.
+              advisor = "opencode-go/mimo-v2.5";
+              smol = "opencode-go/glm-5.3-flash";
+              commit = "opencode-go/mimo-v2.5";
+              # Qwen3.8 Flash: vision-first build, $30 cap.
+              vision = "opencode-go/qwen3.8-flash";
+            };
+            # Cross-family chains: each hop owns a separate monthly cap, so a
+            # cap wall or an outage fails over instead of blocking the turn.
+            retry = {
+              modelFallback = true;
+              fallbackChains = {
+                # Also the catch-all chain for roles without their own entry.
+                default = [
+                  "opencode-go/deepseek-v4-flash"
+                  "opencode-go/glm-5.3-flash"
+                  "opencode-go/qwen3.8-flash"
+                  "opencode-go/minimax-m3"
+                ];
+                task = [
+                  "opencode-go/mimo-v2.5"
+                  "opencode-go/deepseek-flash"
+                  "opencode-go/qwen3.8-flash"
+                ];
+                plan = [
+                  "opencode-go/glm-5.2"
+                  "opencode-go/deepseek-flash"
+                ];
+                slow = [
+                  "opencode-go/qwen3.8-max"
+                  "opencode-go/deepseek-v4-pro"
+                  "opencode-go/kimi-k3"
+                ];
+                advisor = [
+                  "opencode-go/glm-5.3-flash"
+                  "opencode-go/deepseek-flash"
+                ];
+                smol = [
+                  "opencode-go/mimo-v2.5"
+                  "opencode-go/deepseek-flash"
+                ];
+                commit = [
+                  "opencode-go/glm-5.3-flash"
+                  "opencode-go/deepseek-flash"
+                ];
+                vision = [
+                  "opencode-go/gpt-5.6-luna"
+                  "opencode-go/deepseek-v4-flash-vision-exp"
+                  "opencode-go/glm-5.3-flash"
+                ];
+              };
             };
             providers = {
               tinyModel = "lfm2-350m";

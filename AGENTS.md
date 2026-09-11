@@ -112,6 +112,7 @@ relevant child AGENTS.md
 - `modules/` — dendritic flake-parts tree (auto-registration, `parts.nix`, `verify.nix`, `_` exclusion) → `modules/AGENTS.md`
   - `modules/attrs/` — machine-class bundles (`desktop`, `gaming`, `programming`) → `modules/attrs/AGENTS.md`
   - `modules/features/` — opt-in feature modules (import = enable, HM vs NixOS, out-of-store symlinks) → `modules/features/AGENTS.md`
+    - `modules/features/noctalia/` — Noctalia shell, `cernoh/terminal` plugin, `ghostty-term` helper → `modules/features/noctalia/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`
