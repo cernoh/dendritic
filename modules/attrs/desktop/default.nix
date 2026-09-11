@@ -25,6 +25,7 @@
         homeManager
         act
         waylandBase
+        computerUse
       ];
 
       # Allow unfree packages (e.g. obsidian) on every desktop host — NIXPC

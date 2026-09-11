@@ -4,7 +4,7 @@
 Composable NixOS module bundles that group system modules + feature sets by machine class. Hosts import one `attrs` bundle plus host-specific extras, instead of listing every system module individually.
 
 ## Ownership
-- `desktop/` — core desktop base: `core` + `network` + `audio` + `homeManager` + `act` + `waylandBase`, `allowUnfree = true`, shared `environment.systemPackages` (CLI tools, `obsidian`, `ffmpeg`, `tailscale`, `cachix`, `jj`, etc.; see `desktop/default.nix:42`).
+- `desktop/` — core desktop base: `core` + `network` + `audio` + `homeManager` + `act` + `waylandBase` + `computerUse`, `allowUnfree = true`, shared `environment.systemPackages` (CLI tools, `obsidian`, `ffmpeg`, `tailscale`, `cachix`, `jj`, etc.; see `desktop/default.nix:42`).
 - `gaming/` — Steam bundle (`programs.steam` + compat) — imported by `NIXPC` alongside `gaming-tools`.
 - `programming/` — system-side dev tools (HM side is `features/programming`).
 

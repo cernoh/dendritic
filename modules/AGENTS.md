@@ -17,7 +17,7 @@ All flake-parts modules auto-registered by `import-tree` from `flake.nix:84` (`i
 - **`_` exclusion:** paths containing `/_` are skipped by `import-tree`. Data-only siblings (`_languages.nix`, host `_*.nix`, `_*pkg.nix` derivations) use it and are imported explicitly by their owning module.
 - **Lower-level modules are values:** features expose `flake.nixosModules.<name>` / `flake.homeManagerModules.<name>`; hosts assemble them by name (`self.nixosModules.<name>`).
 - **Home-manager HM modules need declaration:** `parts.nix:14` declares `options.flake.homeManagerModules` as `lazyAttrsOf raw` so multiple files can merge into it.
-- **Systems:** `parts.nix:2` — `x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, `aarch64-darwin`. Formatter: `nixfmt-rfc-style`.
+- **Systems:** `parts.nix:2` — `x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, `aarch64-darwin`. Formatter: `nixfmt` (RFC style).
 - **Impure eval:** `nix flake check --impure` / `nix run .#verify` — required because `hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`.
 
 ## Work Guidance

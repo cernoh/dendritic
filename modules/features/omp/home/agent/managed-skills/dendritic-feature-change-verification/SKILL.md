@@ -29,7 +29,8 @@ drafting the linked GitHub issue/PR. Verified against cernoh/dendritic, 2026-09.
    IS the text; do not append `.text` in evals.
 4. **`nix run .#formatter` is broken** in this flake
    (`error: attribute 'formatter.type' does not exist`). CI checks fmt with
-   the nixfmt binary directly; do the same (recipe below).
+   the nixfmt binary directly; do the same (recipe below). `nix fmt --
+   --check <files>` does work and also uses the locked formatter.
 5. **STE linter needs python3**, absent from NixOS default PATH here — run it
    via `nix shell nixpkgs#python3`. The repo lints issue and PR titles+bodies
    (`.github/workflows/ste-write.yml`), so lint drafts BEFORE creating them.
@@ -40,9 +41,11 @@ drafting the linked GitHub issue/PR. Verified against cernoh/dendritic, 2026-09.
 cd <worktree-or-checkout>          # never the dirty main checkout
 # 1. parse
 nix-instantiate --parse modules/features/<name>/default.nix
-# 2. format — nixfmt binary from the LOCKED nixpkgs (match CI):
+# 2. format — nixfmt binary from the LOCKED nixpkgs (match CI).
+#    Use `nixfmt`, never the deprecated `nixfmt-rfc-style` alias: the alias
+#    is the same 1.x binary, but it warns on every eval (issue #147).
 FMT=$(nix eval --impure --raw --expr \
-  'let f = builtins.getFlake "…/dendritic"; in f.inputs.nixpkgs.legacyPackages.x86_64-linux.nixfmt-rfc-style')
+  'let f = builtins.getFlake "…/dendritic"; in f.inputs.nixpkgs.legacyPackages.x86_64-linux.nixfmt')
 "$FMT/bin/nixfmt" modules/features/<name>/default.nix   # format in place
 "$FMT/bin/nixfmt" --check modules/features/<name>/default.nix modules/attrs/<bundle>/default.nix
 # 3. stage new files, THEN eval gates (see fact 1)
