@@ -2,7 +2,7 @@
 
 dendritic-pattern master flake for `NIXPC` (x86_64-linux, MangoWM) and `ASAHI` (aarch64-linux, Niri). Every `modules/**/*.nix` is a flake-parts module auto-registered by `import-tree`; `flake.nix` re-exports `nixosConfigurations`, `overlays`, `packages`, and `checks`.
 
-Project-wide contracts: dendritic pattern (`modules/` auto-registration, `/_` exclusion, `flake.nixosModules`/`flake.homeManagerModules` as values), `--impure` required for deploy (`hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`), dual-homed `nixConfig` caches (`flake.nix` + `modules/system/core/nix-settings.nix` stay in sync), `nixfmt` (RFC style) formatting.
+Project-wide contracts: dendritic pattern (`modules/` auto-registration, `/_` exclusion, `flake.nixosModules`/`flake.homeManagerModules` as values), `--impure` required for deploy (`hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`), dual-homed `nixConfig` caches (`flake.nix` + `modules/system/core/nix-settings.nix` stay in sync), one color source (`self.scheme` from `modules/features/scheme`; themed features read it and never hardcode a hex), `nixfmt` (RFC style) formatting.
 
 Verification ladder (cheapest first): `nix-instantiate --parse <file>` → `nix eval .#nixosConfigurations.<HOST>.config.<option> --impure` → `nix run .#verify` / `nix flake check --impure` (parse, eval-pure, hardware, fmt, aggregate gates from `modules/verify.nix`).
 

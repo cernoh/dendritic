@@ -55,6 +55,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `opencode` | OpenCode agent CLI config tree, out-of-store |
 | `posy-cursors` | Posy cursor themes |
 | `programming` | Dev environment: git, direnv, tmux, zellij, gh, editors' companions |
+| `scheme` | The flake-wide sepia palette: roles, base16, ANSI, the Noctalia palette document, the greeter palette, the omp theme, and the host wallpaper. Every themed feature reads this |
 | `sober` | Roblox via Sober ([flatpak `org.vinegarhq.Sober`](https://flathub.org/apps/org.vinegarhq.Sober)); composes `flatpak` + `portals`, installs the app on the first switch (needs flathub) |
 | `steam` | `programs.steam` + protontricks + compat packages |
 | `stremio-kai` | Stremio-Kai mpv configuration copied writable into `~/.config/mpv` |

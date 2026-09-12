@@ -7,6 +7,10 @@
 # config.kdl ends with `include "noctalia.kdl"`, which the Noctalia shell
 # writes next to it at runtime — same chicken-and-egg as hm-v3, where only
 # config.kdl was linked and the sibling file persisted in $HOME.
+#
+# The focus-ring, border, and shadow colors in config.kdl are a copy of the
+# sepia palette in modules/features/scheme/default.nix. A static file cannot
+# read nix values, so keep the two in sync when the palette changes.
 {
   self,
   inputs,
