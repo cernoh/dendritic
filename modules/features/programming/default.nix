@@ -25,6 +25,129 @@
       lib,
       ...
     }:
+    let
+      scheme = self.scheme;
+
+      # Zellij themes are KDL with decimal RGB triples, and the HM module
+      # writes a string value verbatim. The theme is modelled as data here so
+      # the palette mapping stays readable, then rendered once.
+      rgb = role: scheme.rgb.${role};
+      normalEmphasis = {
+        emphasis_0 = rgb "primary";
+        emphasis_1 = rgb "tertiary";
+        emphasis_2 = rgb "success";
+        emphasis_3 = rgb "secondary";
+      };
+      # The four rows of the palette: normal text, selected text, and the two
+      # frames. `base` is the key color, `background` the fill behind it.
+      sections = {
+        text_unselected = normalEmphasis // {
+          base = rgb "text";
+          background = rgb "mantle";
+        };
+        text_selected = normalEmphasis // {
+          base = rgb "text";
+          background = rgb "selection";
+        };
+        table_title = normalEmphasis // {
+          base = rgb "primary";
+          background = "0";
+        };
+        table_cell_unselected = normalEmphasis // {
+          base = rgb "text";
+          background = rgb "base";
+        };
+        table_cell_selected = normalEmphasis // {
+          base = rgb "text";
+          background = rgb "selection";
+        };
+        list_unselected = normalEmphasis // {
+          base = rgb "text";
+          background = rgb "base";
+        };
+        list_selected = normalEmphasis // {
+          base = rgb "onSelection";
+          background = rgb "selection";
+        };
+        # No per-cell background is drawn for these, so "0" means the terminal
+        # default and the base color carries the emphasis.
+        frame_selected = normalEmphasis // {
+          base = rgb "primary";
+          background = "0";
+        };
+        frame_highlight = {
+          base = rgb "primary";
+          background = "0";
+          emphasis_0 = rgb "onPrimary";
+          emphasis_1 = rgb "primary";
+          emphasis_2 = rgb "primary";
+          emphasis_3 = rgb "primary";
+        };
+        ribbon_unselected = {
+          base = rgb "text";
+          background = rgb "surfaceVariant";
+          emphasis_0 = rgb "primary";
+          emphasis_1 = rgb "secondary";
+          emphasis_2 = rgb "tertiary";
+          emphasis_3 = rgb "success";
+        };
+        ribbon_selected = {
+          base = rgb "onPrimary";
+          background = rgb "primary";
+          emphasis_0 = rgb "onPrimary";
+          emphasis_1 = rgb "onPrimary";
+          emphasis_2 = rgb "onPrimary";
+          emphasis_3 = rgb "onPrimary";
+        };
+        exit_code_success = {
+          base = rgb "success";
+          background = "0";
+          emphasis_0 = rgb "info";
+          emphasis_1 = rgb "base";
+          emphasis_2 = rgb "secondary";
+          emphasis_3 = rgb "primary";
+        };
+        exit_code_error = {
+          base = rgb "error";
+          background = "0";
+          emphasis_0 = rgb "warning";
+          emphasis_1 = "0";
+          emphasis_2 = "0";
+          emphasis_3 = "0";
+        };
+      };
+      multiplayer = {
+        player_1 = rgb "primary";
+        player_2 = rgb "secondary";
+        player_3 = rgb "tertiary";
+        player_4 = rgb "success";
+        player_5 = rgb "warning";
+        player_6 = rgb "info";
+        player_7 = rgb "error";
+        player_8 = rgb "textMuted";
+        player_9 = rgb "textDim";
+        player_10 = rgb "outline";
+      };
+      renderBlock =
+        indent: name: fields:
+        lib.concatStringsSep "\n" (
+          [ "${indent}${name} {" ]
+          ++ lib.mapAttrsToList (field: value: "${indent}    ${field} ${value}") fields
+          ++ [ "${indent}}" ]
+        );
+      themeFile = lib.concatStringsSep "\n" (
+        [
+          "themes {"
+          "    ${scheme.name} {"
+        ]
+        ++ lib.mapAttrsToList (renderBlock "        ") sections
+        ++ [
+          (renderBlock "        " "multiplayer_user_colors" multiplayer)
+          "    }"
+          "}"
+        ]
+      );
+    in
     {
       home.packages = with pkgs; [
         # Dev infrastructure & workflows. NOT language runtimes: direnv
@@ -65,8 +188,8 @@
         enable = true;
         settings = {
           simplified_ui = true;
-          # Follows the flake-wide default scheme (features/catppuccin).
-          theme = "catppuccin-${self.catppuccin.default}";
+          # Follows the flake-wide scheme (features/scheme).
+          theme = scheme.name;
           default_mode = "locked";
           default_shell = "fish";
           default_layout = "default";
@@ -76,6 +199,8 @@
           show_startup_tips = false;
           copy_command = "wl-copy";
         };
+        # Rendered to ~/.config/zellij/themes/<name>.kdl.
+        themes.${scheme.name} = themeFile;
         extraConfig = ''
           keybinds clear-defaults=true {
               locked {
@@ -332,33 +457,30 @@
           ctrlw
           pain-control
           tmux-window-name
-          {
-            plugin = catppuccin;
-            extraConfig = ''
-              # Follows the flake-wide default scheme (features/catppuccin).
-              set -g @catppuccin_flavor '${self.catppuccin.default}'
-              set -g @catppuccin_window_left_separator ""
-              set -g @catppuccin_window_right_separator " "
-              set -g @catppuccin_window_middle_separator " █"
-              set -g @catppuccin_window_number_position "right"
-              set -g @catppuccin_window_default_fill "number"
-              set -g @catppuccin_window_default_text "#W"
-              set -g @catppuccin_window_current_fill "number"
-              set -g @catppuccin_window_current_text "#W"
-              set -g @catppuccin_status_modules_right "directory session"
-              set -g @catppuccin_status_left_separator  " "
-              set -g @catppuccin_status_right_separator ""
-              set -g @catppuccin_status_fill "icon"
-              set -g @catppuccin_status_connect_separator "no"
-              set -g @catppuccin_directory_text "#{pane_current_path}"
-            '';
-          }
           dotbar
           vim-tmux-navigator
           yank
         ];
 
         extraConfig = ''
+          # Sepia styles, from modules/features/scheme. The catppuccin plugin
+          # is gone: it only renders catppuccin flavors, and the palette below
+          # covers the status line, the borders, and the copy mode.
+          set -g status-style "bg=${scheme.hex.surface},fg=${scheme.hex.textMuted}"
+          set -g status-left "#[bg=${scheme.hex.primary},fg=${scheme.hex.onPrimary},bold] #S #[bg=${scheme.hex.surface},fg=${scheme.hex.primary},nobold]"
+          set -g status-right "#[fg=${scheme.hex.tertiary}]#{session_name} #[fg=${scheme.hex.textDim}]#{pane_current_path} #[fg=${scheme.hex.text}]%H:%M "
+          set -g window-status-format "#[fg=${scheme.hex.textDim}] #I:#W "
+          set -g window-status-current-format "#[fg=${scheme.hex.onPrimary},bg=${scheme.hex.primary},bold] #I:#W "
+          set -g window-status-separator ""
+          set -g pane-border-style "fg=${scheme.hex.border}"
+          set -g pane-active-border-style "fg=${scheme.hex.primary}"
+          set -g message-style "bg=${scheme.hex.surfaceVariant},fg=${scheme.hex.text}"
+          set -g message-command-style "bg=${scheme.hex.surfaceVariant},fg=${scheme.hex.primary}"
+          set -g mode-style "bg=${scheme.hex.selection},fg=${scheme.hex.onSelection}"
+          set -g clock-mode-colour "${scheme.hex.primary}"
+          set -g copy-mode-match-style "bg=${scheme.hex.selection},fg=${scheme.hex.onSelection}"
+          set -g copy-mode-current-match-style "bg=${scheme.hex.primary},fg=${scheme.hex.onPrimary}"
+
           # Direnv integration: clear stale DIRENV_* state at session start
           # and propagate it (plus the usual DISPLAY/SSH/etc.) to new panes so
           # the shell's direnv hook can pick up env set by neighbouring panes.

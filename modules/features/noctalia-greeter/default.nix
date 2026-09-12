@@ -13,16 +13,33 @@
 # and asserts default_session.user exists — hence the primary user below
 # (dendritic.userName), who is created by system/core (nixosModules.user).
 {
+  self,
   inputs,
   ...
 }:
 {
   flake.nixosModules.noctaliaGreeter =
-    { config, ... }:
+    {
+      config,
+      ...
+    }:
     {
       imports = [ inputs.noctalia-greeter.nixosModules.default ];
 
       programs.noctalia-greeter.enable = true;
       services.greetd.settings.default_session.user = config.dendritic.userName;
+
+      # Sepia login screen, from features/scheme. A complete
+      # [appearance.palette] wins over the shell's Sync data, so the greeter
+      # shows the palette even before a user logs in.
+      programs.noctalia-greeter.settings.appearance = {
+        scheme = "Synced";
+        theme_mode = self.scheme.mode;
+        palette = self.scheme.greeter;
+        wallpaper = {
+          path = toString self.scheme.wallpaper;
+          fill_mode = "crop";
+        };
+      };
     };
 }

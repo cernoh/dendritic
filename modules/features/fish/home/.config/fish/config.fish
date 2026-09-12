@@ -73,12 +73,13 @@ status is-interactive; and begin
     set -g hydro_symbol_git_ahead ⇡
     set -g hydro_symbol_git_behind ⇣
 
-    set -g hydro_color_prompt blue
-    set -g hydro_color_pwd normal
-    set -g hydro_color_git magenta
-    set -g hydro_color_error red
-    set -g hydro_color_start normal
-    set -g hydro_color_duration normal
+    # Sepia palette, copied from modules/features/scheme/default.nix.
+    set -g hydro_color_prompt '#c99a5b'
+    set -g hydro_color_pwd '#c9b79c'
+    set -g hydro_color_git '#a8a06a'
+    set -g hydro_color_error '#c56a5a'
+    set -g hydro_color_start '#9c8c74'
+    set -g hydro_color_duration '#5f4d3a'
 
     set -g hydro_fetch true
     set -g hydro_multiline true

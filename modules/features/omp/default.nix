@@ -33,7 +33,8 @@
 # - Declares current non-secret settings (from home/agent/config.yml and
 #   home/agent/mcp.json, 2026-09-03) via `programs.omp.settings` and
 #   `home.activation.ompMcp` — no API keys/tokens in Nix; provide
-#   secrets via env / sops-nix / credential store.
+#   secrets via env / sops-nix / credential store. `home.activation.ompTheme`
+#   writes the sepia theme file that `theme.dark` names, from features/scheme.
 #
 # Opt in:
 #   imports = [ self.homeManagerModules.omp ];
@@ -304,7 +305,9 @@
               tinyModelDevice = "gpu";
             };
             symbolPreset = "nerd";
-            theme.dark = "dark-catppuccin";
+            # Theme name for the generated ~/.omp/agent/themes file
+            # (home.activation.ompTheme), from features/scheme.
+            theme.dark = self.scheme.name;
             setupVersion = 1;
             hideThinkingBlock = true;
             memory.backend = "off";
@@ -365,6 +368,24 @@
                 ${lib.generators.toYAML { } config.programs.omp.settings}
                 OMP_EOF
                 run chmod 600 "$HOME/.omp/agent/config.yml"
+              '';
+            }
+            # Custom theme file for `theme.dark`. The token map comes from
+            # features/scheme, so the palette has one source. ~/.omp is the
+            # out-of-store symlink, and agent/* is gitignored there, so the
+            # generated file never dirties the checkout.
+            {
+              home.activation.ompTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                run mkdir -p "$HOME/.omp/agent/themes"
+                run cp -f ${
+                  pkgs.writeText "omp-theme-${self.scheme.name}.json" (
+                    builtins.toJSON {
+                      name = self.scheme.name;
+                      colors = self.scheme.omp;
+                    }
+                  )
+                } "$HOME/.omp/agent/themes/${self.scheme.name}.json"
+                run chmod 600 "$HOME/.omp/agent/themes/${self.scheme.name}.json"
               '';
             }
             {

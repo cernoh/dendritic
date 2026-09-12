@@ -55,9 +55,10 @@ in
           };
           theme = {
             enable = true;
-            name = "catppuccin";
-            # Follows the flake-wide default scheme (features/catppuccin).
-            style = self.catppuccin.default;
+            # base16 takes the palette itself, so the editor follows the
+            # flake-wide scheme (features/scheme) without a named colorscheme.
+            name = "base16";
+            base16-colors = self.scheme.base16;
             transparent = true;
           };
           statusline.lualine.enable = true;

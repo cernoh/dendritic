@@ -716,13 +716,13 @@
     };
   };
   theme = {
-    builtin = "Catppuccin";
+    builtin = "Noctalia";
     community_palette = "Oxocarbon";
-    custom_palette = "";
+    custom_palette = "sepia";
     mode = "dark";
     pure_black_dark = false;
     shell_mode = "follow";
-    source = "builtin";
+    source = "custom";
     wallpaper_scheme = "m3-content";
     templates = {
       builtin_ids = [ ];
@@ -737,7 +737,8 @@
     directory_light = "";
     edge_smoothness = 0.30000001192092896;
     enabled = true;
-    fill_color = "";
+    # Role name, so any letterbox area follows the sepia palette.
+    fill_color = "surface";
     fill_mode = "crop";
     per_monitor_directories = false;
     transition = [

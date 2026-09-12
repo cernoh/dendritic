@@ -35,7 +35,9 @@ local function setStatus(status, message)
 end
 
 local function blankFrame()
-  return { t = "f", s = 0, c = COLS, r = ROWS, dfg = "#cdd6f4", dbg = "#1e1e2e", L = {} }
+  -- Sepia colors, copied from modules/features/scheme/default.nix. The Luau
+  -- sandbox cannot read the palette, so a palette change needs this edit.
+  return { t = "f", s = 0, c = COLS, r = ROWS, dfg = "#ece0cd", dbg = "#1e1813", L = {} }
 end
 
 -- Write one command line to the helper. The helper reads commands from the FIFO
