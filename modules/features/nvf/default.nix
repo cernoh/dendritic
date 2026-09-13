@@ -59,8 +59,73 @@ in
             # flake-wide scheme (features/scheme) without a named colorscheme.
             name = "base16";
             base16-colors = self.scheme.base16;
+            # Dead weight: nvf applies `transparent` only for a theme that
+            # implements it (catppuccin, tokyonight, ...). The base16 setup
+            # ignores the flag and paints `base00` on every surface. The
+            # `luaConfigPost` entry below removes the backgrounds.
             transparent = true;
           };
+
+          # Transparent editor over the ghostty background (ghostty runs at 0.85
+          # opacity). nvf emits `luaConfigPost` after the whole `luaConfigRC` DAG,
+          # so this entry lands after the theme and after the plugin configs:
+          # `vim.theme.extraConfig` runs before the theme setup and would not
+          # survive.
+          #
+          # One closed pass clears every background except the groups that use a
+          # background as a signal. A per-plugin list cannot work here: trouble,
+          # snacks, and fzf-lua define their groups only when a panel opens.
+          luaConfigPost = ''
+            -- Keep the backgrounds that carry a signal: selection plates,
+            -- search hits, diff tints, and position markers. Every other
+            -- background belongs to a surface, so it would hide the wallpaper.
+            -- A group that keeps only a foreground needs no entry here.
+            -- Lua patterns have no alternation, so this is a list, not one
+            -- pattern with `|` between the parts.
+            local signal = {
+              "^Visual$", "^Cursor", "^ColorColumn$", "^Folded$",
+              "^PmenuSel$", "^PmenuThumb$", "^TabLineSel$", "^BufferLineIndicator",
+              "^Search", "^Substitute$", "^MatchParen$",
+              "^Diff(Add|Change|Delete|Text)", "^@diff", "^@text.diff",
+              "^TreesitterContext", "^Illuminate", "^LspReference",
+              -- The lualine mode, filetype, and encoding chips show a dark
+              -- foreground on a cream plate. Without the plate they become
+              -- unreadable. The `c` section is the bar fill, so it clears.
+              "^lualine_[abxyz]_",
+            }
+
+            local function is_signal(name)
+              for _, pattern in ipairs(signal) do
+                if name:match(pattern) then
+                  return true
+                end
+              end
+              return false
+            end
+
+            local function transparent()
+              for name, hl in pairs(vim.api.nvim_get_hl(0, {})) do
+                -- A linked group follows its target, so it needs no change.
+                if hl.link == nil and hl.bg ~= nil and not is_signal(name) then
+                  hl.bg = nil
+                  -- A group the theme declares with `hl default` reads back
+                  -- with `default = true`. Passing that flag to
+                  -- `nvim_set_hl` makes the call a silent no-op, so the
+                  -- background would stay.
+                  hl.default = nil
+                  vim.api.nvim_set_hl(0, name, hl)
+                end
+              end
+            end
+
+            transparent()
+            -- Layers that load later, and a colorscheme change, repaint their
+            -- own backgrounds. The pass is idempotent, so re-run it. BufEnter
+            -- and WinEnter cover a panel that opens in its own window.
+            vim.api.nvim_create_autocmd({ "ColorScheme", "VimEnter", "User", "BufEnter", "WinEnter", "TabEnter" }, {
+              callback = transparent,
+            })
+          '';
           statusline.lualine.enable = true;
           tabline.nvimBufferline = {
             enable = true;
