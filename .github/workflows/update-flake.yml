@@ -9,6 +9,13 @@ permissions:
   contents: write
   pull-requests: write
 
+# `pull-requests: write` alone is not enough: GitHub blocks GITHUB_TOKEN from
+# creating a pull request unless the repository setting
+# `can_approve_pull_request_reviews` is true. With it false, this job runs
+# `nix flake update`, then dies at the last step with
+# "GitHub Actions is not permitted to create or approve pull requests"
+# (issue #175). Check the setting with:
+#   gh api repos/<owner>/<repo>/actions/permissions/workflow
 jobs:
   update:
     name: Update flake.lock
@@ -16,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@v16
+      # GitHub does not run workflows on a PR that GITHUB_TOKEN opened, so the
+      # bump in the new PR arrives unvalidated. Close and re-open the PR to
+      # start `Nix CI` and `Nix quality` on it.
       - name: Open update pull request
         uses: DeterminateSystems/update-flake-lock@v27
         with:
