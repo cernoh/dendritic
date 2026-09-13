@@ -26,6 +26,8 @@
         act
         waylandBase
         computerUse
+        stylix
+        nautilus
       ];
 
       # Allow unfree packages (e.g. obsidian) on every desktop host — NIXPC

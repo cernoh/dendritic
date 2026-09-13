@@ -46,6 +46,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `leetcode` | LeetCode runner (kawre/leetcode.nvim) inside nvf: fzf-lua picker + plenary/nui/devicons bundled, `<leader>l*` bindings, login via `:Leet cookie update` |
 | `mango` | MangoWM session + its home-manager user config |
 | `niri` | Niri compositor + session, live-editable `config.kdl` |
+| `nautilus` | Nautilus file manager (replaces Thunar) plus gvfs, and the default handler for `inode/directory`. Enabled by the `desktop` bundle |
 | `nixpc-desktop` | NIXPC desktop application suite (browsers, media, utilities) |
 | `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host. Includes the `cernoh/terminal` panel plugin and its `ghostty-term` helper (libghostty-vt) |
 | `noctalia-greeter` | greetd login UI matching Noctalia; each host picks `--session <compositor>` inline |
@@ -59,6 +60,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `sober` | Roblox via Sober ([flatpak `org.vinegarhq.Sober`](https://flathub.org/apps/org.vinegarhq.Sober)); composes `flatpak` + `portals`, installs the app on the first switch (needs flathub) |
 | `steam` | `programs.steam` + protontricks + compat packages |
 | `stremio-kai` | Stremio-Kai mpv configuration copied writable into `~/.config/mpv` |
+| `stylix` | GTK and Qt theming from the sepia palette through [stylix](https://nix-community.github.io/stylix/): GTK CSS + `adw-gtk3`, and a Kvantum theme. Only the `gtk` and `qt` targets are on. Enabled by the `desktop` bundle |
 | `usb-automount` | udev-triggered USB mounting under `/run/media/<user>` with mount/unmount notifications |
 | `wayland-base` | Qt Wayland platforms, Chromium/Electron ozone flags, Firefox Wayland, fuzzel |
 | `widevine` | Widevine DRM-enabled Firefox (aarch64 — without it Netflix-class playback breaks on Asahi) |

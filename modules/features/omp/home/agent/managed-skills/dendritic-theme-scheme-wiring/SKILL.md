@@ -23,7 +23,17 @@ Facts verified on the `cernoh/dendritic` flake (PR #166, 2026-09-13).
   - `self.scheme.wallpaper` — the host wallpaper path (a store path).
 - Declared via `options.flake.scheme` (type raw) + `config.flake.scheme` per the dendritic-nix-flakes sharing convention.
 - Every derived form comes from the single `palette` attrset, so a role change propagates everywhere.
-- Wired consumers: ghostty (wrapper flags), nvf (`vim.theme.name = "base16"` + `base16-colors`), zellij (`theme` + `themes.<name>`), tmux (explicit `set -g` styles), omp (`theme.dark` + `home.activation.ompTheme`), mango (`focuscolor` and friends), noctalia (`customPalettes`), noctalia-greeter (`[appearance.palette]`).
+- Wired consumers: ghostty (wrapper flags), nvf (`vim.theme.name = "base16"` + `base16-colors`), zellij (`theme` + `themes.<name>`), tmux (explicit `set -g` styles), omp (`theme.dark` + `home.activation.ompTheme`), mango (`focuscolor` and friends), noctalia (`customPalettes`), noctalia-greeter (`[appearance.palette]`), stylix (GTK and Qt).
+
+## GTK and Qt: `modules/features/stylix`
+
+- `inputs.stylix` follows `nixpkgs` (flake.nix) and the feature exports BOTH `flake.nixosModules.stylix` and `flake.homeManagerModules.stylix`. Both are needed: the NixOS half enables dconf and the system Qt platform theme, the HM half writes the GTK CSS, the GTK theme and the Kvantum theme.
+- `stylix.autoEnable = false` keeps stylix off the applications this flake already themes itself. Only `targets.gtk.enable` and `targets.qt.enable` are set.
+- `homeManagerIntegration.autoImport = false` is REQUIRED, not cosmetic. The default autoImport copies a fixed option list into each HM user, and that list contains no `targets.*.enable` entry. With autoImport left on, the HM halves of gtk and qt inherit `autoEnable = false` and stay off even though the NixOS halves are on.
+- The NixOS and HM target sets are NOT the same shape: `targets.gtk.fonts` and `targets.qt.fonts` exist only on the HM side. Setting them from the NixOS module fails eval with "The option `stylix.targets.gtk.fonts' does not exist".
+- The palette is passed as `base16Scheme = self.scheme.base16` (an attrset); stylix strips the leading `#`.
+- Verify: `nix eval --raw --apply 'hm: hm.gtk.theme.name' .#nixosConfigurations.NIXPC.config.home-manager.users.davr` → `adw-gtk3`; `... hm.qt.kvantum.settings.General.theme` → `Base16Kvantum`. For the rendered CSS, `nix build --expr 'let f = builtins.getFlake (toString ./.); in f.nixosConfigurations.NIXPC.config.home-manager.users.davr.xdg.configFile."gtk-3.0/gtk.css".source'` — a bare `nix build <store-path>` does not work, because the path is not yet realised.
+- The `targets.gtk.colors.override` route is unnecessary: the palette already arrives through `base16Scheme`.
 
 ## Consumers that CANNOT read nix values (keep in sync manually, commented in each file)
 
