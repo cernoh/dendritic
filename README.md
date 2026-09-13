@@ -136,6 +136,12 @@ hosts, and a weekly flake-lock bump.
 - **Asahi inputs must follow nixpkgs** (`inputs.nixpkgs.follows = "nixpkgs"`): apple-silicon
   support modules inject packages into host configs, and without the follow they resolve
   against the input's own eval system and break `ASAHI` evals from other machines (#16).
+- **Noctalia inputs must not follow nixpkgs** (#179): upstream builds the shell
+  and the greeter against its own locked nixpkgs and publishes them to
+  `noctalia.cachix.org`. A follow changes every store path, so Nix substitutes
+  nothing and compiles both packages locally. The shell tracks the upstream
+  `cachix` branch, which always points at the newest cached commit; the greeter
+  tracks `main`, so a bump to a commit CI has not built yet costs one local build.
 - **Asahi bootchain builds locally**: tpwrules/nixos-apple-silicon publish no
   binary cache for linux-asahi/uboot-asahi/m1n1 (`nixos-apple-silicon.cachix.org`
   covers everything else), so every `asahi` input bump rebuilds the ~4 heavy
