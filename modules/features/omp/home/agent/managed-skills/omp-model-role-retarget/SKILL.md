@@ -65,4 +65,4 @@ git commit -- modules/features/omp/default.nix
 
 Without `--`, a bare `git commit` picks up everything already staged.
 
-`Evaluate NIXPC` / `Evaluate ASAHI` in Nix CI fail on this repo for a pre-existing reason (`home.file.".manpath"` reaching the impure `builtins.fetchurl`). Confirm against older `main` runs before attributing it to the change.
+`Evaluate NIXPC` / `Evaluate ASAHI` in Nix CI are green since #173 and are real gates. A red eval means your change; reproduce with `nix eval --accept-flake-config --raw '.#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath'`.

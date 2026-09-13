@@ -13,7 +13,7 @@ GitHub Actions workflows, issue/PR templates, and lint scripts for this flake. R
 - **Prose gate is STE:** `ste-write.yml` concatenates `title + body` into `prose.txt`, runs `ste-lint.py → report.json`, and enforces `total == 0`. Signal is `::error::STE violations: N`.
 - **Bot PRs are exempt:** author `*[bot]` short-circuits the job (update-flake-lock bot cannot rewrite its own body; GitHub Actions don't run on action-opened PRs anyway).
 - **Comment lifecycle:** workflow upserts a `<!-- ste-lint -->` comment on failure, deletes it on pass — keeps one comment per PR/issue.
-- **Nix CI is eval-only in sandbox:** `nix flake check --impure` is the sandboxed gate; `nix run .#verify` is the impure native-machine gate. CI uses the former; local deploys use the latter.
+- **Nix CI has two jobs with different purity:** `Evaluate <HOST>` runs a *pure* `nix eval` of the host toplevel and is the purity gate — no `--impure`. `Flake check` runs `nix flake check --impure` and is the sandboxed ladder gate. `nix run .#verify` is the same ladder on the native machine, where impure hardware is visible.
 
 ## Work Guidance
 - Test STE locally before pushing: `python3 .github/scripts/ste-lint.py < your-draft.md` and fix `violations` before opening PR.

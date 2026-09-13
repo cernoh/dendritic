@@ -32,6 +32,10 @@ jobs:
       # branch and ASAHI keeps its neutral firmware defaults — exactly the
       # cross-machine evaluation mode the modules were built for (#16).
       # Real-deploy validation happens on each machine with `--impure`.
+      # Deliberately no --impure: this job is the purity gate. It fails if
+      # any package reachable from a host config fetches without a hash —
+      # Home Manager's `.manpath` evaluates every entry of `home.packages`,
+      # which is how an impure omp package once broke both hosts (#173).
       - name: Evaluate host toplevel
         run: |
           nix eval --accept-flake-config \

@@ -4,18 +4,16 @@
 # `github.com/can1357/oh-my-pi/releases`. We fetch the matching binary for
 # the current system directly — no Rust/Bun build, no flake input.
 #
-# Auto-update (impure): when `autoUpdate = true` (default, requires
-# `--impure` — dendritic's verification ladder already uses it), the
-# package fetches `releases/latest/download/<asset>` impurely via
-# `builtins.fetchurl` without a pinned hash, so every `nixos-rebuild` /
-# `nix build` pulls the newest release without bumping hashes.
-# When `autoUpdate = false`, a pinned `version` + SRI `hash` is used
-# (reproducible, for `nix flake check` pure eval if needed).
+# Strictly pinned: the in-tree package is `releases/download/v<pinnedVersion>`
+# with a per-system SRI hash. It MUST stay pure — evaluating it impurely made
+# every pure host eval fail, because `programs.omp` lands in `home.packages`
+# and Home Manager's `.manpath` builds a `buildEnv` over those packages
+# (issue #173). Currency comes from the activation-time fetch instead
+# (`programs.omp.useLatestBinary`, see default.nix).
 #
-# To pin manually: query `https://api.github.com/repos/can1357/oh-my-pi/releases/latest`
-# (`browser_download_url` assets + `SHA256SUMS.txt` hex digests) and convert
-# hex digests to SRI: `echo <hex> | xxd -r -p | base64` -> `sha256-<b64>`.
-# (Verify with `nix hash file --sri <downloaded-file>`.)
+# To bump: read `SHA256SUMS.txt` from the release, convert each hex digest to
+# SRI with `printf %s <hex> | xxd -r -p | base64`, and confirm the download
+# with `nix store prefetch-file --json <url>` (its `hash` field is the SRI).
 #
 # Linux note: upstream Linux binaries are Bun single-file executables. They
 # must be shipped PRISTINE — rewriting INTERP/RPATH with patchelf corrupts
@@ -32,84 +30,43 @@
   lib,
   stdenv,
   fetchurl,
-  autoUpdate ? true,
 }:
 let
-  pinnedVersion = "18.1.13";
+  pinnedVersion = "18.1.19";
 
   pinnedSources = {
     "x86_64-linux" = {
       url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-x64";
-      hash = "sha256-O+WjCMyR5va7oUgXX75lHTWD/20yriIcuTHcCKZOHzk=";
+      hash = "sha256-S13wxhzJeCI70S9+jVM1VOgLs2CpGSSR3hPaPVOyg6w=";
     };
     "aarch64-linux" = {
       url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-linux-arm64";
-      hash = "sha256-BvxyGDygxbOt19HcwaMAXhe5tntnnwS1xkawi/52PLY=";
+      hash = "sha256-syG2uyqWBo3y9JcvmGVMI+RRNxonXPuwqY729fhY8jk=";
     };
     "x86_64-darwin" = {
       url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-darwin-x64";
-      hash = "sha256-Ik7kD6r/kHNZUEdJlC0N9HhguWuoCYylEnOEVUcH9Io=";
+      hash = "sha256-Ez5MEfC6f5qTjQG9tPwMn/8n+JE0QOONTXI8teuEoXA=";
     };
     "aarch64-darwin" = {
       url = "https://github.com/can1357/oh-my-pi/releases/download/v${pinnedVersion}/omp-darwin-arm64";
-      hash = "sha256-pMXJzFuCIhhNDXQpsLtqwqkrvkXdEb9o5LE2AFB5GQk=";
+      hash = "sha256-3vwdOY1qkPNJmNUSD7W1PPeuCMEN/5G4NMq1o7BGERk=";
     };
   };
 
-  # Asset name for `releases/latest/download` (glibc build on Linux;
-  # shipped pristine behind a loader wrapper — see below. The
-  # `omp-linux-musl-*` assets are dynamically musl-linked
-  # (`/lib/ld-musl-*`, `libc.musl-*.so.1`), not static, so they are no
-  # more portable on NixOS and stay unused).
-  latestAssets = {
-    "x86_64-linux" = "omp-linux-x64";
-    "aarch64-linux" = "omp-linux-arm64";
-    "x86_64-darwin" = "omp-darwin-x64";
-    "aarch64-darwin" = "omp-darwin-arm64";
-  };
-
+  # glibc build on Linux, shipped pristine behind a loader wrapper — see
+  # below. The `omp-linux-musl-*` assets are dynamically musl-linked
+  # (`/lib/ld-musl-*`, `libc.musl-*.so.1`), not static, so they are no more
+  # portable on NixOS and stay unused.
   system = stdenv.hostPlatform.system;
 
-  # Impure latest fetch: no hash, always pulls newest release.
-  # Requires `--impure` (dendritic deploys already use it via hardwareFromMachine).
-  latestSrc =
-    let
-      asset = latestAssets.${system} or (throw "Unsupported system for omp: ${system}");
-      url = "https://github.com/can1357/oh-my-pi/releases/latest/download/${asset}";
-    in
-    builtins.fetchurl { inherit url; };
-
-  pinnedSrcInfo = pinnedSources.${system} or (throw "Unsupported system for omp: ${system}");
-
-  # Version string: for impure latest, try to read tag from GitHub API
-  # (impure, best-effort); fallback to "latest" if API fetch fails
-  # (e.g. offline or pure eval).
-  latestVersion =
-    let
-      apiUrl = "https://api.github.com/repos/can1357/oh-my-pi/releases/latest";
-      attempt = builtins.tryEval (
-        let
-          raw = builtins.readFile (builtins.fetchurl { url = apiUrl; });
-          json = builtins.fromJSON raw;
-        in
-        lib.removePrefix "v" json.tag_name
-      );
-    in
-    if attempt.success then attempt.value else "latest";
-
-  version = if autoUpdate then latestVersion else pinnedVersion;
-
-  src =
-    if autoUpdate then
-      latestSrc
-    else
-      fetchurl {
-        inherit (pinnedSrcInfo) url hash;
-      };
+  srcInfo = pinnedSources.${system} or (throw "Unsupported system for omp: ${system}");
 in
 stdenv.mkDerivation {
   pname = "omp";
-  inherit version src;
+  version = pinnedVersion;
+  src = fetchurl {
+    inherit (srcInfo) url hash;
+  };
 
   dontUnpack = true;
 
@@ -148,7 +105,7 @@ stdenv.mkDerivation {
   dontPatchELF = true;
 
   meta = {
-    description = "Oh My Pi — agentic coding harness (prebuilt binary, auto-updating)";
+    description = "Oh My Pi — agentic coding harness (prebuilt binary, pinned release)";
     homepage = "https://github.com/can1357/oh-my-pi";
     license = lib.licenses.mit;
     platforms = [
