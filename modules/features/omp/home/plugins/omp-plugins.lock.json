@@ -13,7 +13,7 @@
     "@sinamtz/pi-minimax-provider": {
       "version": "1.1.5",
       "enabledFeatures": null,
-      "enabled": true
+      "enabled": false
     },
     "install": {
       "version": "0.13.0",

@@ -26,6 +26,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - Pinned hashes are SRI (`sha256-<b64>`) converted from upstream `SHA256SUMS.txt` hex via `echo <hex> | xxd -r -p | base64` (verify one with `nix hash file --sri <download>`).
 - No heredocs in activation scripts: nixfmt reindents `''`-string bodies, which indents the terminator and breaks the script at activation time (2026-09-08: `WRAP_EOF` never matched). Write small files with single-line `printf '%s\n' …`. No literal `''` inside `''` strings either (it terminates the string). After editing, render the entry (`nix eval …home.activation.<name>.data --impure --raw`) and check it with `bash -n` — parse/eval alone do not catch shell breakage.
 - Add/rename a skill: add directory under `home/agent/managed-skills/<name>/SKILL.md`; wire through `default.nix` if needed.
+- `@sinamtz/pi-minimax-provider` stays disabled (`enabled: false` in `home/plugins/omp-plugins.lock.json`): it registers a custom `streamSimple` under the builtin `anthropic-messages` API, which omp ≥18.x rejects at startup (`Cannot register custom API ... built-in API names are reserved`, still present in 1.1.7). Re-enable only after upstream fixes it; for MiniMax models use a declarative `models.yml` provider (`baseUrl: https://api.minimax.io/anthropic`, `api: anthropic-messages`) instead.
 - Keep `home/` focused on tracked config; runtime artifacts (`.db`, `sessions/`, `logs/`) are gitignored via `home/.gitignore`.
 
 ## Verification
