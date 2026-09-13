@@ -7,7 +7,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - `default.nix` — overlay + NixOS/HM modules (binary package, settings, symlink, MCP, latest-binary activation)
 - `_omp.pkg.nix` — prebuilt binary (`fetchurl` per-system, `autoUpdate = true` via `builtins.fetchurl` without hash; pinned fallback with `autoUpdate = false`; pristine binary + glibc-loader wrapper on Linux, never patchelf'd)
 - `home/` — tracked omp config: `agent/` (RULES.md, managed-skills/, plugins/, prompts), out-of-store target for `~/.omp`
-- `home/agent/managed-skills/` — versioned managed skills, each a `<name>/SKILL.md`
+- `home/agent/managed-skills/` — versioned managed skills, each a `<name>/SKILL.md`; a skill may bundle extra files, for example `jj-guide/references/*.md`
 - `home/agent/plugins/` — `omp-plugins.lock.json`, `bun.lock`, `package.json` (Bun plugin set)
 
 ## Local Contracts
@@ -26,6 +26,8 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - Pinned hashes are SRI (`sha256-<b64>`) converted from upstream `SHA256SUMS.txt` hex via `echo <hex> | xxd -r -p | base64` (verify one with `nix hash file --sri <download>`).
 - No heredocs in activation scripts: nixfmt reindents `''`-string bodies, which indents the terminator and breaks the script at activation time (2026-09-08: `WRAP_EOF` never matched). Write small files with single-line `printf '%s\n' …`. No literal `''` inside `''` strings either (it terminates the string). After editing, render the entry (`nix eval …home.activation.<name>.data --impure --raw`) and check it with `bash -n` — parse/eval alone do not catch shell breakage.
 - Add/rename a skill: add directory under `home/agent/managed-skills/<name>/SKILL.md`; wire through `default.nix` if needed.
+- Skill URIs resolve as `skill://<name>` for `SKILL.md` and `skill://<name>/<path>` for bundled files (verified 2026-09-13: `skill://jj-guide/references/workflows.md` returns `# jj Workflows`). Use those URIs in skill cross-references, not relative markdown paths.
+- OMP discovers skills once, at session start. A running session does not list a new skill until restart. `omp read skill://<name>` is not a discovery check — it answers `Unknown skill` for every skill, including installed ones. Start a fresh session (`omp -p …`) to confirm discovery.
 - `@sinamtz/pi-minimax-provider` stays disabled (`enabled: false` in `home/plugins/omp-plugins.lock.json`): it registers a custom `streamSimple` under the builtin `anthropic-messages` API, which omp ≥18.x rejects at startup (`Cannot register custom API ... built-in API names are reserved`, still present in 1.1.7). Re-enable only after upstream fixes it; for MiniMax models use a declarative `models.yml` provider (`baseUrl: https://api.minimax.io/anthropic`, `api: anthropic-messages`) instead.
 - Keep `home/` focused on tracked config; runtime artifacts (`.db`, `sessions/`, `logs/`) are gitignored via `home/.gitignore`.
 
