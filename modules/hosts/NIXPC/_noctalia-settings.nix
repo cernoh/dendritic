@@ -10,6 +10,8 @@
 #   modules/features/noctalia/default.nix, and bar.main.start uses its widget.
 # - wallpaper.directory: the export writes the absolute path of this host, not
 #   the previous `~/Pictures/Wallpapers` form. The export value is kept.
+# - brightness.enable_ddcutil: the export has false. This host has no internal
+#   panel, so the DisplayPort monitors need DDC/CI (issue #168).
 {
   accessibility = {
     high_contrast = false;
@@ -124,7 +126,7 @@
     warning_threshold = 10;
   };
   brightness = {
-    enable_ddcutil = false;
+    enable_ddcutil = true;
     ignore_mmids = [ ];
     minimum_brightness = 0.0;
     sync_all_monitors = true;

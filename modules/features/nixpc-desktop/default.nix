@@ -13,6 +13,7 @@
 #   - playerctl/pavucontrol -> audio;  libnotify -> core
 #   - eza/bat/zoxide/fzf/fastfetch/lazygit -> fish;  direnv/git -> programming
 #   - ghostty, nvim, brave -> their own features
+#   - ddcutil -> noctalia (the shell owns monitor brightness, issue #168)
 #   - swaybg + waybar configs -> dropped outright (#28)
 #   - gaming tools (lutris/mangohud/gamescope/protonup-qt/wine/winetricks/
 #     vulkan tools/nvidia-vaapi-driver) -> gaming-tools feature (#26)
@@ -71,7 +72,6 @@
         lm_sensors
         btop
         gnome-disk-utility
-        ddcutil
         wob
         syshud
         nwg-look
