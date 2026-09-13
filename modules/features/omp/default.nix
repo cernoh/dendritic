@@ -1,26 +1,25 @@
-# Oh My Pi (omp) feature — prebuilt binary from GitHub releases with auto-update.
+# Oh My Pi (omp) feature — prebuilt binary from GitHub releases.
 #
 # Formerly consumed `can1357/oh-my-pi` as a flake input and built from
 # Rust+Bun source via `inputs.oh-my-pi.overlays.default`. Now pulls the
 # prebuilt binary from `github.com/can1357/oh-my-pi/releases` — no flake
-# input, no build. Because dendritic's deploys are already `--impure`
-# (hardwareFromMachine), both the nix package and the HM activation track
-# `releases/latest` by default — no manual version/hash bumps.
+# input, no build.
 #
-# - Binary package is `perSystem.packages.omp` (`_omp.pkg.nix`) with
-#   `autoUpdate = true` (default). It impurely fetches
-#   `releases/latest/download/<asset>` via `builtins.fetchurl` (no hash)
-#   and resolves `version` from the GitHub API. Set `autoUpdate = false`
-#   to use the pinned `version` + SRI hashes.
+# - Binary package is `perSystem.packages.omp` (`_omp.pkg.nix`): strictly
+#   pinned `version` + per-system SRI hashes. It MUST stay pure — it lands
+#   in `home.packages`, and Home Manager's `.manpath` evaluates every home
+#   package, so an impure package breaks pure host evaluation (issue #173).
+# - Latest release reaches the machine through activation instead:
+#   `programs.omp.useLatestBinary` (default true) downloads
+#   `releases/latest/download/<asset>` to `~/.local/bin/omp.bin`
+#   (pristine) + `~/.local/bin/omp` (loader wrapper) on each activation,
+#   and the NixOS module does the same to `/usr/local/bin`. No rebuild
+#   needed for currency.
 # - `overlays.omp` / `overlays.default` expose the same binary as a
 #   nixpkgs overlay (`pkgs.omp`).
 # - `flake.nixosModules.omp` / `flake.homeManagerModules.omp` (plus
 #   `oh-my-pi` compat aliases) provide `programs.omp` with `package`,
-#   `settings`, and `useLatestBinary` (default true). When true, the
-#   module also downloads `releases/latest` imperatively to
-#   `~/.local/bin/omp.bin` (pristine) + `~/.local/bin/omp` (loader
-#   wrapper) on each activation — true auto-update without waiting for
-#   a rebuild. The nix package itself already auto-updates.
+#   `settings`, and `useLatestBinary`.
 # - Linux binaries are Bun single-file executables and must stay pristine:
 #   both the nix package and the activation scripts ship the untouched
 #   download and exec it through the Nix glibc loader from a small
@@ -39,8 +38,8 @@
 # Opt in:
 #   imports = [ self.homeManagerModules.omp ];
 # then either `programs.omp.enable = true` or the compat `programs.oh-my-pi.enable`.
-# Auto-update is on by default; to pin:
-#   programs.omp.useLatestBinary = false;  # plus perSystem autoUpdate = false if you want pure
+# To freeze the binary, set `programs.omp.useLatestBinary = false`; the store
+# package then stays the only omp on the machine.
 { self, ... }:
 {
   # ---------------------------------------------------------------------------
@@ -74,7 +73,7 @@
         useLatestBinary = lib.mkOption {
           type = lib.types.bool;
           default = true;
-          description = "When true, also download latest release binary to /usr/local/bin/omp via activation (curl releases/latest) for instant auto-update. Package itself already auto-updates (--impure). Set false to pin.";
+          description = "When true, also download the latest release binary to /usr/local/bin/omp via activation (curl releases/latest) for instant auto-update. The store package is pinned, so this is the only source of currency. Set false to pin.";
         };
         settings = lib.mkOption {
           type = lib.types.attrs;
@@ -204,7 +203,7 @@
           description = ''
             When true, also download the latest GitHub release binary to ~/.local/bin/omp
             on each activation (curl -fsSL https://github.com/can1357/oh-my-pi/releases/latest/download/...) for instant auto-update.
-            Package itself already auto-updates (--impure). Set false to pin to nix store.
+            The store package is pinned, so this is the only source of currency. Set false to pin to nix store.
           '';
         };
         settings = lib.mkOption {

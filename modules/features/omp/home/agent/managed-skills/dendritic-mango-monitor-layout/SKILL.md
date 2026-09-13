@@ -33,6 +33,6 @@ Use when changing monitor arrangement in `modules/features/mango/default.nix` (N
 
 ## Pitfalls
 
-- Pure host-eval CI (`Evaluate NIXPC/ASAHI`) can be red on main from an unrelated home-manager `.manpath` `fetchurl sha256` pure-eval error; `nix flake check --impure` and local impure eval are the reliable gates. Confirm pre-existing at `origin/main` before attributing.
+- Pure host-eval CI (`Evaluate NIXPC/ASAHI`) is a real gate since #173 (the omp package is pinned, so pure eval no longer dies on the `.manpath` `fetchurl sha256` error). A red eval now means your change; reproduce locally with `nix eval --accept-flake-config --raw '.#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath'`.
 - Do not edit in the main checkout when it has the user's in-flight changes; the mango file lives in the same repo tree (omp agent config etc.). Use a worktree and stage only the mango file.
 - A live flip only applies after rebuild + mango session restart; there is no mango IPC to hot-reload (`mango msg` does not exist).

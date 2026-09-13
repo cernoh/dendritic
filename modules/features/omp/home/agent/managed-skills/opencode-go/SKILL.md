@@ -146,4 +146,4 @@ omp config get retry.fallbackChains
 omp models find deepseek-flash
 ```
 
-The activation-script eval prints the generated YAML, so it proves the rendered roles and chains in one step. For format and PR mechanics, use `dendritic-feature-change-verification` and `dendritic-stacked-prs-and-worktrees`. CI `Evaluate NIXPC` and `Evaluate ASAHI` fail from the pre-existing pure-eval manpath `fetchurl` break, so watch `Flake check`, `Format Nix`, and `Lint prose` instead.
+The activation-script eval prints the generated YAML, so it proves the rendered roles and chains in one step. For format and PR mechanics, use `dendritic-feature-change-verification` and `dendritic-stacked-prs-and-worktrees`. `Evaluate NIXPC` and `Evaluate ASAHI` in Nix CI are green since #173, so a red eval is your change.

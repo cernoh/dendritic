@@ -1,6 +1,6 @@
 ---
 name: dendritic-stacked-prs-and-worktrees
-description: "Create stacked, issue-linked PRs in the dendritic flake (or any worktree-based repo): base-chain PRs, the three gh stack failure modes with worktrees, reverting a half-run gh stack init, rebasing a child branch after a parent update, attributing the pre-existing Nix CI pure-eval manpath failure, and STE-linting issue/PR prose. Use when opening a second stacked PR, when gh stack refuses to run, or when CI eval jobs are red."
+description: "Create stacked, issue-linked PRs in the dendritic flake (or any worktree-based repo): base-chain PRs, the three gh stack failure modes with worktrees, reverting a half-run gh stack init, rebasing a child branch after a parent update, and STE-linting issue/PR prose. Use when opening a second stacked PR, when gh stack refuses to run, or when CI eval jobs are red."
 ---
 
 # Stacked PRs in dendritic when worktrees hold the branches
@@ -27,9 +27,9 @@ A half-run `gh stack init` writes a stack entry into `.git/gh-stack` before fail
 
 ## CI attribution in this repo
 
-- `Nix CI` fails on `main` since 2026-09-07. The eval jobs die on pure eval forcing `home-manager.users.<user>.home.file.".manpath"` → `error: in pure evaluation mode, 'fetchurl' requires a 'sha256' argument`. Root cause: the omp feature's impure `builtins.fetchurl` auto-update reaches MANPATH.
-- Do not attribute that failure to your change. Reproduce with a plain pure eval (`nix eval --accept-flake-config --raw .#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath`) in a worktree based on main HEAD and in the untouched main checkout. Identical failures mean pre-existing.
-- `Flake check`, `Format Nix (changed files)`, and `Lint prose` pass and are the signals to watch.
+- All four `Nix CI` / `Nix quality` jobs pass on `main` since #173 (2026-09-13). The eval jobs are real signals again — read them, do not dismiss them.
+- History, so a red eval reads correctly: the eval jobs died on pure eval forcing `home-manager.users.<user>.home.file.".manpath"` → `error: in pure evaluation mode, 'fetchurl' requires a 'sha256' argument`. Root cause was the omp feature's impure `builtins.fetchurl` auto-update, which reached MANPATH because `programs.omp.package` lands in `home.packages`. #173 pinned the package and moved the latest-release fetch to activation.
+- If a pure eval fails with that message again, some package in `home.packages` fetches without a hash. Find it with `nix eval --accept-flake-config --raw '.#packages.x86_64-linux.<name>.drvPath'`, which isolates the package from the host. Fix it the same way: pin a hash, and fetch the moving version at activation instead.
 
 ## STE prose gate
 
