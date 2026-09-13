@@ -73,6 +73,13 @@
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # GTK/Qt theming (issue #164). Follows nixpkgs, because stylix themes the
+    # GTK and Qt packages of the evaluated system and refuses to mix package
+    # sets.
+    stylix = {
+      url = "github:nix-community/stylix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
     wrappers.url = "github:BirdeeHub/nix-wrapper-modules";

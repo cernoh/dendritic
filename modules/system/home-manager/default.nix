@@ -34,6 +34,7 @@
             nushell
             opencode
             waylandBase
+            stylix
           ];
           home = {
             username = userName;

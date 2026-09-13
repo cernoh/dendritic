@@ -62,7 +62,6 @@
 
       home.packages = with pkgs; [
         firefox
-        thunar
         mpv
         vlc
         spotify
