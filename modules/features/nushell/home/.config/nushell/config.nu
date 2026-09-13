@@ -13,42 +13,42 @@ source ~/.config/nushell/functions.nu
 # Better history settings
 $env.config.history.max_size = 10000
 
-# Colors
+# Colors. Palette copied from modules/features/scheme/default.nix.
 $env.config.color_config = {
-  separator: "white"
+  separator: "#8a6a4a"
   leading_trailing_space_bg: { attr: n }
-  header: "green"
-  empty: "blue"
-  bool: {|| if $in { "light_cyan" } else { "light_red" }}
-  int: "white"
+  header: "#c99a5b"
+  empty: "#8a9bb0"
+  bool: {|| if $in { "#7d9a8e" } else { "#c56a5a" }}
+  int: "#ece0cd"
   filesize: {|e|
     if $e == 0b {
-      "white"
+      "#c9b79c"
     } else if $e < 1mb {
-      "cyan"
+      "#a8a06a"
     } else {
-      "blue"
+      "#c99a5b"
     }
   }
-  duration: "white"
+  duration: "#c9b79c"
   date: {|| (date now) - $in |
     if $in < 1hr {
-      "red"
+      "#c56a5a"
     } else if $in < 6hr {
-      "orange"
+      "#cf8f5c"
     } else if $in < 1day {
-      "yellow"
+      "#d9b06a"
     } else if $in < 3day {
-      "green"
+      "#8f9a6a"
     } else {
-      "cyan"
+      "#7d9a8e"
     }
   }
-  record: "white"
-  list: "white"
-  block: "white"
-  hints: "dark_gray"
-  search_result: {fg: "white" bg: "red"}
+  record: "#ece0cd"
+  list: "#ece0cd"
+  block: "#ece0cd"
+  hints: "#5f4d3a"
+  search_result: {fg: "#1e1813" bg: "#c99a5b"}
 }
 
 $env.config = ($env.config? | default {})

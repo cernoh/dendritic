@@ -304,16 +304,18 @@
     enableBatteryToast = true;
   };
 
-  colorSchemes = {
-    useWallpaperColors = false;
-    predefinedScheme = "Catppuccin";
-    darkMode = true;
-    schedulingMode = "off";
-    manualSunrise = "06:30";
-    manualSunset = "18:30";
-    generationMethod = "tonal-spot";
-    monitorForColors = "";
-    syncGsettings = true;
+  # v5 theme block, replacing the v4 `colorSchemes` section that noctalia
+  # ignores. `custom_palette` names the sepia palette that
+  # modules/features/noctalia/default.nix renders into
+  # ~/.config/noctalia/palettes/.
+  theme = {
+    builtin = "Noctalia";
+    custom_palette = "sepia";
+    mode = "dark";
+    pure_black_dark = false;
+    shell_mode = "follow";
+    source = "custom";
+    wallpaper_scheme = "m3-content";
   };
   wallpaper = {
     enabled = true;
@@ -325,10 +327,11 @@
     viewMode = "single";
     setWallpaperOnAllMonitors = true;
     linkLightAndDarkWallpapers = true;
-    fillMode = "crop";
-    fillColor = "#000000";
-    useSolidColor = false;
-    solidColor = "#1a1a2e";
+    # v5 key names; the camelCase forms were v4 and noctalia ignored them.
+    # `default.path` (the sepia wallpaper) comes from
+    # modules/features/noctalia/default.nix.
+    fill_mode = "crop";
+    fill_color = "#1e1813";
     automationEnabled = false;
     wallpaperChangeMode = "random";
     randomIntervalSec = 300;

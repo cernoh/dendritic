@@ -23,15 +23,28 @@
       ...
     }:
     let
-      # Builtin theme name tracks the flake-wide default
-      # (self.catppuccin.default, modules/features/catppuccin): "mocha" ->
-      # "Catppuccin Mocha". A static file cannot read nix values; this
-      # wrapper can, so repointing the default needs no manual sync.
-      flavor = self.catppuccin.default;
-      themeName =
-        "Catppuccin "
-        + lib.toUpper (builtins.substring 0 1 flavor)
-        + builtins.substring 1 (builtins.stringLength flavor - 1) flavor;
+      # The palette comes from modules/features/scheme. ghostty has a builtin
+      # theme for every bundled scheme, but not for this one, so the wrapper
+      # passes the colors directly. A static file cannot read nix values; this
+      # wrapper can, so repointing the scheme needs no manual sync.
+      scheme = self.scheme;
+
+      # ANSI names in index order: 0-7 normal, 8-15 bright.
+      ansiOrder = [
+        "black"
+        "red"
+        "green"
+        "yellow"
+        "blue"
+        "magenta"
+        "cyan"
+        "white"
+      ];
+      paletteFlags =
+        lib.imap0 (index: name: "--palette=${toString index}=${scheme.ansiNormal.${name}}") ansiOrder
+        ++ lib.imap0 (
+          index: name: "--palette=${toString (index + 8)}=${scheme.ansiBright.${name}}"
+        ) ansiOrder;
 
       # Flake-owned settings, previously modules/features/ghostty/config.
       configFlags = [
@@ -43,9 +56,15 @@
         "--macos-option-as-alt=true"
         "--background-opacity=0.85"
         "--background-blur=true"
-        "--theme=${themeName}"
+        "--background=${scheme.hex.base}"
+        "--foreground=${scheme.hex.text}"
+        "--cursor-color=${scheme.hex.primary}"
+        "--cursor-text=${scheme.hex.base}"
+        "--selection-background=${scheme.hex.selection}"
+        "--selection-foreground=${scheme.hex.onSelection}"
         "--cursor-style=block"
-      ];
+      ]
+      ++ paletteFlags;
 
       ghosttyWrapped = pkgs.symlinkJoin {
         name = "ghostty-wrapped";

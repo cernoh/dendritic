@@ -13,6 +13,10 @@
 # hosts/NIXPC/_noctalia-settings.nix (a verbatim translation of this host's
 # exported config.toml, so a rebuild keeps the tuned live shell).
 #
+# The palette is NOT per-host: this module renders the flake-wide sepia palette
+# (features/scheme) into ~/.config/noctalia/palettes/, and each host points
+# `theme` at it.
+#
 # The cernoh/terminal plugin (panel/bar widget) is symlinked out-of-store;
 # hosts that want it list it in plugins.enabled. The plugin itself runs in a
 # Luau sandbox with no foreign function interface, so it cannot link a C
@@ -65,6 +69,17 @@
       programs.noctalia = {
         enable = true;
         systemd.enable = true;
+
+        # The flake-wide palette (features/scheme), rendered to
+        # ~/.config/noctalia/palettes/sepia.json. Each host selects it with
+        # `theme.source = "custom"` and `theme.custom_palette = "sepia"`.
+        customPalettes.${self.scheme.name} = self.scheme.noctalia;
+
+        # Host wallpaper, from the same feature. The store path is identical
+        # on every host, and it merges with each host's own `wallpaper` block
+        # (directory, transitions). A run-time pick in the shell writes
+        # `settings.toml`, which wins over this value.
+        settings.wallpaper.default.path = toString self.scheme.wallpaper;
       };
 
       # The terminal plugin drives this helper, so it must be on PATH for the

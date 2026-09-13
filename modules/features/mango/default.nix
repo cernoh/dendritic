@@ -100,10 +100,11 @@
         gappoh = 10;
         gappov = 10;
         borderpx = 5;
-        focuscolor = "0xCD7F32ff";
-        bordercolor = "0x505050ff";
-        urgentcolor = "0x9b0000ff";
-        rootcolor = "0x1e1e2eff";
+        # Sepia palette, from features/scheme. mango takes 0xRRGGBBAA.
+        focuscolor = "0x${self.scheme.palette.primary}ff";
+        bordercolor = "0x${self.scheme.palette.outline}ff";
+        urgentcolor = "0x${self.scheme.palette.error}ff";
+        rootcolor = "0x${self.scheme.palette.base}ff";
 
         border_radius = 5;
         shadows = 0;
@@ -111,7 +112,7 @@
         shadows_blur = 30;
         shadows_position_x = 0;
         shadows_position_y = 5;
-        shadowscolor = "0x00000070";
+        shadowscolor = "0x${self.scheme.palette.shadow}70";
 
         animations = 1;
         layer_animations = 1;
@@ -160,7 +161,7 @@
           "SUPER,T,spawn_shell,$TERMINAL"
           "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
           "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
-          "SUPER+ALT+SHIFT,L,spawn_shell,swaylock --screenshots --clock --indicator --indicator-radius 100 --indicator-thickness 7 --effect-blur 7x5 --effect-vignette 0.5:0.5 --ring-color bb00cc --key-hl-color 880033 --line-color 00000000 --inside-color 00000088 --separator-color 00000000 --grace 2 --fade-in 0.2"
+          "SUPER+ALT+SHIFT,L,spawn_shell,swaylock --screenshots --clock --indicator --indicator-radius 100 --indicator-thickness 7 --effect-blur 7x5 --effect-vignette 0.5:0.5 --ring-color ${self.scheme.palette.primary} --key-hl-color ${self.scheme.palette.secondary} --line-color ${self.scheme.palette.border} --inside-color ${self.scheme.palette.shadow}e6 --separator-color ${self.scheme.palette.outline} --grace 2 --fade-in 0.2"
           "SUPER,Q,killclient"
           "SUPER,F,togglemaximizescreen"
           "SUPER+SHIFT,F,togglefullscreen"
