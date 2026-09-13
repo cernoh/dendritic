@@ -1,0 +1,19 @@
+# Dojjo (djo) project configuration: keep every workspace inside this repository.
+#
+# The `omp-worktree` policy puts worktrees under `.worktrees/` and keeps that
+# directory gitignored, so a workspace never appears in `git status`.
+#
+# The path is absolute on purpose. `{{ repo_path }}` resolves to the CURRENT
+# workspace root, so a workspace created from inside another workspace would
+# nest under it (`.worktrees/<parent>/.worktrees/<child>`). This checkout path
+# is already fixed for the flake: every out-of-store symlink points back here.
+# On another machine, change the prefix, or pass the template through the
+# `DOJJO_WORKSPACE_PATH` environment variable for one command.
+#
+# The `sanitize` filter maps the bookmark separator to a hyphen, so the
+# bookmark `feat/162-topic` becomes the directory `.worktrees/feat-162-topic`.
+workspace-path = "/home/davr/.config/dendritic/.worktrees/{{ name | sanitize }}"
+
+# Each workspace gets a bookmark. That bookmark is the git branch the pull
+# request is opened from.
+create-bookmark = true
