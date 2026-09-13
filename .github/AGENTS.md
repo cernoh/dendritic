@@ -5,7 +5,9 @@ GitHub Actions workflows, issue/PR templates, and lint scripts for this flake. R
 
 ## Ownership
 - `workflows/ste-write.yml` — STE (Simplified Technical English) prose lint on PR/issue title+body; posts/updates `<!-- ste-lint -->` comment; fails check on violations; skips `*[bot]` authors.
-- `workflows/` — additional CI: changed-file `nixfmt` check, eval matrix over `NIXPC` + `ASAHI`, weekly `flake.lock` bump (see `README.md:CI`).
+- `workflows/ci.yml` — `Evaluate <HOST>` purity gate (pure `nix eval` of each host toplevel) plus `Flake check` (`nix flake check --impure`).
+- `workflows/quality.yml` — changed-file `nixfmt --check` over the diff against the default branch.
+- `workflows/update-flake.yml` — weekly `flake.lock` bump, opened as `automation/update-flake-lock` (see `README.md:CI`).
 - `scripts/ste-lint.py` — STE linter invoked by `ste-write.yml` (also runnable locally: `python3 .github/scripts/ste-lint.py < draft.md`).
 - `ISSUE_TEMPLATE/issue.yml`, `pull_request_template.md` — contributor templates.
 
@@ -14,11 +16,14 @@ GitHub Actions workflows, issue/PR templates, and lint scripts for this flake. R
 - **Bot PRs are exempt:** author `*[bot]` short-circuits the job (update-flake-lock bot cannot rewrite its own body; GitHub Actions don't run on action-opened PRs anyway).
 - **Comment lifecycle:** workflow upserts a `<!-- ste-lint -->` comment on failure, deletes it on pass — keeps one comment per PR/issue.
 - **Nix CI has two jobs with different purity:** `Evaluate <HOST>` runs a *pure* `nix eval` of the host toplevel and is the purity gate — no `--impure`. `Flake check` runs `nix flake check --impure` and is the sandboxed ladder gate. `nix run .#verify` is the same ladder on the native machine, where impure hardware is visible.
+- **The purity gate is only as good as the packages it forces:** `Evaluate <HOST>` fails when any package reachable from a host config fetches without a hash, because Home Manager's `.manpath` evaluates every entry of `home.packages`. Keep such packages pure. See #173.
+- **`update-flake.yml` needs a repository setting, not just permissions:** the job requires `can_approve_pull_request_reviews: true`, or GitHub refuses the PR with `GitHub Actions is not permitted to create or approve pull requests`. Check it with `gh api repos/<owner>/<repo>/actions/permissions/workflow`. See #175.
+- **Bump PRs arrive unvalidated:** GitHub runs no workflows on a PR that `GITHUB_TOKEN` opened. Close and re-open the bump PR to start `Nix CI` and `Nix quality` on it.
 
 ## Work Guidance
 - Test STE locally before pushing: `python3 .github/scripts/ste-lint.py < your-draft.md` and fix `violations` before opening PR.
 - New workflow: place under `workflows/`; keep `nixConfig` caches in mind for `nix` steps (use `DeterminateSystems/nix-installer-action` or similar if needed).
-- Weekly lock bump: no manual action unless CI signals eval breakage after the bump.
+- Weekly lock bump: no manual action unless CI signals eval breakage after the bump. Confirm the bump PR's checks after re-opening it.
 
 ## Verification
 - `python3 .github/scripts/ste-lint.py < prose.txt` — local STE check (mirrors CI).
