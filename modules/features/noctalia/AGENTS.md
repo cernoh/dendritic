@@ -4,13 +4,14 @@
 Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.nixosModules.noctalia` (system install + `recommendedServices`) and `flake.homeManagerModules.noctalia` (declarative settings into `~/.config/noctalia/`). Owns the `cernoh/terminal` plugin and the `ghostty-term` helper it needs. Settings are per-host values.
 
 ## Ownership
-- `default.nix` — NixOS/HM modules, the `ghostty-term` package, and the out-of-store plugin symlink.
+- `default.nix` — NixOS/HM modules, the `ghostty-term` package, the out-of-store plugin symlink, and the system-side brightness dependencies.
 - `_ghostty-term.pkg.nix` — derivation for the helper (single C translation unit against `pkgs.libghostty-vt`).
 - `ghostty-term.c` — PTY and libghostty-vt helper; owns the frame protocol.
 - `plugins/terminal/` — the `cernoh/terminal` plugin: `plugin.toml`, `service.luau`, `panel.luau`, `bar.luau`, `shortcut.luau`.
 - `noctalia-full-config.toml` — reference dump of the ASAHI live config (data, not a source of truth).
 
 ## Local Contracts
+- **The feature owns monitor brightness.** The NixOS module installs `ddcutil` into `environment.systemPackages` and sets `hardware.i2c.enable`, because the noctalia user service carries no shell PATH and DDC/CI needs `/dev/i2c-*`. A host turns the DDC/CI path on with `brightness.enable_ddcutil = true` in its `_noctalia-settings.nix`; the kernel backlight interface covers internal panels only. Both hosts have an `i2c-dev` kernel (`=m` on NIXPC, built in on ASAHI), so no kernel patch is needed.
 - **Plugin directories hold Luau and TOML only.** The Noctalia plugin runtime has no foreign function interface, so a plugin cannot link a C library. Any native work goes in a separate derivation that the plugin spawns as a process.
 - **`ghostty-term` is the bridge.** It owns the pseudo-terminal and a `libghostty-vt` terminal, and writes one JSON frame per screen change on stdout. `pkgs.libghostty-vt` is a standalone package, separate from `pkgs.ghostty`; the `ghostty` build ships only the sequence parsers under the same soname, and its `vt.h` includes headers it does not install. The helper is offered only where `lib.meta.availableOn` reports `pkgs.libghostty-vt` (no x86_64-darwin build).
 - **Frame protocol** (one JSON object per stdout line). `service.luau` is the only reader:
@@ -38,6 +39,9 @@ Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.n
 - `nix-instantiate --parse modules/features/noctalia/_ghostty-term.pkg.nix`
 - `nix build .#ghostty-term` — builds the helper with `-Werror`.
 - `nix eval --impure .#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.packages` — the helper reaches the host.
+- Brightness wiring: `nix eval --impure .#nixosConfigurations.<HOST>.config.hardware.i2c.enable` returns true, and `nix eval --impure .#nixosConfigurations.<HOST>.config.boot.kernelModules` lists `i2c-dev`.
+- Brightness config: `nix build --no-link --impure --expr 'let f = builtins.getFlake (toString ./.); in f.nixosConfigurations.NIXPC.config.home-manager.users.davr.xdg.configFile."noctalia/config.toml".source'` — the build runs `noctalia config validate`, so a bad `brightness` key fails here.
+- Live brightness on the host: `ddcutil detect` lists the monitors, `noctalia msg brightness-set <connector> 60` changes one, and the Control Center Monitor tab shows a slider per monitor.
 - `nix flake check --impure`
 
 ## Child DOX Index

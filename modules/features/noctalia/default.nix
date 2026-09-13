@@ -44,10 +44,7 @@
     };
 
   flake.nixosModules.noctalia =
-    {
-      lib,
-      ...
-    }:
+    { pkgs, ... }:
     {
       imports = [ inputs.noctalia.nixosModules.default ];
 
@@ -55,6 +52,21 @@
         enable = true;
         recommendedServices.enable = true;
       };
+
+      # Brightness of an external monitor. The kernel backlight interface
+      # (/sys/class/backlight) reaches an internal panel only, so Noctalia
+      # drives an external monitor over DDC/CI through ddcutil. That path
+      # needs both pieces below; a host switches it on with
+      # `brightness.enable_ddcutil`.
+      #
+      # - ddcutil on the PATH of the noctalia user service. The unit carries
+      #   no shell PATH, so the package goes into the system profile.
+      # - /dev/i2c-*, the bus DDC/CI runs on. `hardware.i2c.enable` loads
+      #   i2c-dev and its udev rule grants the local seat the write access
+      #   ddcutil needs; without it ddcutil reports "No /dev/i2c devices
+      #   exist".
+      environment.systemPackages = [ pkgs.ddcutil ];
+      hardware.i2c.enable = true;
     };
 
   flake.homeManagerModules.noctalia = moduleWithSystem (
