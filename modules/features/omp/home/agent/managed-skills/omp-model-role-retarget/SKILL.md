@@ -9,7 +9,7 @@ Verified 2026-09-10 on `cernoh/dendritic` (retarget `opencode-go` roles to DeepS
 
 ## 1. Resolve the real model slug, never guess it
 
-Provider display names, ids, and selectors differ. `deepseek-flash` is "DeepSeek V4.1 Flash"; there is no `deepseek-v4.1` id.
+Provider display names, ids, and selectors differ. `deepseek-v4.1-flash` is "DeepSeek V4.1 Flash"; the bare `deepseek-flash` id is a null-metadata stub — never use it.
 
 ```bash
 omp models --json <provider> > /tmp/m.json     # fields: provider, id, selector, name
@@ -34,9 +34,9 @@ The authoritative rows come from live provider endpoint discovery, so a newly re
 `omp config set` needs the whole record as one JSON value. Dotted paths fail with `Unknown setting`:
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-flash",
- "task":"opencode-go/deepseek-flash","plan":"opencode-go/deepseek-flash",
- "slow":"opencode-go/deepseek-flash","advisor":"opencode-go/deepseek-flash"}'
+omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash",
+ "task":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4.1-flash",
+ "slow":"opencode-go/deepseek-v4.1-flash","advisor":"opencode-go/deepseek-v4.1-flash"}'
 omp config get modelRoles
 ```
 

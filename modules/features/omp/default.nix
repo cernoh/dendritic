@@ -240,7 +240,7 @@
           programs.omp.settings = {
             modelRoles = {
               # DeepSeek V4.1 Flash: 1M ctx, 384K out, vision, $0.15/$0.60.
-              default = "opencode-go/deepseek-flash";
+              default = "opencode-go/deepseek-v4.1-flash";
               # GLM-5.3-Flash: cheapest capable tool-use model, $60 cap.
               task = "opencode-go/glm-5.3-flash";
               # DeepSeek V4 Pro: deepest cheap reasoning, 384K out.
@@ -268,12 +268,12 @@
                 ];
                 task = [
                   "opencode-go/mimo-v2.5"
-                  "opencode-go/deepseek-flash"
+                  "opencode-go/deepseek-v4.1-flash"
                   "opencode-go/qwen3.8-flash"
                 ];
                 plan = [
                   "opencode-go/glm-5.2"
-                  "opencode-go/deepseek-flash"
+                  "opencode-go/deepseek-v4.1-flash"
                 ];
                 slow = [
                   "opencode-go/qwen3.8-max"
@@ -282,15 +282,15 @@
                 ];
                 advisor = [
                   "opencode-go/glm-5.3-flash"
-                  "opencode-go/deepseek-flash"
+                  "opencode-go/deepseek-v4.1-flash"
                 ];
                 smol = [
                   "opencode-go/mimo-v2.5"
-                  "opencode-go/deepseek-flash"
+                  "opencode-go/deepseek-v4.1-flash"
                 ];
                 commit = [
                   "opencode-go/glm-5.3-flash"
-                  "opencode-go/deepseek-flash"
+                  "opencode-go/deepseek-v4.1-flash"
                 ];
                 vision = [
                   "opencode-go/gpt-5.6-luna"

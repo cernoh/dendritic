@@ -59,10 +59,12 @@ The UI name and the selector differ. Never invent a slug from the display name.
 
 | Display name | Correct selector |
 | --- | --- |
-| DeepSeek V4.1 Flash | `opencode-go/deepseek-flash` |
+| DeepSeek V4.1 Flash | `opencode-go/deepseek-v4.1-flash` |
 | DeepSeek V4 Flash | `opencode-go/deepseek-v4-flash` |
 | DeepSeek V4 Pro | `opencode-go/deepseek-v4-pro` |
 | DeepSeek V4 Flash Vision Exp | `opencode-go/deepseek-v4-flash-vision-exp` |
+
+The bare `deepseek-flash` id is a null-metadata stub (no context, pricing, or thinking levels in the live registry). Never use it.
 
 Copy the id from the registry, never from prose. Two ways:
 
@@ -78,11 +80,9 @@ WHERE provider_id LIKE 'opencode-go%' AND value->>'name' LIKE '%4.1%';
 
 ## Role picks: cheapest capable model per role
 
-Verified 2026-09-10 against the live registry. Prices are $ per 1M tokens.
-
 ```text
 role      model                     in / out      ctx / max-out   vision  cap/mo
-default   deepseek-flash            0.15 / 0.60   1.0M / 384K     yes     $15
+default   deepseek-v4.1-flash       0.15 / 0.60   1.0M / 384K     yes     $15
 plan      deepseek-v4-pro           0.66 / 1.98   1.0M / 384K     no      $15
 slow      glm-5.3                   1.40 / 4.40   1.0M / 131K     no      $15
 task      glm-5.3-flash             0.075 / 0.25  1.0M / 131K     yes     $60
@@ -127,7 +127,7 @@ omp config get retry.fallbackChains --json
 2. Apply to the running install without a rebuild. Records take one JSON value, and dotted record paths fail with "Unknown setting".
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-flash","plan":"opencode-go/deepseek-v4-pro","slow":"opencode-go/glm-5.3","task":"opencode-go/glm-5.3-flash"}'
+omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4-pro","slow":"opencode-go/glm-5.3","task":"opencode-go/glm-5.3-flash"}'
 ```
 
 3. Never commit `modules/features/omp/home/agent/config.yml`. Home Manager regenerates it wholesale from the settings through `home.activation.ompConfig`, and the live copy carries drift from `/settings` and migrations. Commit `default.nix` only.
@@ -143,7 +143,7 @@ nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.home-manager.users.d
 nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath'
 omp config get modelRoles
 omp config get retry.fallbackChains
-omp models find deepseek-flash
+omp models find deepseek-v4.1-flash
 ```
 
 The activation-script eval prints the generated YAML, so it proves the rendered roles and chains in one step. For format and PR mechanics, use `dendritic-feature-change-verification` and `dendritic-stacked-prs-and-worktrees`. `Evaluate NIXPC` and `Evaluate ASAHI` in Nix CI are green since #173, so a red eval is your change.
