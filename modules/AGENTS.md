@@ -23,6 +23,7 @@ All flake-parts modules auto-registered by `import-tree` from `flake.nix:84` (`i
 ## Work Guidance
 - Check new files before commit: `nix-instantiate --parse <file>`.
 - Keep `flake.nix` `nixConfig` and `modules/system/core/nix-settings.nix` substituter lists in sync.
+- An input whose packages upstream publishes to a binary cache MUST NOT follow `nixpkgs`: the follow changes the store path and defeats substitution. Track the upstream cache branch when one exists (`noctalia` → `cachix`).
 - New top-level concerns go in `system/`; new apps go in `features/`; new machine classes in `attrs/`.
 
 ## Verification

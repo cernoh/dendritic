@@ -44,13 +44,21 @@
       url = "github:tpwrules/nixos-apple-silicon";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Must NOT follow nixpkgs (issue #179): upstream builds the shell and the
+    # greeter against its own locked nixpkgs and publishes them to
+    # noctalia.cachix.org. A follow changes every store path in those builds,
+    # so Nix substitutes nothing and compiles both packages from source. Only
+    # the packages cross the boundary — the modules take `pkgs` from the host
+    # eval.
+    # The shell tracks the `cachix` branch, which always points at the newest
+    # commit CI has already cached (noctalia-docs, binary cache). The greeter
+    # has no such branch; upstream caches its main-branch builds, so a bump to
+    # a commit CI has not built yet costs one local build.
     noctalia = {
-      url = "github:noctalia-dev/noctalia-shell";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:noctalia-dev/noctalia/cachix";
     };
     noctalia-greeter = {
       url = "github:noctalia-dev/noctalia-greeter";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
     davinci = {
       url = "git+https://git.voidarc.co.uk/voidarc/nixos.davinci";
