@@ -25,7 +25,7 @@ nu -c 'open /tmp/x.json | where pull_request? == null | select number title'
 
 ```bash
 omp models --json opencode-go > /tmp/m.json
-nu -c 'open /tmp/m.json | get models | where id == "deepseek-flash" | select id name'
+nu -c 'open /tmp/m.json | get models | where id == "deepseek-v4.1-flash" | select id name'
 ```
 
 `open` infers JSON/YAML from the extension and content. Plain text works too:
