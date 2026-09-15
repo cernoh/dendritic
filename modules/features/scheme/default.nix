@@ -11,6 +11,7 @@
 #   self.scheme.noctalia         # Noctalia palette document
 #   self.scheme.greeter          # greeter.toml [appearance.palette]
 #   self.scheme.omp              # omp theme token map
+#   self.scheme.html             # render_html palette document (CSS roles)
 #   self.scheme.wallpaper        # host wallpaper path
 #
 # Every value derives from `palette`, so a role change propagates to every
@@ -255,6 +256,33 @@ let
     statusLineCost = hex.warning;
     statusLineSubagents = hex.secondary;
   };
+
+  # HTML report palette. Each key becomes a CSS custom property of the same
+  # name, lowercased with a dash before a capital: `codeBackground` becomes
+  # `--code-background`. The `render_html` extension reads the document from
+  # ~/.omp/agent/html-theme.json (written by `home.activation.ompHtmlTheme`),
+  # so a rendered report carries the desktop palette. Every value is an opaque
+  # hex color.
+  html = {
+    background = hex.base;
+    card = hex.surface;
+    raised = hex.surfaceVariant;
+    ink = hex.text;
+    muted = hex.textMuted;
+    faint = hex.textDim;
+    line = hex.border;
+    lineStrong = hex.outline;
+    accent = hex.primary;
+    onAccent = hex.onPrimary;
+    link = hex.info;
+    success = hex.success;
+    danger = hex.error;
+    codeBackground = hex.surfaceVariant;
+    codeInk = hex.onPrimaryContainer;
+    quoteInk = hex.textMuted;
+    selection = hex.selection;
+    selectionInk = hex.onSelection;
+  };
 in
 {
   options.flake.scheme = lib.mkOption {
@@ -274,6 +302,7 @@ in
       ansiBright
       noctalia
       omp
+      html
       ;
     rgb = lib.mapAttrs (_: toRgb) palette;
 

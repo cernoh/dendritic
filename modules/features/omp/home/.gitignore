@@ -14,6 +14,8 @@ agent/*
 !agent/managed-skills/**
 !agent/scripts/
 !agent/scripts/**
+!agent/extensions/
+!agent/extensions/**
 
 
 # Declarative via home-manager (programs.omp.settings / ompMcp):

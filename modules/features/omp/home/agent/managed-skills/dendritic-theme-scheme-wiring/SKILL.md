@@ -1,11 +1,11 @@
 ---
 name: dendritic-theme-scheme-wiring
-description: "Work on the color scheme in the dendritic flake: change the sepia palette, wire a new app's theme, or debug why an app is not showing the sepia colors"
+description: "Work on the color scheme in the dendritic flake: change the sepia palette, wire a new app's theme (including omp extensions and generated HTML), or debug why an app is not showing the sepia colors"
 ---
 
 # Dendritic theme / color-scheme wiring
 
-Facts verified on the `cernoh/dendritic` flake (PR #166, 2026-09-13).
+Facts verified on the `cernoh/dendritic` flake (PR #166, 2026-09-13; `self.scheme.html` added 2026-09-15).
 
 ## Single source of truth: `modules/features/scheme/default.nix`
 
@@ -20,10 +20,28 @@ Facts verified on the `cernoh/dendritic` flake (PR #166, 2026-09-13).
   - `self.scheme.noctalia` — the Noctalia palette document, wrapped in `dark`.
   - `self.scheme.greeter` — `[appearance.palette]` for `greeter.toml`.
   - `self.scheme.omp` — the omp theme token map.
+  - `self.scheme.html` — the `render_html` palette document: 18 camelCase keys (`background`, `card`, `raised`, `ink`, `muted`, `faint`, `line`, `lineStrong`, `accent`, `onAccent`, `link`, `success`, `danger`, `codeBackground`, `codeInk`, `quoteInk`, `selection`, `selectionInk`). A key becomes a CSS custom property of the same name, lowercased with a dash before each capital, so `codeBackground` becomes `--code-background`.
   - `self.scheme.wallpaper` — the host wallpaper path (a store path).
 - Declared via `options.flake.scheme` (type raw) + `config.flake.scheme` per the dendritic-nix-flakes sharing convention.
 - Every derived form comes from the single `palette` attrset, so a role change propagates everywhere.
-- Wired consumers: ghostty (wrapper flags), nvf (`vim.theme.name = "base16"` + `base16-colors`), zellij (`theme` + `themes.<name>`), tmux (explicit `set -g` styles), omp (`theme.dark` + `home.activation.ompTheme`), mango (`focuscolor` and friends), noctalia (`customPalettes`), noctalia-greeter (`[appearance.palette]`), stylix (GTK and Qt).
+- Wired consumers: ghostty (wrapper flags), nvf (`vim.theme.name = "base16"` + `base16-colors`), zellij (`theme` + `themes.<name>`), tmux (explicit `set -g` styles), omp (`theme.dark` + `home.activation.ompTheme`), mango (`focuscolor` and friends), noctalia (`customPalettes`), noctalia-greeter (`[appearance.palette]`), stylix (GTK and Qt), `render_html` (`home.activation.ompHtmlTheme`).
+
+## Generated files a colour consumer reads at runtime
+
+The pattern for a consumer that cannot evaluate Nix: an activation writes the document into the out-of-store config tree, and the consumer reads that file.
+
+- `home.activation.ompTheme` → `~/.omp/agent/themes/<self.scheme.name>.json`, `{ name, colors = self.scheme.omp }`. Read by the omp TUI through `theme.dark`.
+- `home.activation.ompHtmlTheme` → `~/.omp/agent/html-theme.json`, `{ name, mode, colors = self.scheme.html }`. Read by the `render_html` extension (`modules/features/omp/home/agent/extensions/html-report.ts`), which turns it into a `html[data-theme="desktop"]` CSS block.
+- Both use `pkgs.writeText` + `run cp -f` rather than a heredoc, so the JSON cannot trip the indented-string dedent trap.
+- Verify the activation without a switch: `nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.activation.ompHtmlTheme.data'` shows the script; pipe it through `bash -n`. A `writeText` store path is NOT realised until it is built, so `cp <store-path>` fails with "No such file or directory". To place the artifact for a test, evaluate the same expression instead:
+  `nix eval --impure --json --expr 'let f = builtins.getFlake (toString /path/to/repo); in { name = f.scheme.name; mode = f.scheme.mode; colors = f.scheme.html; }' > ~/.omp/agent/html-theme.json`.
+
+## omp extensions that consume a palette
+
+- omp discovers `~/.omp/agent/extensions/*.ts` through its native scan. No `extensions:` setting and no Nix change are needed for a new module.
+- `home/.gitignore` ignores `agent/*` and re-includes tracked config, so a new `agent/<dir>/` needs its own `!agent/<dir>/` + `!agent/<dir>/**` pair.
+- The module runs inside the omp process for every session. Keep it to Node builtins, and validate any file it reads (the extension checks every colour against `/^#[0-9a-fA-F]{3,8}$/` before the value reaches the CSS).
+- Prove it in a fresh session, not by reading code: `omp -p --no-session --no-title --model @smol --auto-approve "Call the render_html tool with path=/tmp/x.md out=/tmp/x.html"`.
 
 ## GTK and Qt: `modules/features/stylix`
 
@@ -52,6 +70,7 @@ The shell reads a custom palette with the SAME parser as a community palette, an
 - A `jj workspace` checkout under `.worktrees/` has no git ref for its bookmark until the first push, so `nix` cannot see it. Evaluate through `git worktree add --detach <path> <commit>` instead.
 - `jj` refuses to snapshot a file above 1 MiB. Raise it for the repo with `jj config set --repo snapshot.max-new-file-size <bytes>` before adding a wallpaper.
 - Verify a wired consumer: `nix eval --raw .#nixosConfigurations.NIXPC.config.home-manager.users.davr.programs.zellij.settings.theme` → `sepia`. ASAHI user is `da`, not `davr`.
+- A derived document is its own lookup path: `nix eval --json .#scheme.html` prints the whole palette, `nix eval --raw .#scheme.html.accent` prints one value. No host eval is needed to check a scheme document.
 - Rendered artifacts: `xdg.configFile."noctalia/config.toml"`, `"noctalia/palettes/sepia.json"`, `"zellij/config.kdl"`, `"zellij/themes/sepia.kdl"`, `"tmux/tmux.conf"`.
 - Validate a rendered noctalia config with the shell binary: `<noctalia>/bin/noctalia config validate <dir>`. Warnings about v4 keys are expected on the ASAHI settings.
 - CI "Format Nix (changed files)" runs `nixfmt --check` on changed files only — but per-file, so touching a legacy-formatted file requires a FULL reflow.
