@@ -22,6 +22,9 @@
       ghostty
       noctaliaGreeter
       ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
+      # tailscaled (services.tailscale). ASAHI imports the same module; the
+      # daemon needs a one-time `sudo tailscale up` per machine.
+      tailscale
       # The Docker daemon comes in through attrs/desktop -> act -> docker;
       # importing `docker` here as well would define the module twice and
       # duplicate the docker extraGroup entry (mcpContainers below only

@@ -14,7 +14,8 @@ One directory per machine producing `flake.nixosConfigurations.<HOST>`. Assemble
 - **Shared base is `desktop`:** both hosts import `desktop` (from `attrs/desktop` → `core` + `network` + `audio` + `homeManager` + `act` + `waylandBase` + `computerUse` + `stylix` + `nautilus` + common `environment.systemPackages` + `allowUnfree`). Host `default.nix` then adds its compositor, drivers, and extras. Neither `stylix` nor `nautilus` is host-specific, so they live in the bundle rather than in a host's module list.
 - **Per-host deltas:**
   - `NIXPC`: `nixpcConfiguration`, `nixpcDesktop`, `nvidiaDrivers`, `gaming`, `mango`, `noctaliaGreeter --session Mango`, `mcpContainers` (via `desktop→act→docker`; do not re-import `docker`).
-  - `ASAHI`: `asahiConfiguration`, `asahiPlatform` (apple-silicon support), `widevine`, `niri`, `noctaliaGreeter --session Niri`, `stability`/`timeSync`/`tailscale`/`flatpak`/`obs`/`portals`.
+  - `ASAHI`: `asahiConfiguration`, `asahiPlatform` (apple-silicon support), `widevine`, `niri`, `noctaliaGreeter --session Niri`, `stability`/`timeSync`/`flatpak`/`obs`/`portals`.
+- **`tailscale` is imported by both hosts:** the module enables `services.tailscale` (tailscaled). Auth is interactive, so run `sudo tailscale up` once per machine after the switch that adds the module.
 - **`inputs.asahi` must follow nixpkgs** (`inputs.nixpkgs.follows = "nixpkgs"` in `flake.nix`) — otherwise apple-silicon packages resolve against the wrong `nixpkgs` and break cross-machine eval (issue #16).
 - **Asahi bootchain is uncached** (`nixos-apple-silicon.cachix.org` excludes `linux-asahi`/`uboot-asahi`/`m1n1`) — every `asahi` input bump rebuilds ~4 heavy derivations locally; plan reboot via `/run/reboot-required` (issue #72/#73).
 
