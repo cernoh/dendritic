@@ -7,12 +7,10 @@
  * Contract:
  * - Output is a single file. No external stylesheet, script, font, or image.
  * - All text is escaped. Raw HTML in the source is shown as text, never parsed.
- * - The page carries three themes: the desktop palette, light, and dark. The
- *   desktop palette comes from `<agent dir>/html-theme.json`, which
- *   `home.activation.ompHtmlTheme` writes from `self.scheme.html`, so a report
- *   matches the desktop. Without that file the page offers light and dark.
- * - Every color value is validated as a hex literal before it reaches the CSS,
- *   so a read of a foreign file cannot inject a rule.
+ * - The page shell, the palette, and the theme switcher come from `lib/html.ts`,
+ *   which reads the desktop palette from `<agent dir>/html-theme.json`. The page
+ *   therefore carries the desktop palette, light, and dark. See that module for
+ *   the palette contract.
  * - Default output path: `<agent dir>/html/<slug>-<stamp>.html`, where the agent
  *   dir is `PI_CODING_AGENT_DIR` or `~/.omp/agent`. That path stays untracked,
  *   because `home/.gitignore` ignores `agent/*` except tracked config.
@@ -22,54 +20,19 @@
  * card layout, so the transcript reads as a list of decisions.
  */
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
-import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
-import { homedir } from "node:os";
-
-// --------------------------------------------------------------------------
-// Text helpers
-// --------------------------------------------------------------------------
-
-const HTML_ESCAPES: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;",
-};
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (char) => HTML_ESCAPES[char] ?? char);
-}
-
-/** Block `javascript:` and `data:` URLs, and keep the rest. */
-function safeUrl(url: string): string {
-  const trimmed = url.trim();
-  if (/^(?:javascript|data|vbscript):/i.test(trimmed)) return "#";
-  return trimmed;
-}
-
-function slugify(text: string): string {
-  const slug = text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return slug || "section";
-}
-
-/** Local time stamp: `20260915-180233`. */
-function stamp(date = new Date()): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return (
-    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
-    `-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
-  );
-}
-
-function humanDate(date = new Date()): string {
-  return date.toISOString().replace("T", " ").slice(0, 16) + " UTC";
-}
+import {
+  agentDir,
+  escapeHtml,
+  humanDate,
+  openInBrowser,
+  pageShell,
+  safeUrl,
+  slugify,
+  stamp,
+  themeOptions,
+} from "./lib/html";
 
 // --------------------------------------------------------------------------
 // Inline Markdown
@@ -454,86 +417,10 @@ function firstHeading(blocks: Block[]): string | undefined {
 // --------------------------------------------------------------------------
 
 /**
- * Built-in document palettes. The light set is the `show-html` pack palette
- * (ivory, clay, oat, olive, rust); the dark set is its neutral counterpart.
- * The desktop theme arrives from the scheme document instead.
+ * Document layout. The shell, the palette, and the theme switcher come from
+ * `lib/html.ts`; this constant holds only the rules of a rendered document.
  */
-const STYLE = `
-:root {
-  color-scheme: light;
-  --background: #FAF9F5;
-  --card: #FFFFFF;
-  --raised: #F0EEE6;
-  --ink: #141413;
-  --muted: #3D3D3A;
-  --faint: #87867F;
-  --line: #D1CFC5;
-  --line-strong: #87867F;
-  --accent: #D97757;
-  --on-accent: #FFFFFF;
-  --link: #B04A3F;
-  --success: #788C5D;
-  --danger: #B04A3F;
-  --code-background: #F0EEE6;
-  --code-ink: #3D3D3A;
-  --quote-ink: #3D3D3A;
-  --selection: #E3DACC;
-  --selection-ink: #141413;
-  --serif: ui-serif, Georgia, "Times New Roman", serif;
-  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-html[data-theme="dark"] {
-  color-scheme: dark;
-  --background: #141413;
-  --card: #1C1C1A;
-  --raised: #24231F;
-  --ink: #F0EEE6;
-  --muted: #C7C5BA;
-  --faint: #A5A39A;
-  --line: #35342F;
-  --line-strong: #4C4A44;
-  --accent: #E08B6D;
-  --on-accent: #1C1C1A;
-  --link: #E0A184;
-  --success: #9AAE72;
-  --danger: #D97F6C;
-  --code-background: #24231F;
-  --code-ink: #F0DDBE;
-  --quote-ink: #C7C5BA;
-  --selection: #3C3A34;
-  --selection-ink: #F7F2E8;
-}
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  background: var(--background);
-  color: var(--ink);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.6;
-}
-::selection { background: var(--selection); color: var(--selection-ink); }
-.page { max-width: 880px; margin: 0 auto; padding: 56px 28px 80px; }
-.doc-head { position: relative; padding-bottom: 8px; }
-.eyebrow {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--faint);
-  overflow-wrap: anywhere;
-}
-h1 {
-  margin: 10px 0 8px;
-  font-family: var(--serif);
-  font-size: 34px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-.sub { margin: 0; font-size: 13px; color: var(--faint); }
+const DOCUMENT_CSS = `
 h2 {
   margin: 44px 0 14px;
   padding-top: 18px;
@@ -665,135 +552,14 @@ article.q { break-inside: avoid; }
   color: var(--success);
 }
 .q-answer p:last-child { margin-bottom: 0; }
-footer.doc-foot {
-  margin-top: 56px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 20px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  color: var(--faint);
-  overflow-wrap: anywhere;
-}
-.theme-switch {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  background: var(--card);
-}
-.theme-switch button {
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--faint);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  padding: 4px 10px;
-  cursor: pointer;
-}
-.theme-switch button:hover { color: var(--ink); }
-.theme-switch button.active { background: var(--accent); color: var(--on-accent); }
 @media (max-width: 700px) {
-  .page { padding: 38px 18px 60px; }
-  h1 { font-size: 26px; }
   h2 { font-size: 20px; }
   .card { padding: 16px; }
-  .doc-head { padding-bottom: 46px; }
-  .theme-switch { top: auto; bottom: 0; right: auto; left: 0; }
 }
 @media print {
-  .theme-switch { display: none; }
-  .page { max-width: none; padding: 0; }
   article.q, .card { break-inside: avoid; }
 }
 `;
-
-const THEME_SCRIPT = `(function () {
-  var root = document.documentElement;
-  var available = (root.dataset.themes || "light dark").split(" ");
-  var key = "omp-html-theme";
-  var stored = null;
-  try { stored = window.localStorage.getItem(key); } catch (error) {}
-  var chosen = stored && available.indexOf(stored) >= 0 ? stored : root.dataset.defaultTheme;
-  if (available.indexOf(chosen) < 0) chosen = available[0];
-  root.dataset.theme = chosen;
-  document.addEventListener("DOMContentLoaded", function () {
-    var buttons = document.querySelectorAll(".theme-switch button");
-    var paint = function () {
-      for (var index = 0; index < buttons.length; index += 1) {
-        var active = buttons[index].dataset.themeId === root.dataset.theme;
-        buttons[index].classList.toggle("active", active);
-        buttons[index].setAttribute("aria-pressed", active ? "true" : "false");
-      }
-    };
-    for (var index = 0; index < buttons.length; index += 1) {
-      buttons[index].addEventListener("click", function (event) {
-        root.dataset.theme = event.currentTarget.dataset.themeId;
-        try { window.localStorage.setItem(key, root.dataset.theme); } catch (error) {}
-        paint();
-      });
-    }
-    paint();
-  });
-})();`;
-
-interface DesktopTheme {
-  label: string;
-  mode: string;
-  colors: Record<string, string>;
-}
-
-function agentDir(): string {
-  const configured = process.env.PI_CODING_AGENT_DIR;
-  if (configured && configured.trim()) return resolve(configured.trim());
-  return join(process.env.HOME?.trim() || homedir(), ".omp", "agent");
-}
-
-/**
- * Read the desktop palette that `home.activation.ompHtmlTheme` writes from
- * `self.scheme.html`. Every color must be a hex literal, so a damaged or
- * foreign file cannot inject a CSS rule. An unreadable file yields undefined,
- * and the page then offers light and dark only.
- */
-function readDesktopTheme(): DesktopTheme | undefined {
-  const file = join(agentDir(), "html-theme.json");
-  if (!existsSync(file)) return undefined;
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    return undefined;
-  }
-  if (!parsed || typeof parsed !== "object") return undefined;
-  const document = parsed as { name?: unknown; mode?: unknown; colors?: unknown };
-  if (!document.colors || typeof document.colors !== "object") return undefined;
-  const colors: Record<string, string> = {};
-  for (const [key, value] of Object.entries(document.colors as Record<string, unknown>)) {
-    if (typeof value !== "string" || !/^#[0-9a-fA-F]{3,8}$/.test(value)) continue;
-    colors[key] = value;
-  }
-  if (Object.keys(colors).length < 5) return undefined;
-  return {
-    label: typeof document.name === "string" && document.name.trim() ? document.name.trim() : "desktop",
-    mode: document.mode === "light" ? "light" : "dark",
-    colors,
-  };
-}
-
-function desktopThemeCss(theme: DesktopTheme): string {
-  const declarations = Object.entries(theme.colors)
-    .map(([key, value]) => `  --${key.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()}: ${value};`)
-    .join("\n");
-  return `html[data-theme="desktop"] {\n  color-scheme: ${theme.mode};\n${declarations}\n}`;
-}
 
 interface RenderInput {
   markdown: string;
@@ -811,23 +577,13 @@ interface RenderOutput {
 }
 
 function renderDocument(input: RenderInput): RenderOutput {
-  const desktopTheme = readDesktopTheme();
+  const options = themeOptions();
   const blocks = parseMarkdown(input.markdown);
   const title = input.title?.trim() || firstHeading(blocks) || basename(input.source, extname(input.source)) || "Document";
   const headings = collectHeadings(blocks);
   const questions = blocks.filter((block) => block.kind === "question").length;
   const body = renderBlocks(blocks);
   const words = input.markdown.split(/\s+/).filter(Boolean).length;
-
-  const themes: { id: string; label: string }[] = [];
-  if (desktopTheme) themes.push({ id: "desktop", label: desktopTheme.label });
-  themes.push({ id: "light", label: "light" }, { id: "dark", label: "dark" });
-  const defaultTheme =
-    input.theme && themes.some((theme) => theme.id === input.theme)
-      ? input.theme
-      : desktopTheme
-        ? "desktop"
-        : "light";
 
   const toc =
     headings.length >= 2
@@ -841,58 +597,26 @@ function renderDocument(input: RenderInput): RenderOutput {
 
   const meta = [`${words} words`, questions > 0 ? `${questions} questions` : "", humanDate()].filter(Boolean).join(" · ");
 
-  const html = `<!DOCTYPE html>
-<html lang="en" data-default-theme="${defaultTheme}" data-themes="${themes.map((theme) => theme.id).join(" ")}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)}</title>
-<style>${STYLE}${desktopTheme ? `\n${desktopThemeCss(desktopTheme)}` : ""}
-</style>
-<script>${THEME_SCRIPT}</script>
-</head>
-<body>
-<div class="page">
-<header class="doc-head">
-<p class="eyebrow">${escapeHtml(input.source)}</p>
-<h1>${renderInline(title)}</h1>
-<p class="sub">${escapeHtml(meta)}</p>
-<div class="theme-switch" role="group" aria-label="Theme">${themes
-    .map(
-      (theme) =>
-        `<button type="button" data-theme-id="${theme.id}" aria-pressed="false">${escapeHtml(theme.label)}</button>`,
-    )
-    .join("")}</div>
-</header>
-${toc}
+  const html = pageShell({
+    eyebrow: input.source,
+    heading: title,
+    headingHtml: renderInline(title),
+    sub: meta,
+    style: DOCUMENT_CSS,
+    defaultTheme: input.theme,
+    body: `${toc}
 <main>
 ${body}
-</main>
-<footer class="doc-foot">
-<span>${escapeHtml(input.source)}</span>
-<span>${humanDate()}</span>
-<span>render_html · oh-my-pi</span>
-</footer>
-</div>
-</body>
-</html>
-`;
+</main>`,
+    footer: [input.source, humanDate(), "render_html · oh-my-pi"],
+  });
 
-  return { html, title, headings: headings.length, questions, themes: themes.map((theme) => theme.id) };
+  return { html, title, headings: headings.length, questions, themes: options.map((option) => option.id) };
 }
 
 // --------------------------------------------------------------------------
 // Tool
 // --------------------------------------------------------------------------
-
-function openInBrowser(path: string): void {
-  const command = process.platform === "darwin" ? "open" : "xdg-open";
-  try {
-    spawn(command, [path], { detached: true, stdio: "ignore" }).unref();
-  } catch {
-    // A missing opener must not fail the render.
-  }
-}
 
 interface RenderParams {
   path?: string;
@@ -928,6 +652,7 @@ export default function htmlReportExtension(pi: ExtensionAPI) {
       open: z.boolean().optional().describe("Open the page in the default browser after the write. Default false."),
       theme: z.string().optional().describe("Theme the page opens with: desktop, light, or dark. Default desktop."),
     }),
+    loadMode: "essential",
     approval: "write",
     async execute(_toolCallId, params: RenderParams, signal, _onUpdate, ctx) {
       if (signal?.aborted) {
