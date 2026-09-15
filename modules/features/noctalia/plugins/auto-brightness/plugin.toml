@@ -1,0 +1,13 @@
+id = "cernoh/auto-brightness"
+name = "Auto Brightness"
+version = "1.0.0"
+plugin_api = 26
+author = "cernoh"
+license = "MIT"
+tags = ["brightness", "sensor", "display", "keyboard"]
+icon = "brightness-2"
+description = "Drives the internal panel and the keyboard backlight from the ambient light sensor."
+
+[[service]]
+id = "auto"
+entry = "service.luau"
