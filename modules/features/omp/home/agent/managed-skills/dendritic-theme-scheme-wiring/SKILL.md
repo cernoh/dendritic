@@ -31,7 +31,7 @@ Facts verified on the `cernoh/dendritic` flake (PR #166, 2026-09-13; `self.schem
 The pattern for a consumer that cannot evaluate Nix: an activation writes the document into the out-of-store config tree, and the consumer reads that file.
 
 - `home.activation.ompTheme` → `~/.omp/agent/themes/<self.scheme.name>.json`, `{ name, colors = self.scheme.omp }`. Read by the omp TUI through `theme.dark`.
-- `home.activation.ompHtmlTheme` → `~/.omp/agent/html-theme.json`, `{ name, mode, colors = self.scheme.html }`. Read by the `render_html` extension (`modules/features/omp/home/agent/extensions/html-report.ts`), which turns it into a `html[data-theme="desktop"]` CSS block.
+- `home.activation.ompHtmlTheme` → `~/.omp/agent/html-theme.json`, `{ name, mode, colors = self.scheme.html }`. Read by `modules/features/omp/home/agent/extensions/lib/html.ts`, the page shell that `render_html`, `grill_form`, and `grill_finish` all render through; it turns the document into a `html[data-theme="desktop"]` CSS block.
 - Both use `pkgs.writeText` + `run cp -f` rather than a heredoc, so the JSON cannot trip the indented-string dedent trap.
 - Verify the activation without a switch: `nix eval --impure --raw '.#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.activation.ompHtmlTheme.data'` shows the script; pipe it through `bash -n`. A `writeText` store path is NOT realised until it is built, so `cp <store-path>` fails with "No such file or directory". To place the artifact for a test, evaluate the same expression instead:
   `nix eval --impure --json --expr 'let f = builtins.getFlake (toString /path/to/repo); in { name = f.scheme.name; mode = f.scheme.mode; colors = f.scheme.html; }' > ~/.omp/agent/html-theme.json`.

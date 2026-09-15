@@ -56,3 +56,5 @@ Then call the `render_html` tool with `path` set to the record file. The tool wr
 The tool pairs each `❓` question with the `➡️` recommendation below it, and gives every question its own card. Keep the round format above so the page stays readable.
 
 When the user wants a page with its own layout, such as a comparison, a diagram, or a slide deck, read `skill://show-html` and write the page yourself. If the `render_html` tool is absent, do the same.
+
+For a session driven through a form instead of chat, run `skill://grill-me-html`.
