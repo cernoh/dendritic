@@ -88,7 +88,7 @@ task:
   agentAdvisor:
     task: "on"
 theme:
-  dark: dark-catppuccin
+  dark: sepia
 isolation:
   backend: auto
 composer:

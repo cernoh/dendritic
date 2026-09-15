@@ -22,23 +22,32 @@
       # (aarch64-linux) derivations locally; cross builds run foreign
       # fixup binaries under emulation.
       boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-      # Spare SATA data disks (sda2 NTFS "2tb storage", sdc1 ext4), pinned by
-      # UUID. nofail keeps boot green if a disk is absent or unmountable;
-      # uid/gid give davr ownership on ntfs3 (in-kernel driver).
+      # btrfs userspace support for the endeavouros data disk (sdc2, Windows
+      # target — entry stays until the Windows installer takes the disk).
+      boot.supportedFilesystems.btrfs = true;
+      environment.systemPackages = with pkgs; [
+        btrfs-progs
+      ];
+      # Spare SATA data disks (sda1 + sdb1 ext4), pinned by UUID. nofail
+      # keeps boot green if a disk is absent or unmountable.
       fileSystems = {
         "/mnt/2tb-storage" = {
-          device = "/dev/disk/by-uuid/DE82B0B582B0938D";
-          fsType = "ntfs3";
+          device = "/dev/disk/by-uuid/3121d45d-1143-4745-bfc8-7222cf4234f0";
+          fsType = "ext4";
           options = [
-            "uid=1000"
-            "gid=100"
-            "umask=022"
             "nofail"
           ];
         };
         "/mnt/2tb-ext4" = {
-          device = "/dev/disk/by-uuid/5cd547ee-7ee6-47e6-9de5-0d922d7fea10";
+          device = "/dev/disk/by-uuid/e0a5bb7a-02eb-448c-a625-6d4dffabce2a";
           fsType = "ext4";
+          options = [
+            "nofail"
+          ];
+        };
+        "/mnt/endeavouros" = {
+          device = "/dev/disk/by-uuid/c6c7f349-20be-44aa-93da-0b358cb61b7b";
+          fsType = "btrfs";
           options = [
             "nofail"
           ];
@@ -64,10 +73,12 @@
           home.file = {
             "2tb-storage".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-storage";
             "2tb-ext4".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-ext4";
+            "endeavouros".source = config.lib.file.mkOutOfStoreSymlink "/mnt/endeavouros";
           };
           xdg.configFile."gtk-3.0/bookmarks".text = ''
             file:///mnt/2tb-storage 2tb-storage
             file:///mnt/2tb-ext4 2tb-ext4
+            file:///mnt/endeavouros endeavouros
           '';
           # Noctalia shell settings: the full exported shell configuration of
           # this host lives in _noctalia-settings.nix (the same convention as
