@@ -35,7 +35,7 @@ memory:
 modelRoles:
   advisor: opencode-go/mimo-v2.5
   commit: opencode-go/mimo-v2.5
-  default: opencode-go/deepseek-flash
+  default: opencode-go/deepseek-v4.1-flash
   plan: opencode-go/deepseek-v4-pro
   slow: opencode-go/glm-5.3
   smol: opencode-go/glm-5.3-flash
@@ -48,10 +48,10 @@ retry:
   fallbackChains:
     advisor:
       - opencode-go/glm-5.3-flash
-      - opencode-go/deepseek-flash
+      - opencode-go/deepseek-v4.1-flash
     commit:
       - opencode-go/glm-5.3-flash
-      - opencode-go/deepseek-flash
+      - opencode-go/deepseek-v4.1-flash
     default:
       - opencode-go/deepseek-v4-flash
       - opencode-go/glm-5.3-flash
@@ -59,17 +59,17 @@ retry:
       - opencode-go/minimax-m3
     plan:
       - opencode-go/glm-5.2
-      - opencode-go/deepseek-flash
+      - opencode-go/deepseek-v4.1-flash
     slow:
       - opencode-go/qwen3.8-max
       - opencode-go/deepseek-v4-pro
       - opencode-go/kimi-k3
     smol:
       - opencode-go/mimo-v2.5
-      - opencode-go/deepseek-flash
+      - opencode-go/deepseek-v4.1-flash
     task:
       - opencode-go/mimo-v2.5
-      - opencode-go/deepseek-flash
+      - opencode-go/deepseek-v4.1-flash
       - opencode-go/qwen3.8-flash
     vision:
       - opencode-go/gpt-5.6-luna
