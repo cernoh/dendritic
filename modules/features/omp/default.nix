@@ -387,6 +387,25 @@
                 run chmod 600 "$HOME/.omp/agent/themes/${self.scheme.name}.json"
               '';
             }
+            # Palette for the `render_html` extension (features/omp/home/
+            # agent/extensions/html-report.ts). Same source as the omp theme,
+            # so a rendered HTML report matches the desktop. writeText + copy
+            # keeps the JSON out of heredoc territory.
+            {
+              home.activation.ompHtmlTheme = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+                run mkdir -p "$HOME/.omp/agent"
+                run cp -f ${
+                  pkgs.writeText "omp-html-theme.json" (
+                    builtins.toJSON {
+                      name = self.scheme.name;
+                      mode = self.scheme.mode;
+                      colors = self.scheme.html;
+                    }
+                  )
+                } "$HOME/.omp/agent/html-theme.json"
+                run chmod 600 "$HOME/.omp/agent/html-theme.json"
+              '';
+            }
             {
               home.activation.ompMcp = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
                 run mkdir -p "$HOME/.omp/agent"
