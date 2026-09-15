@@ -550,6 +550,7 @@
   plugins = {
     autoUpdate = true;
     notifyUpdates = true;
+    enabled = [ "cernoh/auto-brightness" ];
   };
 
   idle = {

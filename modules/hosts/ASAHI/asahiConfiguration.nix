@@ -90,7 +90,7 @@
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
       home-manager.users.${config.dendritic.userName} =
-        { pkgs, ... }:
+        { pkgs, config, ... }:
         let
           # Login notification when system.activationScripts.asahiRebootRequired
           # (see drivers/asahi.nix) flagged a pending reboot (issue #72).
@@ -113,6 +113,12 @@
             brave
           ];
           programs.noctalia.settings = import ./_noctalia-settings.nix;
+
+          # ASAHI-only: ambient-light auto brightness. Out-of-store like the
+          # terminal plugin, so edits stay live. The plugins.enabled entry in
+          # _noctalia-settings.nix turns it on; NIXPC gets neither.
+          home.file.".local/share/noctalia/plugins/auto-brightness".source =
+            config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/auto-brightness";
 
           # One-shot at graphical login: if the flag file is present, surface a
           # desktop notification. WantedBy default.target (not

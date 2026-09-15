@@ -8,12 +8,14 @@ Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.n
 - `_ghostty-term.pkg.nix` — derivation for the helper (single C translation unit against `pkgs.libghostty-vt`).
 - `ghostty-term.c` — PTY and libghostty-vt helper; owns the frame protocol.
 - `plugins/terminal/` — the `cernoh/terminal` plugin: `plugin.toml`, `service.luau`, `panel.luau`, `bar.luau`, `shortcut.luau`.
+- `plugins/auto-brightness/` — the `cernoh/auto-brightness` plugin: `plugin.toml`, `service.luau` (ambient-light display + keyboard backlight from the ALS IIO sensor; ASAHI-only).
 - `noctalia-full-config.toml` — reference dump of the ASAHI live config (data, not a source of truth).
 
 ## Local Contracts
 - **The feature owns monitor brightness.** The NixOS module installs `ddcutil` into `environment.systemPackages` and sets `hardware.i2c.enable`, because the noctalia user service carries no shell PATH and DDC/CI needs `/dev/i2c-*`. A host turns the DDC/CI path on with `brightness.enable_ddcutil = true` in its `_noctalia-settings.nix`; the kernel backlight interface covers internal panels only. Both hosts have an `i2c-dev` kernel (`=m` on NIXPC, built in on ASAHI), so no kernel patch is needed.
 - **The `noctalia` input tracks the upstream `cachix` branch and the `noctalia-greeter` input tracks `main`; neither follows `nixpkgs`.** Upstream publishes both packages to `noctalia.cachix.org` against its own locked nixpkgs, so a follow changes the store path and forces a local build (issue #179).
 - **Plugin directories hold Luau and TOML only.** The Noctalia plugin runtime has no foreign function interface, so a plugin cannot link a C library. Any native work goes in a separate derivation that the plugin spawns as a process.
+- **Auto-brightness is ASAHI-only.** Only ASAHI has an ambient light sensor, so only `asahiConfiguration.nix` symlinks `plugins/auto-brightness` out-of-store and only ASAHI `_noctalia-settings.nix` lists `cernoh/auto-brightness` in `plugins.enabled`; NIXPC gets neither.
 - **`ghostty-term` is the bridge.** It owns the pseudo-terminal and a `libghostty-vt` terminal, and writes one JSON frame per screen change on stdout. `pkgs.libghostty-vt` is a standalone package, separate from `pkgs.ghostty`; the `ghostty` build ships only the sequence parsers under the same soname, and its `vt.h` includes headers it does not install. The helper is offered only where `lib.meta.availableOn` reports `pkgs.libghostty-vt` (no x86_64-darwin build).
 - **Frame protocol** (one JSON object per stdout line). `service.luau` is the only reader:
   - `{"t":"init","c":cols,"r":rows}` — geometry, sent once at start.
