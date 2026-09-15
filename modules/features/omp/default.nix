@@ -240,19 +240,22 @@
           programs.omp.settings = {
             modelRoles = {
               # DeepSeek V4.1 Flash: 1M ctx, 384K out, vision, $0.15/$0.60.
+              # Rank #2 on opencode.ai/data — most used DeepSeek model.
               default = "opencode-go/deepseek-v4.1-flash";
-              # GLM-5.3-Flash: cheapest capable tool-use model, $60 cap.
-              task = "opencode-go/glm-5.3-flash";
-              # DeepSeek V4 Pro: deepest cheap reasoning, 384K out.
-              plan = "opencode-go/deepseek-v4-pro";
-              # GLM-5.3: flagship tier for long, hard sessions.
-              slow = "opencode-go/glm-5.3";
-              # MiMo V2.5: cheap enough to review every turn, own $60 cap.
-              advisor = "opencode-go/mimo-v2.5";
-              smol = "opencode-go/glm-5.3-flash";
-              commit = "opencode-go/mimo-v2.5";
-              # Qwen3.8 Flash: vision-first build, $30 cap.
-              vision = "opencode-go/qwen3.8-flash";
+              # Same model: tool-use workhorse, same price.
+              task = "opencode-go/deepseek-v4.1-flash";
+              # Same model: planning needs reasoning, not a pricier tier.
+              plan = "opencode-go/deepseek-v4.1-flash";
+              # Same model: replaces GLM-5.3 ($1.40/$4.40).
+              slow = "opencode-go/deepseek-v4.1-flash";
+              # Muse Spark 1.3 Contributor: rank #1, second opinion,
+              # $0.10/$0.20, $60 cap. Meta trains on prompts; advisor only.
+              advisor = "opencode-go/muse-spark-1.3-contributor";
+              # DeepSeek V4 Flash: rank #3, own $30 cap, $0.15/$0.60.
+              smol = "opencode-go/deepseek-v4-flash";
+              commit = "opencode-go/deepseek-v4-flash";
+              # DeepSeek V4 Flash Vision Exp: vision-first build, $0.15/$0.60.
+              vision = "opencode-go/deepseek-v4-flash-vision-exp";
             };
             # Cross-family chains: each hop owns a separate monthly cap, so a
             # cap wall or an outage fails over instead of blocking the turn.
@@ -263,39 +266,40 @@
                 default = [
                   "opencode-go/deepseek-v4-flash"
                   "opencode-go/glm-5.3-flash"
+                  "opencode-go/mimo-v2.5"
                   "opencode-go/qwen3.8-flash"
-                  "opencode-go/minimax-m3"
                 ];
                 task = [
+                  "opencode-go/deepseek-v4-flash"
+                  "opencode-go/glm-5.3-flash"
                   "opencode-go/mimo-v2.5"
-                  "opencode-go/deepseek-v4.1-flash"
-                  "opencode-go/qwen3.8-flash"
                 ];
                 plan = [
-                  "opencode-go/glm-5.2"
-                  "opencode-go/deepseek-v4.1-flash"
+                  "opencode-go/deepseek-v4-flash"
+                  "opencode-go/glm-5.3-flash"
+                  "opencode-go/deepseek-v4-pro"
                 ];
                 slow = [
-                  "opencode-go/qwen3.8-max"
+                  "opencode-go/deepseek-v4-flash"
+                  "opencode-go/glm-5.3-flash"
                   "opencode-go/deepseek-v4-pro"
-                  "opencode-go/kimi-k3"
                 ];
                 advisor = [
-                  "opencode-go/glm-5.3-flash"
                   "opencode-go/deepseek-v4.1-flash"
+                  "opencode-go/mimo-v2.5"
                 ];
                 smol = [
+                  "opencode-go/glm-5.3-flash"
                   "opencode-go/mimo-v2.5"
-                  "opencode-go/deepseek-v4.1-flash"
                 ];
                 commit = [
                   "opencode-go/glm-5.3-flash"
-                  "opencode-go/deepseek-v4.1-flash"
+                  "opencode-go/mimo-v2.5"
                 ];
                 vision = [
+                  "opencode-go/deepseek-v4.1-flash"
                   "opencode-go/gpt-5.6-luna"
-                  "opencode-go/deepseek-v4-flash-vision-exp"
-                  "opencode-go/glm-5.3-flash"
+                  "opencode-go/qwen3.8-flash"
                 ];
               };
             };

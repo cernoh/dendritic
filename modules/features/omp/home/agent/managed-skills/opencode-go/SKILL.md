@@ -4,6 +4,8 @@ description: "Work with OpenCode Go (opencode-go) models in omp: the doc fact sh
 ---
 
 Trawled from <https://opencode.ai/docs/go/> plus local verification on NIXPC, 2026-09-10.
+Role picks and prices re-checked 2026-09-15 against <https://opencode.ai/docs/go/#usage-limits>
+(the canonical pricing and cap table) and <https://opencode.ai/data/> (real usage ranking).
 
 ## What OpenCode Go is
 
@@ -29,14 +31,17 @@ Monthly caps and prices change often. Treat the table below as a starting point,
 Monthly caps worth knowing before choosing a role model:
 
 ```
-DeepSeek V4.1 Flash      $15      GLM-5.3-Flash        $60
+DeepSeek V4.1 Flash      $60*     GLM-5.3-Flash        $60
 DeepSeek V4 Flash        $30      GLM-5.3              $15
 DeepSeek V4 Pro          $15      Kimi K3              $15
-Qwen3.8 Flash            $30      Kimi K2.7 Code       $60
-Qwen3.8 Max              $15      MiMo V2.5 / Pro      $60 / $15
-Grok 4.6                 $15      MiniMax M3           $60
+DeepSeek V4 Flash Vis.   $15      Kimi K2.7 Code       $60
+Qwen3.8 Flash            $30      MiMo V2.5 / Pro      $60 / $15
+Qwen3.8 Max              $15      MiniMax M3           $60
 GPT 5.6 Luna             $15      Muse Spark 1.3 C.    $60
 ```
+
+\* DeepSeek V4.1 Flash runs a 4x cap promotion that ends 2026-09-20, then
+returns to $15. Re-check the table before you lean on that cap.
 
 DeepSeek prices double at peak hours: 01:00-04:00 and 06:00-10:00 UTC, Monday through Friday. All other hours and all weekends are off-peak. Run large jobs off-peak.
 
@@ -78,26 +83,47 @@ FROM model_cache, json_each(models)
 WHERE provider_id LIKE 'opencode-go%' AND value->>'name' LIKE '%4.1%';
 ```
 
+## Usage ranking: <https://opencode.ai/data/>
+
+The OpenCode team publishes real token volume per model. Treat it as a popularity proxy for quality — the most used models are usually the best ones, but a model can rank low from price alone.
+
+Top models, 2026-09-15 (tokens, weekly retention):
+
+```
+1  muse-spark-1.3-contributor   36T   87%
+2  deepseek-v4.1-flash          32T   pending
+3  deepseek-v4-flash            20T   68%
+4  mimo-v2.5                    8.9T  73%
+6  glm-5.3-flash                3.6T  69%
+8  deepseek-v4-flash-vision-exp 1.0T  70%
+9  deepseek-v4-pro              708B  62%
+```
+
+Author token share: DeepSeek 56.0%, Meta 28.9%, Xiaomi 7.4%, Zhipu 3.5%, NVIDIA 2.0%.
+
 ## Role picks: cheapest capable model per role
 
 ```text
-role      model                     in / out      ctx / max-out   vision  cap/mo
-default   deepseek-v4.1-flash       0.15 / 0.60   1.0M / 384K     yes     $15
-plan      deepseek-v4-pro           0.66 / 1.98   1.0M / 384K     no      $15
-slow      glm-5.3                   1.40 / 4.40   1.0M / 131K     no      $15
-task      glm-5.3-flash             0.075 / 0.25  1.0M / 131K     yes     $60
-smol      glm-5.3-flash             0.075 / 0.25  1.0M / 131K     yes     $60
-advisor   mimo-v2.5                 0.14 / 0.28   1.0M / 128K     yes     $60
-commit    mimo-v2.5                 0.14 / 0.28   1.0M / 128K     yes     $60
-vision    qwen3.8-flash             0.15 / 0.47   1.0M / 131K     yes     $30
+role      model                        in / out    ctx / max-out  vision  cap/mo
+default   deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
+task      deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
+plan      deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
+slow      deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
+smol      deepseek-v4-flash            0.15/0.60   1.0M / 384K    no      $30
+commit    deepseek-v4-flash            0.15/0.60   1.0M / 384K    no      $30
+vision    deepseek-v4-flash-vision-exp 0.15/0.60   1.0M / 384K    yes     $15
+advisor   muse-spark-1.3-contributor   0.10/0.20   1.0M / 131K    yes     $60
 ```
+
+Prices are off-peak, from the live registry. Caps are from the docs table.
 
 Why this shape:
 
-- `task`, `smol`, `advisor`, and `commit` run often, so they take the cheapest models that still do the job, and they sit on the two largest caps (GLM-5.3-Flash, MiMo V2.5).
-- The visible roles take the strongest model that stays cheap: DeepSeek V4.1 Flash for the driver seat, DeepSeek V4 Pro for planning, GLM-5.3 for deep sessions.
-- Four roles keep vision support, so paste-a-screenshot flows work without a manual model switch.
-- Never assign `muse-spark-1.2-contributor` or `muse-spark-1.3-contributor`: Meta trains on your prompts, and availability is region-limited.
+- DeepSeek V4.1 Flash drives every heavy role. It is the most used DeepSeek model, the cheapest capable one, and it carries vision.
+- The cheap roles split across two extra DeepSeek caps (`deepseek-v4-flash` at $30, `vision-exp` at $15), so one cap wall does not stop everything.
+- `advisor` uses Muse Spark 1.3 Contributor ($0.10/$0.20). It is the most used model on the ranking, and it gives a different family for a second opinion.
+- Muse Spark Contributor permits Meta to train on prompts, so keep it on `advisor` only and out of the `default` chain.
+- Six roles keep vision support, so paste-a-screenshot flows work without a manual model switch.
 - Leave `modelRoles.tiny` unset while `providers.tinyModel` runs a local model. The local model costs nothing.
 
 ## Fallback chains
@@ -107,7 +133,7 @@ Why this shape:
 Pick hops that own separate monthly caps, so a cap wall or an outage fails over instead of blocking the turn.
 
 ```bash
-omp config set retry.fallbackChains '{"default":["opencode-go/deepseek-v4-flash","opencode-go/glm-5.3-flash"],"slow":["opencode-go/qwen3.8-max","opencode-go/deepseek-v4-pro"]}'
+omp config set retry.fallbackChains '{"default":["opencode-go/deepseek-v4-flash","opencode-go/glm-5.3-flash"],"slow":["opencode-go/deepseek-v4-flash","opencode-go/deepseek-v4-pro"]}'
 omp config get retry.fallbackChains
 omp config get retry.fallbackRevertPolicy
 ```
@@ -127,7 +153,7 @@ omp config get retry.fallbackChains --json
 2. Apply to the running install without a rebuild. Records take one JSON value, and dotted record paths fail with "Unknown setting".
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4-pro","slow":"opencode-go/glm-5.3","task":"opencode-go/glm-5.3-flash"}'
+omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash","task":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4.1-flash","slow":"opencode-go/deepseek-v4.1-flash","smol":"opencode-go/deepseek-v4-flash","commit":"opencode-go/deepseek-v4-flash","vision":"opencode-go/deepseek-v4-flash-vision-exp","advisor":"opencode-go/muse-spark-1.3-contributor"}'
 ```
 
 3. Never commit `modules/features/omp/home/agent/config.yml`. Home Manager regenerates it wholesale from the settings through `home.activation.ompConfig`, and the live copy carries drift from `/settings` and migrations. Commit `default.nix` only.
