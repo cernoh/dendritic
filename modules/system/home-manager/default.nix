@@ -29,6 +29,7 @@
             nvf
             omp
             agent-browser
+            herdr-web
             programming
             fish
             nushell
