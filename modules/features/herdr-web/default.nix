@@ -25,6 +25,15 @@
 # Tailscale terminates TLS and gives the app an HTTPS origin. HTTPS is also
 # what unlocks PWA install and background notifications.
 #
+# The tailnet owner enables Serve once, in a browser. Until then the client
+# blocks and prints:
+#
+#   Serve is not enabled on your tailnet.
+#   To enable, visit: https://login.tailscale.com/f/serve?node=<node-id>
+#
+# The unit gives up after 45 seconds and retries once a minute, so it turns
+# active on its own after that step.
+#
 # Any authenticated reverse proxy works the same way. The option needs
 # `homeManagerModules.herdr-web` for `config.dendritic.userName`, because it
 # reads the bridge address from that service. The flake's HM wiring imports
@@ -183,6 +192,12 @@
 
         # `--bg` writes the mapping into tailscaled and returns, so a oneshot
         # unit fits. `off` removes only this port's mapping.
+        #
+        # The client blocks when the tailnet has not enabled Serve, and it
+        # prints the enable URL while it waits. `Type=oneshot` has no start
+        # timeout by default, so bound the wait explicitly. The unit then fails
+        # in about 45 seconds, and the restart policy retries it. Once the
+        # tailnet owner enables Serve, a retry applies the mapping.
         systemd.services.herdr-web-tailscale-serve = {
           description = "Publish the herdr-web bridge on the tailnet";
           wantedBy = [ "multi-user.target" ];
@@ -191,12 +206,16 @@
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
-            ExecStart = "${lib.getExe pkgs.tailscale} serve --bg --https=${toString httpsPort} http://${bridge.bind}:${toString bridge.port}";
+            ExecStart = "${lib.getExe pkgs.tailscale} serve --bg --yes --https=${toString httpsPort} http://${bridge.bind}:${toString bridge.port}";
             ExecStop = "${lib.getExe pkgs.tailscale} serve --https=${toString httpsPort} off";
+            # The client ignores SIGTERM while it waits, so follow with SIGKILL.
+            TimeoutStartSec = "45s";
+            TimeoutStopSec = "10s";
+            KillSignal = "SIGKILL";
             # tailscaled is started, not necessarily online, when this runs at
             # boot. Retry until the node can take a serve mapping.
             Restart = "on-failure";
-            RestartSec = 15;
+            RestartSec = 60;
           };
         };
       };
