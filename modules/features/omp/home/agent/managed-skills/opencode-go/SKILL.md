@@ -3,9 +3,10 @@ name: opencode-go
 description: "Work with OpenCode Go (opencode-go) models in omp: the doc fact sheet (models, ids, endpoints, plan limits, DeepSeek peak hours, privacy), omp provider wiring and live discovery, model id vs display name traps, the cheap per-role model picks, fallback chains, and how to write it all into the dendritic flake."
 ---
 
-Trawled from <https://opencode.ai/docs/go/> plus local verification on NIXPC, 2026-09-10.
-Role picks and prices re-checked 2026-09-15 against <https://opencode.ai/docs/go/#usage-limits>
-(the canonical pricing and cap table) and <https://opencode.ai/data/> (real usage ranking).
+Trawled from <https://opencode.ai/docs/go/> plus local verification on NIXPC, 2026-09-16.
+Model list, caps, and prices re-checked 2026-09-16 against <https://opencode.ai/docs/go/#usage-limits>
+(the canonical pricing and cap table), the live account registry, and
+<https://opencode.ai/data/> (real usage ranking, updated 2026-09-16).
 
 ## What OpenCode Go is
 
@@ -18,13 +19,47 @@ Role picks and prices re-checked 2026-09-15 against <https://opencode.ai/docs/go
 
 Base URL: `https://opencode.ai/zen/go/v1`. Selector format in client configs: `opencode-go/<model-id>`.
 
-| Endpoint suffix | Models |
-| --- | --- |
-| `/responses` | Grok 4.6, GPT 5.6 Luna, Muse Spark 1.3 and 1.2 Contributor |
-| `/chat/completions` | GLM-5.1/5.2/5.3/5.3-Flash, Kimi K3/K2.7 Code/K2.6, DeepSeek V4.1 Flash, DeepSeek V4 Pro, DeepSeek V4 Flash, DeepSeek V4 Flash Vision Exp, MiMo-V2.5, MiMo-V2.5-Pro, LongCat-2.0, Hy3, Hy4 preview |
-| `/messages` | MiniMax M3/M2.7/M2.5, Qwen3.6 Plus, Qwen3.7 Plus/Max, Qwen3.8 Flash/Max |
+| Model | Model id | Endpoint |
+| --- | --- | --- |
+| Grok 4.6 | `grok-4.6` | `/responses` |
+| GPT 5.6 Luna | `gpt-5.6-luna` | `/responses` |
+| Muse Spark 1.3 Contributor | `muse-spark-1.3-contributor` | `/responses` |
+| Muse Spark 1.2 Contributor | `muse-spark-1.2-contributor` | `/responses` |
+| GLM-5.3-Flash | `glm-5.3-flash` | `/chat/completions` |
+| GLM-5.3 | `glm-5.3` | `/chat/completions` |
+| GLM-5.2 | `glm-5.2` | `/chat/completions` |
+| GLM-5.1 | `glm-5.1` | `/chat/completions` |
+| Kimi K3 | `kimi-k3` | `/chat/completions` |
+| Kimi K2.7 Code | `kimi-k2.7-code` | `/chat/completions` |
+| Kimi K2.6 | `kimi-k2.6` | `/chat/completions` |
+| LongCat-2.0 | `longcat-2.0` | `/chat/completions` |
+| DeepSeek V4.1 Flash | `deepseek-v4.1-flash` | `/chat/completions` |
+| DeepSeek V4 Pro | `deepseek-v4-pro` | `/chat/completions` |
+| DeepSeek V4 Flash | `deepseek-v4-flash` | `/chat/completions` |
+| DeepSeek V4 Flash Vision Exp | `deepseek-v4-flash-vision-exp` | `/chat/completions` |
+| MiMo-V2.5 | `mimo-v2.5` | `/chat/completions` |
+| MiMo-V2.5-Pro | `mimo-v2.5-pro` | `/chat/completions` |
+| Hy4 preview | `hy4-preview` | `/chat/completions` |
+| Hy3 | `hy3` | `/chat/completions` |
+| MiniMax M3 | `minimax-m3` | `/messages` |
+| MiniMax M2.7 | `minimax-m2.7` | `/messages` |
+| MiniMax M2.5 | `minimax-m2.5` | `/messages` |
+| Qwen3.8 Max | `qwen3.8-max` | `/messages` |
+| Qwen3.8 Flash | `qwen3.8-flash` | `/messages` |
+| Qwen3.7 Max | `qwen3.7-max` | `/messages` |
+| Qwen3.7 Plus | `qwen3.7-plus` | `/messages` |
+| Qwen3.6 Plus | `qwen3.6-plus` | `/messages` |
+| Union Alpha Free | `union-alpha` | `/messages` |
 
 Model list metadata: `GET https://opencode.ai/zen/go/v1/models`.
+
+The account registry answers with more ids than the docs page. These ids have no
+docs row:
+
+- Legacy ids: `glm-5`, `grok-4.5`, `kimi-k2.5`, `qwen3.5-plus`.
+- Extra ids: `mimo-v2-omni`, `mimo-v2-pro`, `hy3-preview`.
+- `ox-alpha-free`, named "Ox Alpha Free (Unlimited)": $0, 1M context, vision. No docs row, so treat it as a test model.
+- Null-metadata stubs: `deepseek-flash`, `omen-alpha`. They carry no context, price, or thinking level. Never use them.
 
 Monthly caps and prices change often. Treat the table below as a starting point, and re-check the docs page or the live catalog before you commit to a role model.
 
@@ -32,20 +67,27 @@ Monthly caps worth knowing before choosing a role model:
 
 ```
 DeepSeek V4.1 Flash      $60*     GLM-5.3-Flash        $60
-DeepSeek V4 Flash        $30      GLM-5.3              $15
-DeepSeek V4 Pro          $15      Kimi K3              $15
-DeepSeek V4 Flash Vis.   $15      Kimi K2.7 Code       $60
-Qwen3.8 Flash            $30      MiMo V2.5 / Pro      $60 / $15
-Qwen3.8 Max              $15      MiniMax M3           $60
-GPT 5.6 Luna             $15      Muse Spark 1.3 C.    $60
+DeepSeek V4 Flash        $30      GLM-5.2 / GLM-5.1    $60 each
+DeepSeek V4 Pro          $15      GLM-5.3              $15
+DeepSeek V4 Flash Vis.   $15      Kimi K2.7 Code / 2.6 $60 each
+GPT 5.6 Luna             $15      Kimi K3              $15
+Muse Spark 1.3 / 1.2 C.  $60      MiMo V2.5            $60
+Qwen3.8 Flash            $30      MiMo V2.5 Pro        $15
+Qwen3.7 Max              $30      MiniMax M3/M2.7/M2.5 $60 each
+Qwen3.6 / Qwen3.7 Plus   $60      LongCat-2.0          $60
+Hy4 preview              $30      Hy3                  $60
+Grok 4.6                 $15      Union Alpha Free     unlimited+
 ```
 
 \* DeepSeek V4.1 Flash runs a 4x cap promotion that ends 2026-09-20, then
 returns to $15. Re-check the table before you lean on that cap.
 
+\+ Union Alpha Free is free and unlimited for a limited time. The docs give no
+end date, so keep it off a role that must work next month.
+
 DeepSeek prices double at peak hours: 01:00-04:00 and 06:00-10:00 UTC, Monday through Friday. All other hours and all weekends are off-peak. Run large jobs off-peak.
 
-Privacy: DeepSeek traffic is zero-data-retention, and the agreement renews monthly, valid through 2026-09-30. Muse Spark Contributor permits Meta to train on your prompts. Read the page before using either on private code.
+Privacy: DeepSeek traffic is zero-data-retention, and the agreement renews monthly, valid through 2026-09-30. Muse Spark Contributor permits Meta to train on your prompts. Grok 4.6 and GPT 5.6 Luna hold abuse-monitoring logs for 30 days. Every other model holds data for 0 days. Read the page before you use Muse Spark on private code.
 
 Client requirements from the page: send ordinary coding-agent traffic, identify with your own user agent, and send a stable per-conversation id in the `x-opencode-session` header for routing and prompt caching.
 
@@ -87,19 +129,28 @@ WHERE provider_id LIKE 'opencode-go%' AND value->>'name' LIKE '%4.1%';
 
 The OpenCode team publishes real token volume per model. Treat it as a popularity proxy for quality — the most used models are usually the best ones, but a model can rank low from price alone.
 
-Top models, 2026-09-15 (tokens, weekly retention):
+Top models, 2026-09-16 (tokens, weekly retention):
 
 ```
-1  muse-spark-1.3-contributor   36T   87%
-2  deepseek-v4.1-flash          32T   pending
-3  deepseek-v4-flash            20T   68%
-4  mimo-v2.5                    8.9T  73%
-6  glm-5.3-flash                3.6T  69%
-8  deepseek-v4-flash-vision-exp 1.0T  70%
-9  deepseek-v4-pro              708B  62%
+1  deepseek-v4.1-flash          34T   new
+2  muse-spark-1.3-contributor   32T   87%
+3  deepseek-v4-flash            17T   68%
+4  mimo-v2.5                    7.6T  73%
+5  glm-5.3-flash                3.2T  69%
+6  muse-spark-1.2-contributor   3.1T  81%
+7  nemotron-3-ultra             2.0T   no Go entry
+8  deepseek-v4-flash-vision-exp 928B  70%
+9  deepseek-v4-pro              620B  62%
+10 gpt-5.6-luna                 474B
+13 omen-alpha                   369B  82%   null metadata on Go
+14 qwen3.8-flash                298B  72%
 ```
 
-Author token share: DeepSeek 56.0%, Meta 28.9%, Xiaomi 7.4%, Zhipu 3.5%, NVIDIA 2.0%.
+Author token share: DeepSeek 56.3%, Meta 29.1%, Xiaomi 5.6%, NVIDIA 3.7%, Zhipu 3.2%.
+
+The ranking spans every provider, so a top row can be absent from Go.
+`nemotron-3-ultra`, `nemotron-3.5-lightning`, and `ling-3.0-flash-fin` have no
+Go id.
 
 ## Role picks: cheapest capable model per role
 
@@ -119,9 +170,9 @@ Prices are off-peak, from the live registry. Caps are from the docs table.
 
 Why this shape:
 
-- DeepSeek V4.1 Flash drives every heavy role. It is the most used DeepSeek model, the cheapest capable one, and it carries vision.
+- DeepSeek V4.1 Flash drives every heavy role. It is the most used model on the 2026-09-16 ranking, the cheapest capable one, and it carries vision.
 - The cheap roles split across two extra DeepSeek caps (`deepseek-v4-flash` at $30, `vision-exp` at $15), so one cap wall does not stop everything.
-- `advisor` uses Muse Spark 1.3 Contributor ($0.10/$0.20). It is the most used model on the ranking, and it gives a different family for a second opinion.
+- `advisor` uses Muse Spark 1.3 Contributor ($0.10/$0.20). It holds rank 2 on the ranking, and it gives a different family for a second opinion.
 - Muse Spark Contributor permits Meta to train on prompts, so keep it on `advisor` only and out of the `default` chain.
 - Six roles keep vision support, so paste-a-screenshot flows work without a manual model switch.
 - Leave `modelRoles.tiny` unset while `providers.tinyModel` runs a local model. The local model costs nothing.
