@@ -7,7 +7,7 @@ NixOS modules shared by every desktop host (or available to any host). Composed 
 Each subdirectory is one system concern exporting `flake.nixosModules.<name>`:
 
 - `core/` — base system bundle, `nix-settings.nix` (caches, keep in sync with `flake.nix:nixConfig`), `boot.nix`, `hardware.nix`, `locale.nix`, `user.nix`; defines `flake.lib.hardwareFromMachine`.
-- `home-manager/` — wires `inputs.home-manager` into NixOS, sets `useGlobalPkgs`/`useUserPackages`/`backupFileExtension`, enables the default HM feature set (`nvf`, `omp`, `agent-browser`, `programming`, `fish`, `nushell`, `opencode`, `waylandBase`) for `config.dendritic.userName`.
+- `home-manager/` — wires `inputs.home-manager` into NixOS, sets `useGlobalPkgs`/`useUserPackages`/`backupFileExtension`, enables the default HM feature set (`nvf`, `omp`, `agent-browser`, `herdr-web`, `programming`, `fish`, `nushell`, `opencode`, `waylandBase`, `stylix`) for `config.dendritic.userName`. Keep this list in step with the `imports` there.
 - `network/`, `audio/`, `drivers/` (`asahi.nix`, `nvidia.nix`), `flatpak/`, `portals/`, `tailscale/`, `time-sync/`, `stability/`, `obs/`, `home-manager/` — one concern each.
 
 ## Local Contracts

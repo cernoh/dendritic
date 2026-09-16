@@ -15,13 +15,20 @@
 # restart.
 #
 # SECURITY: the bridge has no authentication and grants terminal control of
-# every pane. It therefore binds to loopback only. Front it with a proxy that
-# terminates TLS before a phone can reach it:
+# every pane. It therefore binds to loopback only. A phone cannot reach
+# loopback, so publish the bridge on the tailnet with the `tailscaleServe`
+# option of the NixOS module. It runs the upstream command:
 #
 #   tailscale serve --bg --https=17930 http://127.0.0.1:7930
 #   # then open https://<machine>.<tailnet>.ts.net:17930
 #
-# HTTPS is also what unlocks PWA install and background notifications.
+# Tailscale terminates TLS and gives the app an HTTPS origin. HTTPS is also
+# what unlocks PWA install and background notifications.
+#
+# Any authenticated reverse proxy works the same way. The option needs
+# `homeManagerModules.herdr-web` for `config.dendritic.userName`, because it
+# reads the bridge address from that service. The flake's HM wiring imports
+# it.
 #
 # The service PATH carries every binary the bridge shells out to:
 #   - `herdr` — spawns `herdr server` when none runs. It also keeps a hidden
@@ -120,4 +127,65 @@
       };
     }
   );
+
+  # ---------------------------------------------------------------------------
+  # NixOS module — publish the loopback bridge on the tailnet.
+  # ---------------------------------------------------------------------------
+  # `tailscale serve` terminates TLS on the tailnet and proxies to the local
+  # address, so the phone gets an HTTPS origin and the bridge keeps its
+  # loopback bind. Read the address back from the home-manager service: the
+  # proxy target can then not drift from the port the bridge listens on.
+  flake.nixosModules.herdr-web =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.services.herdr-web;
+      bridge = config.home-manager.users.${config.dendritic.userName}.services.herdr-web;
+      httpsPort = cfg.tailscaleServe.httpsPort;
+    in
+    {
+      options.services.herdr-web.tailscaleServe = {
+        enable = lib.mkEnableOption "publishing the herdr-web bridge on the tailnet";
+
+        httpsPort = lib.mkOption {
+          type = lib.types.port;
+          default = 17930;
+          description = "Tailnet HTTPS port that reaches the bridge.";
+        };
+      };
+
+      config = lib.mkIf cfg.tailscaleServe.enable {
+        assertions = [
+          {
+            assertion = config.services.tailscale.enable;
+            message = ''
+              services.herdr-web.tailscaleServe needs services.tailscale.
+            '';
+          }
+        ];
+
+        # `--bg` writes the mapping into tailscaled and returns, so a oneshot
+        # unit fits. `off` removes only this port's mapping.
+        systemd.services.herdr-web-tailscale-serve = {
+          description = "Publish the herdr-web bridge on the tailnet";
+          wantedBy = [ "multi-user.target" ];
+          wants = [ "tailscaled.service" ];
+          after = [ "tailscaled.service" ];
+          serviceConfig = {
+            Type = "oneshot";
+            RemainAfterExit = true;
+            ExecStart = "${lib.getExe pkgs.tailscale} serve --bg --https=${toString httpsPort} http://${bridge.bind}:${toString bridge.port}";
+            ExecStop = "${lib.getExe pkgs.tailscale} serve --https=${toString httpsPort} off";
+            # tailscaled is started, not necessarily online, when this runs at
+            # boot. Retry until the node can take a serve mapping.
+            Restart = "on-failure";
+            RestartSec = 15;
+          };
+        };
+      };
+    };
 }
