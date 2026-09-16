@@ -135,6 +135,10 @@
   # address, so the phone gets an HTTPS origin and the bridge keeps its
   # loopback bind. Read the address back from the home-manager service: the
   # proxy target can then not drift from the port the bridge listens on.
+  #
+  # That read makes `homeManagerModules.herdr-web` a requirement for the
+  # primary user. Nix reports an unknown option when it is absent, so the read
+  # is guarded and the message names the module.
   flake.nixosModules.herdr-web =
     {
       config,
@@ -144,8 +148,17 @@
     }:
     let
       cfg = config.services.herdr-web;
-      bridge = config.home-manager.users.${config.dendritic.userName}.services.herdr-web;
       httpsPort = cfg.tailscaleServe.httpsPort;
+
+      hmServices = config.home-manager.users.${config.dendritic.userName}.services;
+
+      bridge =
+        if hmServices ? herdr-web then
+          hmServices.herdr-web
+        else
+          throw ''
+            services.herdr-web.tailscaleServe reads the bridge address from the home-manager service, but ${config.dendritic.userName} does not import homeManagerModules.herdr-web.
+          '';
     in
     {
       options.services.herdr-web.tailscaleServe = {
