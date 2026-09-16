@@ -25,6 +25,11 @@
       # tailscaled (services.tailscale). ASAHI imports the same module; the
       # daemon needs a one-time `sudo tailscale up` per machine.
       tailscale
+      # Build host half of the ASAHI link (issue #209): a `remotebuild` SSH
+      # account that only ASAHI's root can use, and that account in
+      # trusted-users. ASAHI imports the matching client module. The link
+      # addresses NIXPC by its tailnet name, so both halves need tailscale.
+      remoteBuilder
       # The herdr-web bridge runs from the home-manager module; this module
       # publishes it on the tailnet, so the phone reaches it over HTTPS.
       # ASAHI does not import it: no agent runs there.

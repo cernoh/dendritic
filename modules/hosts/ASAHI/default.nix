@@ -26,6 +26,12 @@
       watt
       timeSync
       tailscale
+      # Client half of the NIXPC build link (issue #209): the Mac schedules
+      # its aarch64-linux derivations on NIXPC instead of its own single
+      # build slot. The builder half is imported by hosts/NIXPC/default.nix.
+      # One-time setup: the private key at /root/.ssh/remotebuild, see
+      # modules/system/distributed-builds/_link.nix.
+      distributedBuilds
       flatpak
       obs
       portals
