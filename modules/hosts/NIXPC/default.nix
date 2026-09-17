@@ -37,9 +37,11 @@
       ({ services.herdr-web.tailscaleServe.enable = true; })
       # The Docker daemon comes in through attrs/desktop -> act -> docker;
       # importing `docker` here as well would define the module twice and
-      # duplicate the docker extraGroup entry (mcpContainers below only
-      # needs the daemon to exist).
+      # duplicate the docker extraGroup entry (mcpContainers and paseo below
+      # only need the daemon to exist).
       mcpContainers
+      # Paseo daemon + bundled web UI in a container, on the tailnet.
+      paseo
     ];
   };
 }
