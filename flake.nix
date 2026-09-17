@@ -77,6 +77,14 @@
       url = "github:allecsc/Stremio-Kai/37e6273a7d18ff0a3745c59265aebd99bb2509a6";
       flake = false;
     };
+    # Pinned rev, flake = false: consumed as a plain source tree by the Mirai
+    # Miracast package in modules/features/noctalia/_mirai.pkg.nix. The input is
+    # not followed by nixpkgs because it carries none — only the source tree
+    # crosses the boundary. Upstream publishes no tags, so the rev is pinned.
+    mirai = {
+      url = "github:Leriart/Mirai/1e7148b392107eec748b0213ef65c23f62fdfc1e";
+      flake = false;
+    };
     mangowm = {
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
