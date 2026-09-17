@@ -49,7 +49,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `niri` | Niri compositor + session, live-editable `config.kdl` |
 | `nautilus` | Nautilus file manager (replaces Thunar) plus gvfs, and the default handler for `inode/directory`. Enabled by the `desktop` bundle |
 | `nixpc-desktop` | NIXPC desktop application suite (browsers, media, utilities) |
-| `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host. Includes the `cernoh/terminal` panel plugin and its `ghostty-term` helper (libghostty-vt) |
+| `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host. Includes the `cernoh/terminal` panel plugin and its `ghostty-term` helper (libghostty-vt), and the `cernoh/mirai` Miracast panel with the `mirai` CLI it drives |
 | `noctalia-greeter` | greetd login UI matching Noctalia; each host picks `--session <compositor>` inline |
 | `nushell` | nushell as secondary interactive shell, incl. `nixpc-rebuild` / `asahi-rebuild` helpers |
 | `nvf` | Neovim via [nvf](https://github.com/notashelf/nvf) (languages, keymaps, nixd config) |

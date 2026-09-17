@@ -84,6 +84,7 @@
       start = [
         "launcher"
         "cernoh/terminal:bar"
+        "cernoh/mirai:bar"
         "wallpaper"
         "workspaces"
         "active_window"
@@ -485,6 +486,7 @@
     enabled = [
       "noctalia/bitwarden"
       "cernoh/terminal"
+      "cernoh/mirai"
     ];
     source = [
       {

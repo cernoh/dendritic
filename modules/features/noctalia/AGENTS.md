@@ -1,13 +1,15 @@
 # noctalia — Noctalia desktop shell feature
 
 ## Purpose
-Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.nixosModules.noctalia` (system install + `recommendedServices`) and `flake.homeManagerModules.noctalia` (declarative settings into `~/.config/noctalia/`). Owns the `cernoh/terminal` plugin and the `ghostty-term` helper it needs. Settings are per-host values.
+Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.nixosModules.noctalia` (system install + `recommendedServices`) and `flake.homeManagerModules.noctalia` (declarative settings into `~/.config/noctalia/`). Owns the `cernoh/terminal` plugin and the `ghostty-term` helper it needs, and the `cernoh/mirai` plugin with the `mirai` Miracast CLI it drives. Settings are per-host values.
 
 ## Ownership
-- `default.nix` — NixOS/HM modules, the `ghostty-term` package, the out-of-store plugin symlink, and the system-side brightness dependencies.
+- `default.nix` — NixOS/HM modules, the `ghostty-term` and `mirai` packages, the out-of-store plugin symlinks, and the system-side brightness dependencies.
 - `_ghostty-term.pkg.nix` — derivation for the helper (single C translation unit against `pkgs.libghostty-vt`).
 - `ghostty-term.c` — PTY and libghostty-vt helper; owns the frame protocol.
+- `_mirai.pkg.nix` — derivation for the Mirai daemon and CLI, built from the `mirai` source input.
 - `plugins/terminal/` — the `cernoh/terminal` plugin: `plugin.toml`, `service.luau`, `panel.luau`, `bar.luau`, `shortcut.luau`.
+- `plugins/mirai/` — the `cernoh/mirai` plugin: `plugin.toml`, `service.luau` (CLI poll + actions), `panel.luau` (the Bluetooth-style panel), `bar.luau`, `shortcut.luau`, `translations/en.json`.
 - `plugins/auto-brightness/` — the `cernoh/auto-brightness` plugin: `plugin.toml`, `service.luau` (ambient-light display + keyboard backlight from the ALS IIO sensor; ASAHI-only).
 - `noctalia-full-config.toml` — reference dump of the ASAHI live config (data, not a source of truth).
 
@@ -29,19 +31,31 @@ Noctalia v5 desktop shell: bars, panels, launcher, lock screen. Exposes `flake.n
 - **Entries exchange plain values only.** `noctalia.state` copies values and forbids functions, so the panel posts work to the `request` key and bumps `request_rev`. The counter is required: two identical requests in a row must both run.
 - **Render within the panel API's limits.** There is no canvas, no grid, and no per-cell background, and `ui.label` has no per-span styling. The panel draws one `ui.row` per terminal line and one `ui.label` per colour run, in a gap-free row, so a monospace font keeps the columns aligned. Backgrounds, italics, and underlines are not transmitted because nothing can draw them.
 - **Only declared chords arrive.** `plugin.toml` `capture_keys` lists what the panel forwards; Noctalia delivers only those, sends them to `onKey(chord, pressed)`, and never sends a key it did not list. `escape` is reserved for the panel-close action and cannot be captured, and super chords belong to the compositor. A focused `ui.input` receives printable keys first, so typing goes through the input and `capture_keys` carries arrows, tab, and control chords.
-- **The plugin is symlinked out-of-store** to `modules/features/noctalia/plugins/terminal` in this checkout, so plugin edits are live without a rebuild. The path is hardcoded to `~/.config/dendritic`, so a worktree copy is not live.
+- **The plugin is symlinked out-of-store** to `modules/features/noctalia/plugins/terminal` in this checkout, so plugin edits are live without a rebuild. The path is hardcoded to `~/.config/dendritic`, so a worktree copy is not live. `plugins/mirai` is symlinked the same way.
+- **`mirai` expects its helpers under `/usr`.** `mirai/config.py` compiles in `/usr/bin/miracle-wifid`, `/usr/bin/miracle-sinkctl`, and `/usr/lib/gnome-network-displays-stream`, and the daemon probes `iw`, `ip`, `avahi-browse`, `wlr-randr`, `gst-launch-1.0`, `gst-inspect-1.0`, and `mpv` by bare name. `_mirai.pkg.nix` sets those paths and the PATH for the CLI, so the wrapper carries its closure wherever it is invoked, including through `sudo`. `dbus-python` belongs on the wrapper's PYTHONPATH; `$out/lib` alone is not enough.
+- **The Mirai plugin drives the CLI, never the socket.** Mirai serves newline-delimited JSON on a Unix socket, and the Luau sandbox has no socket client, so `service.luau` runs `mirai status` and the action commands and publishes the parsed answer on the `snapshot` state key. The `socket` setting only overrides `MIRAI_SOCK`.
+- **Sink mode needs a root daemon.** `miracle-wifid` needs Wi-Fi P2P, and Mirai refuses `sink-start` from a non-root daemon with a message naming `sudo`. The panel starts an unprivileged daemon (casting works), and offers a root daemon through `sudo` in a terminal, passing `WAYLAND_DISPLAY`, `XDG_RUNTIME_DIR`, and the other session variables the sink player needs. A refused `sink-start` sets the `needs_root` state key, which renders the hint row and the root button.
+- **`mirai quit` never answers.** The daemon closes the socket before it replies, so the CLI raises and the poll is the only confirmation of a stop. The service waits for a poll that reports the daemon down instead of reading the CLI answer, which keeps a Python traceback off the panel.
+- **The panel copies the Bluetooth tab of the control center.** Cards follow `applySectionCardStyle`: fill `surface_variant` at the control-center card opacity (`0.92` for `transparency_mode = soft` on an opaque bar), outline border, radius 12, padding 12, gap 8. Rows follow `BluetoothDeviceRow`: a `surface` row with radius 6, a kind glyph, the name (bold while active), metric pills, then the actions. Every glyph name must exist in the shell's `assets/fonts/tabler.json`; an unknown name logs `missing glyph` and draws nothing (`monitor` and `close` are not in that set).
 
 ## Work Guidance
 - Change the frame or command protocol: edit `ghostty-term.c` and `service.luau` together, and update the two contract lists above.
 - Add a key the panel may forward: add a row to `KEY_TABLE` in `ghostty-term.c`, then add the same chord to `capture_keys` in `plugin.toml`. Use a chord name Noctalia documents as valid; an unknown name risks the manifest.
 - The panel reads frames; it must not talk to the helper. New work goes through the service's request channel.
-- Keep `plugin.toml` `plugin_api` at the lowest level that covers the features in use. The terminal plugin needs 21.
+- Keep `plugin.toml` `plugin_api` at the lowest level that covers the features in use. The terminal plugin needs 21. The Mirai plugin needs 24 (the argument-array form of `runAsync`, which keeps setting values out of a shell).
+- Pick glyph and action glyph names from the shell's `assets/fonts/tabler.json` in `noctalia-dev/noctalia`; the shell logs `missing glyph` and draws nothing for a name outside that set.
+- Add a Mirai control: post a new `kind` from `panel.luau`, run the matching `mirai` command in `service.luau`, and add its translation keys to `translations/en.json`.
 
 ## Verification
 - `nix-instantiate --parse modules/features/noctalia/default.nix`
 - `nix-instantiate --parse modules/features/noctalia/_ghostty-term.pkg.nix`
+- `nix-instantiate --parse modules/features/noctalia/_mirai.pkg.nix`
 - `nix build .#ghostty-term` — builds the helper with `-Werror`.
-- `nix eval --impure .#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.packages` — the helper reaches the host.
+- `nix build .#mirai` — builds the Mirai CLI. The command then answers: `mirai status` prints the daemon JSON, `mirai sink-start` on an unprivileged daemon returns the root error, and `mirai source-scan --timeout 5` returns `{"ok":true,"scanning":true}`.
+- `nix eval --impure .#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.packages` — the helper and the CLI reach the host.
+- Plugin checks, offline: `nix/store/<noctalia>/bin/noctalia plugins lint modules/features/noctalia/plugins/<name>` cross-checks the manifest against the `getConfig` calls, and `nix shell nixpkgs#luau --command luau-analyze modules/features/noctalia/plugins/<name>/*.luau` parses and type-checks the scripts. Only `Unknown global` reports for the host namespaces (`noctalia`, `ui`, `panel`, `barWidget`, `shortcut`) and `FunctionUnused` for the host-called globals are expected.
+- Plugin behaviour, offline: run one entry script against a stub host and assert on the state it publishes and the trees it renders. The drivers used for the Mirai plugin kept a stub for `noctalia.*`, `ui.*`, `panel`, `barWidget`, and `shortcut`, answered `runAsync` from a fixture queue, and checked each rendered row, the command behind each control, and the poll and timeout paths.
+- Plugin live: register the plugin directory as a path source (`noctalia msg plugins source add <name> path <dir>`), enable it, and open the panel with `noctalia msg panel-toggle cernoh/<plugin>:panel`. The panel opens on the focused output, so read `mmsg get all-layers` for the `noctalia-attached-panel` entry to learn which output to capture. Hot reload does not always pick up an edited file; `plugins disable` then `enable` forces it. Screenshot with `grim -o <connector>` and read the image.
 - Brightness wiring: `nix eval --impure .#nixosConfigurations.<HOST>.config.hardware.i2c.enable` returns true, and `nix eval --impure .#nixosConfigurations.<HOST>.config.boot.kernelModules` lists `i2c-dev`.
 - Brightness config: `nix build --no-link --impure --expr 'let f = builtins.getFlake (toString ./.); in f.nixosConfigurations.NIXPC.config.home-manager.users.davr.xdg.configFile."noctalia/config.toml".source'` — the build runs `noctalia config validate`, so a bad `brightness` key fails here.
 - Live brightness on the host: `ddcutil detect` lists the monitors, `noctalia msg brightness-set <connector> 60` changes one, and the Control Center Monitor tab shows a slider per monitor.
