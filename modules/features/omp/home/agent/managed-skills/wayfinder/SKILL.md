@@ -119,6 +119,7 @@ gh label create wayfinder:task      --description "Wayfinder task ticket"      -
 - **Frontier query**: `~/.omp/agent/scripts/wayfinder-frontier.sh [<owner>/<repo>]` prints the open, labeled, unblocked, unclaimed tickets, map excluded. `issue_dependencies_summary.blocked_by` counts **open** blockers only, so it is the live gate. Order is the map's sub-issue order where sub-issues are wired, otherwise creation order.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Read the map**: `gh issue view <map> --json body,labels`, and `gh issue list --state all --label wayfinder:grilling` to find the tickets.
+- **See the map**: call the `wayfinder_view` tool. It renders the whole map as one live HTML page: the solved count, the remaining count, a progress bar, and every ticket under takeable, blocked, claimed, or solved. The page refreshes itself in the browser, so call the tool once after charting and again after each resolution.
 - **Resolve**: `gh issue comment <n> --body-file <record.md>`, then `gh issue close <n>`, then append the one-line pointer to the map's Decisions-so-far.
 
 After wiring a batch of tickets, wait a few seconds and run the frontier query. A fresh blocking edge needs a moment to appear: measured on 2026-09-17, `issue_dependencies_summary` took 8 s to report it. Then check that the query names every ticket you mean to be takeable, and no others.
@@ -158,11 +159,17 @@ User invokes with a map (URL or number). A ticket is **optional**: without one, 
 1. Load the **map**: the low-res view, not every ticket body.
 2. Choose the ticket. If the user named one, use it. Otherwise take the first frontier ticket in order. **Claim it**: assign it to yourself before any work.
 3. Resolve it. **Zoom as needed**: fetch the full body of any related or closed ticket on demand; run whichever skills the `## Notes` block names. If in doubt, run `skill://grill-me-html` and `skill://domain-modeling` together.
-4. Record the resolution: post the answer as a **resolution comment**, **close** the issue, and **append a context pointer** to the map's Decisions-so-far.
+4. Record the resolution: post the answer as a **resolution comment**, **close** the issue, and **append a context pointer** to the map's Decisions-so-far. Refresh the view with `wayfinder_view`.
 5. Add newly-surfaced tickets (create-then-wire); graduate any fog the answer has made specifiable, clearing each graduated patch from **Not yet specified** so it lives only as its new ticket. If the answer reveals that a ticket (this one or another) sits beyond the destination, **rule it out of scope** rather than resolving it on the route. If the decision invalidates other parts of the map, update or delete those tickets.
 
 The user may run unblocked tickets in parallel, so expect other sessions to be editing the tracker concurrently.
 
 ## Handing off
 
-A cleared map is not a build plan: its tickets are closed decision tickets. Hand the map to `skill://to-spec`, which collapses the linked decisions into one spec.
+A cleared map is not a build plan: its tickets are closed decision tickets. Hand the map down the chain, one skill at a time:
+
+1. `skill://to-spec` collapses the linked decisions into one spec issue.
+2. `skill://to-tickets` slices that spec into tracer-bullet issues with native blocking edges.
+3. `skill://implement` builds one ticket, checks it against its acceptance criteria, and closes it.
+
+Do not run the map straight into `skill://implement`: that skips the collapse and throws the linked detail away. Go straight to implementation only when the effort turned out genuinely small.

@@ -7,5 +7,6 @@
   1. The tracker is GitHub Issues. The `## GitHub operations` section holds the commands. Upstream defers to a tracker document written by `setup-matt-pocock-skills`, which this flake does not carry.
   2. The ticket types name the local skills: `skill://research`, `skill://prototype`, `skill://grill-me-html`, and `skill://domain-modeling`.
   3. `## The grills run as a form` is new. Each HITL grill runs through the `grill_form` tool of `skill://grill-me-html`, and the record renders with `render_html`.
-  4. `## Handing off` is new. A cleared map hands to `skill://to-spec`.
+  4. `## Handing off` is new. A cleared map hands to `skill://to-spec`, then `skill://to-tickets`, then `skill://implement`.
   5. The frontier query calls `~/.omp/agent/scripts/wayfinder-frontier.sh`.
+  6. The `wayfinder_view` tool is new, and the GitHub operations list it: it serves the whole map as one live HTML page with the solved and remaining counts.
