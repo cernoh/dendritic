@@ -1,11 +1,11 @@
 ---
 name: omp-live-session-rpc-testing
-description: "Prove an omp extension, custom tool, or interactive bridge in a live session over omp --mode rpc: the JSONL harness, waiting for idle instead of guessing, the essential-vs-discoverable tool trap, the grill_form round endpoints, verifying a hidden skill's command, and the failure modes that cost real debug cycles"
+description: "Prove an omp extension, custom tool, or interactive bridge in a live session over omp --mode rpc: the JSONL harness, waiting for idle, the grill_form round endpoints, serving a page from the session and inspecting it with headless chromium (dump-dom, virtual time, an observable poll counter), and the failure modes that cost real debug cycles"
 ---
 
 # Proving an omp extension in a live session
 
-A `omp -p` run exits after one turn, so it cannot prove anything that needs a second turn: an injected message, a queued answer, an HTTP bridge. Drive a real session over RPC instead. Verified 2026-09-15 while building `render_html`, `grill_form`, and `grill_finish` in `cernoh/dendritic`.
+A `omp -p` run exits after one turn, so it cannot prove anything that needs a second turn: an injected message, a queued answer, an HTTP bridge. Drive a real session over RPC instead. Verified 2026-09-15 while building `render_html`, `grill_form`, and `grill_finish` in `cernoh/dendritic`, and 2026-09-17 while adding the `wayfinder_view` tool.
 
 ## The harness
 
@@ -53,13 +53,34 @@ Verified 2026-09-17 driving `skill://wayfinder` end to end in `cernoh/dendritic`
 - The tool result text carries the page URL and `Environment: <dir>` (a `<tmpdir>/omp-html-env-*` folder). Match `Environment: (/[^\s]+)`; the model also echoes that phrase in its prose, so an unanchored `(\S+)` match grabs a `<dir>` placeholder and the round file lookup fails.
 - The question ids live in `<env>/data/round-<n>.json`. POST `{"answers":{"<question-id>":"..."}}` to `http://127.0.0.1:<port>/g/<token>/round/<n>/answers` (the base is the URL minus `/round/<n>`). A 200 with `{"ok":true,"answers":N}` means every answer reached `pi.sendUserMessage`.
 - Watch for your own marker string in the frames: the injected user message starts the next turn, which is the proof the loop continues.
-- To keep a browser out of it, give the child a `PATH` whose first entry holds a no-op `xdg-open`; `lib/html.ts` spawns `xdg-open` by name, so `$BROWSER` is only reachable through xdg-utils itself.
+- To keep a browser out of it, give the child a `PATH` whose first entry holds a no-op `xdg-open`; `lib/html.ts` spawns `xdg-open` by name, so `$BROWSER` is only reachable through xdg-utils itself. A tool that takes an `open: false` argument is cleaner still: pass it.
+
+## Inspecting a page the session serves
+
+The bridge dies with the session, so the session must stay alive while you look at the page.
+
+- Hold the harness open: have the driver write the URL to a file (`/tmp/probe-url.txt`), print it, then sleep. In this harness an async/backgrounded bash job survived; a `setsid nohup … &` subshell inside the tool call produced empty logs and never wrote its file. Poll for the URL file from a second call.
+- Snapshot and measure with headless chromium, not the MCP browser:
+
+```bash
+nix shell nixpkgs#chromium -c chromium --headless=new --no-sandbox --disable-gpu \
+  --hide-scrollbars --virtual-time-budget=14000 --window-size=1280,1700 \
+  --screenshot=/tmp/page.png "<url>"
+nix shell nixpkgs#chromium -c chromium --headless=new --no-sandbox \
+  --virtual-time-budget=14000 --dump-dom "<url>" > /tmp/page.html
+```
+
+- `--virtual-time-budget` fast-forwards timers, so a 5 s poll loop runs several times inside one shot. `--dump-dom` therefore shows the page after its script ran, which `curl` cannot.
+- The MCP `agent_browser_open` may report the right title and then hand `about:blank` to the next call: the daemon restarted the browser, the reported `targetId` changed, and a named `session` did not preserve it. The chromium CLI carries no such state; prefer it, and use the MCP tools only for interaction.
+- **Make the refresh observable.** A page that stamps `humanDate()` shows the same minute before and after a poll, so it cannot prove the poll ran. Have the script count its own refreshes (`el.dataset.polls = String(Number(el.dataset.polls || "0") + 1)`) and read `data-polls` out of the `--dump-dom` output. Measured 2026-09-17: `data-polls="3"` in 14 s of virtual time.
+- Grep the dump for structural invariants, not just text: a repaint that writes a container's own markup into that container nests it, so count the container tag and the duplicate id (`<main class="wf" id="wf-live">` appearing once, not twice).
+- A short page body is not proof of correctness. Assert the numbers against an independent source (`gh issue list` versus the served JSON), then read the screenshot with a vision model for wrapping, clipping, and overlap. Trust the dump for structure and the vision pass only for legibility.
 
 ## Traps that cost real cycles
 
 - **Discoverable ≠ callable.** An extension tool registered without `loadMode` is treated as discoverable, and the model reaches it through the `xd://<tool>` device bridge (`tool_execution_start` shows `toolName: "write"`, `path: "xd://grill_finish"`). It works, but it is indirect. Set `loadMode: "essential"` on any tool the model must call reliably.
 - **A hidden skill still registers a command.** With `disable-model-invocation: true` the skill is absent from the model's prompt list, so asking a fresh session to list skills proves nothing. Prove it with `{"type":"get_available_commands"}` and look for `skill:<name>`; `{"type":"get_state"}` and `data.dumpTools` lists the loaded tools.
-- **A installed skill is still readable by URI.** `omp read skill://<name>` answering `Unknown skill` says nothing about discovery, but a fresh `-p` session that reads `skill://<name>` and reports the first line does prove the skill resolved.
+- **An installed skill is still readable by URI.** `omp read skill://<name>` answering `Unknown skill` says nothing about discovery, but a fresh `-p` session that reads `skill://<name>` and reports the first line does prove the skill resolved.
 - **`pi.sendUserMessage` works from an HTTP callback.** The extension factory closes over `pi`, and runtime actions are legal after load, so a bridge handler can inject answers into a session that is idle. Omit `deliverAs` to start a turn; it queues a steer while the session streams.
 - **A thrown error inside an HTTP handler is contained** by the request try/catch and surfaces as HTTP 500 plus a JSON error body. A 500 on a route you think is wired is a missing import or a typo in a helper name, not a routing bug.
 - **Unref the server.** `server.unref()` plus a `session_shutdown` close keeps a `-p` run from hanging on the listener.

@@ -1,6 +1,6 @@
 ---
 name: ste-lint-measurement-recipe
-description: "Measure and clean up STE prose with ~/.omp/agent/scripts/ste-lint.py: the stdin-vs-file invocation rule, running it without a system python via nix, and the false positives and markdown gotchas that make the naive counters lie. Use when drafting or linting issues, PR bodies, READMEs, or docs into ASD-STE100 Simplified Technical English."
+description: "Measure and clean up STE prose with ~/.omp/agent/scripts/ste-lint.py: the stdin-vs-file invocation rule, running it without a system python via nix, linting the exact string CI lints (title with its (#N) tag plus body), the partial-output trap that lets one violation reach CI, and the false positives and markdown gotchas that make the naive counters lie."
 ---
 
 # Measuring STE
@@ -26,6 +26,30 @@ python3 ~/.omp/agent/scripts/ste-lint.py < draft.md
 
 `total` is the number to drive to zero. `total_per100w` compares drafts of
 different lengths. `em_dash` is reported separately and is NOT part of `total`.
+
+**Read the whole report, never the tail.** `total` sits above the per-rule
+counters, so `... | tail` shows a wall of zeros from the trailing rules and hides
+a nonzero `total`. Use `| head -20`, or `| nu -c 'from json | select total violations'`.
+Measured 2026-09-17: a `passive_voice: 1` reached CI on a PR whose local check
+"passed" because only the last four lines were read.
+
+## Lint the string CI lints
+
+`.github/workflows/ste-write.yml` concatenates the **title and body** of the
+issue or PR that changed, and fails when `total > 0`. Reproduce that input
+exactly:
+
+```bash
+{ printf '%s\n\n' "<title>"; cat body.md; } \
+  | nix shell nixpkgs#python3 --command python3 .github/scripts/ste-lint.py
+```
+
+- A PR title already ends with its own `(#<N>)` tag, because the repo requires
+  it. Lint the **tagged** title; the tag adds words the untagged draft does not have.
+- Lint the issue body separately from the PR body. Each event starts its own run,
+  and a violation in the issue fails its own check.
+- Blank-line-separate list items: `long_paragraph(>6s)` splits on `\n\s*\n`, so a
+  tight numbered list of eight items counts as one paragraph and fires.
 
 ## No system python on NixOS
 
@@ -70,6 +94,10 @@ These fire on correct prose. Recognise them instead of rewriting good text.
 Rewrites that clear these are usually still fine prose. When the possessive is
 genuine, prefer "the X of the Y" or a definite noun phrase.
 
+`passive_voice` also fires on ordinary verb phrases that read as plain English:
+`was clipped`, `is un-vendored`, `are untouched`, `is needed`. Drop the `BE`:
+"No text clipped or overlapped", "which stays un-vendored".
+
 ## Markdown gotchas that make counters lie
 
 1. **Blank-line-separate list items.** `long_paragraph(>6s)` splits on
@@ -103,6 +131,8 @@ count in structured documents.
    rule names.
 4. Run the locator helper for the rule that fired.
 5. Fix, then re-run the summary across every file before publishing.
+6. Re-lint the exact title-plus-body string CI will see, and read `total`.
 
 Lint before creating the issue or PR. A repository with an STE CI job rejects the
-body after it exists.
+body after it exists, and one missed violation costs a round trip plus a bot
+comment on the PR.
