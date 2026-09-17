@@ -1,8 +1,6 @@
-
 { pkgs, lib, ... }:
 
 {
-
 
   # Containers
   virtualisation.oci-containers.containers."paseo" = {
