@@ -1,0 +1,35 @@
+# Compose source of truth for the paseo feature. compose2nix turns this file
+# into the NixOS module `_paseo.nix` beside it, which `default.nix` imports.
+# Regenerate after every edit here:
+#
+#   cd modules/features/paseo
+#   nix run github:aksiksi/compose2nix -- \
+#     -inputs compose.yaml -output _paseo.nix -project paseo -runtime docker \
+#     -check_bind_mounts
+#
+# What compose2nix cannot express lives in default.nix: the child-image build,
+# the tailnet serve unit, the password env file, and the data-disk ordering.
+name: paseo
+
+services:
+  paseo:
+    # Built from ./paseo-image by the `paseo-image` systemd unit; the daemon
+    # image alone ships no agent CLI.
+    image: paseo-with-agents
+    container_name: paseo
+    restart: unless-stopped
+    # Loopback only. tailscaled publishes the UI to the tailnet.
+    ports:
+      - "127.0.0.1:6767:6767"
+    environment:
+      # the base image already defaults this to true, keep it explicit
+      PASEO_WEB_UI_ENABLED: "true"
+      # DNS names the daemon accepts in the Host header (DNS rebinding guard)
+      PASEO_HOSTNAMES: "nixpc.tail49d78b.ts.net,.ts.net,nixpc"
+      # docker-proxy forwards from the bridge, not from loopback
+      PASEO_TRUSTED_PROXIES: "loopback,172.16.0.0/12"
+    volumes:
+      # daemon state, worktrees and agent credentials on the 2TB ext4 disk
+      - /mnt/2tb-ext4/paseo/home:/home/paseo
+      # code the daemon and its agents read and write
+      - /mnt/2tb-ext4/paseo/workspace:/workspace
