@@ -48,7 +48,14 @@
 
       # Flake-owned settings, previously modules/features/ghostty/config.
       configFlags = [
-        "--font-family=Monofur Nerd Font"
+        # Caskaydia Cove (Cascadia Code) draws a dotted zero and ships a real
+        # italic face with cursive forms. `zero` swaps in the slashed glyph,
+        # and `font-style-italic` pins that face instead of letting ghostty
+        # synthesize an oblique. Both flags belong to the family, so they
+        # sit beside it.
+        "--font-family=CaskaydiaCove Nerd Font"
+        "--font-style-italic=Italic"
+        "--font-feature=zero"
         "--font-size=16"
         "--window-padding-x=10"
         "--window-padding-y=10"
@@ -84,11 +91,11 @@
       };
     in
     {
-      # Monofur is the active ghostty family; Droid Sans Mono rides along
-      # for editor/UI use.
+      # Caskaydia Cove is the active ghostty family; Droid Sans Mono rides
+      # along for editor/UI use.
       fonts.packages = with pkgs.nerd-fonts; [
+        caskaydia-cove
         droid-sans-mono
-        monofur
       ];
 
       environment.systemPackages = [ ghosttyWrapped ];
