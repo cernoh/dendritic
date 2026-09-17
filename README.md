@@ -41,7 +41,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902, hindsight host-networked) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
 | `gaming-tools` | Lutris, MangoHud, Wine, Vulkan tooling and friends — beyond Steam |
-| `ghostty` | Ghostty terminal with live-editable out-of-store config |
+| `ghostty` | Ghostty terminal; the flake settings (Caskaydia Cove Nerd Font with a slashed zero, the sepia palette) travel in a CLI-flag wrapper over `pkgs.ghostty`, so no user config file exists |
 | `herdr-web` | Mobile web UI for `herdr` ([eyalev/herdr-web](https://github.com/eyalev/herdr-web)): the bridge runs as a systemd user service on loopback, with `node-pty` compiled so panes reflow to the phone width. NIXPC publishes it on the tailnet through `tailscale serve` |
 | `lazygit` | lazygit built by this flake, into `environment.systemPackages` |
 | `leetcode` | LeetCode runner (kawre/leetcode.nvim) inside nvf: fzf-lua picker + plenary/nui/devicons bundled, `<leader>l*` bindings, login via `:Leet cookie update` |
