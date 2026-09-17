@@ -1,15 +1,15 @@
 # omp — Oh My Pi feature
 
 ## Purpose
-Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binaries (not a flake build). Exposes `overlays.omp`, `packages.omp`, `flake.nixosModules.omp` / `flake.homeManagerModules.omp` (plus `oh-my-pi` compat aliases), and wraps the HM module with out-of-store `~/.omp` symlink and declarative non-secret settings. The store package is pinned; activation fetches `releases/latest`. Ships two managed skills (`show-html`, `grilling`) and one extension (`html-report`, which registers the `render_html` tool).
+Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binaries (not a flake build). Exposes `overlays.omp`, `packages.omp`, `flake.nixosModules.omp` / `flake.homeManagerModules.omp` (plus `oh-my-pi` compat aliases), and wraps the HM module with out-of-store `~/.omp` symlink and declarative non-secret settings. The store package is pinned; activation fetches `releases/latest`. Ships the tracked managed-skill library (vendored packs such as `show-html` and the `mattpocock/skills` engineering set, plus learned skills) and two extensions (`html-report`, which registers the `render_html` tool, and `grill-form`, which registers `grill_form` and `grill_finish`).
 
 ## Ownership
 - `default.nix` — overlay + NixOS/HM modules (binary package, settings, symlink, MCP, latest-binary, theme, and HTML-theme activations)
 - `_omp.pkg.nix` — prebuilt binary, strictly pinned (`fetchurl` + per-system SRI hash); pristine binary + glibc-loader wrapper on Linux, never patchelf'd
 - `home/` — tracked omp config: `agent/` (RULES.md, managed-skills/, extensions/, plugins/, prompts), out-of-store target for `~/.omp`
-- `home/agent/managed-skills/` — versioned managed skills, each a `<name>/SKILL.md`; a skill may bundle extra files, for example `jj-guide/references/*.md`, or a vendored pack such as `show-html/assets/*.html`
+- `home/agent/managed-skills/` — versioned managed skills, each a `<name>/SKILL.md`; a skill may bundle extra files, for example `jj-guide/references/*.md`, or a vendored pack such as `show-html/assets/*.html`. A vendored pack keeps `UPSTREAM.md` and the upstream licence text beside it (`LICENSE-MIT.txt`, or `LICENSE-Apache-2.0.txt` for the `show-html` assets)
 - `home/agent/extensions/` — extension modules that omp discovers and loads in every session: `html-report.ts` (the `render_html` tool), `grill-form.ts` (the `grill_form` and `grill_finish` tools plus the loopback submit bridge), and `lib/` (the shared page shell, palette, and HTML environment folder; a subdirectory without `index.ts` is not loaded as an extension)
-- `home/agent/scripts/` — helper scripts the skills call, for example `ste-lint.py`
+- `home/agent/scripts/` — helper scripts the skills call: `ste-lint.py` for STE prose, `wayfinder-frontier.sh` for the wayfinder GitHub frontier query
 - `home/plugins/` — `omp-plugins.lock.json`, `bun.lock`, `package.json` (Bun plugin set)
 
 ## Local Contracts
@@ -29,6 +29,7 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - **The HTML environment is a temp folder:** `<tmpdir>/omp-html-env-*` holds `data/` (rounds and answers), `public/` (pages), `flake.nix` (dev shell with Node and Bun), and `README.md`. It is created on first use and never lives in a repository.
 - **The HTML tools register `loadMode: "essential"`:** omp otherwise treats an extension tool as discoverable and the model reaches it through the `xd://<tool>` device bridge rather than a direct call.
 - **Vendored skill packs carry provenance:** a vendored skill keeps `UPSTREAM.md` (source, commit, licence, list of local edits) and the upstream licence text. Leave vendored files unedited.
+- **The `mattpocock/skills` packs act on the repo of the current clone, not on this flake:** `wayfinder` keeps its map and its decision tickets as GitHub issues there, and `to-spec` publishes the spec there. The vocabulary is five `wayfinder:` labels (`map`, `grilling`, `prototype`, `research`, `task`) plus `ready-for-agent`, and the skill creates them in a repo that lacks them. A human-in-the-loop grill in those packs runs through the `grill_form` tool of `skill://grill-me-html`, not through chat.
 
 ## Work Guidance
 - Bump the pinned release by hand: read `SHA256SUMS.txt` from the new release, convert the four hex digests to SRI, update `pinnedVersion` + `pinnedSources` in `_omp.pkg.nix`, then build and run one asset to prove it.
@@ -38,7 +39,8 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - Add/rename a skill: add directory under `home/agent/managed-skills/<name>/SKILL.md`; wire through `default.nix` if needed.
 - Add an extension: write `home/agent/extensions/<name>.ts`; no flake edit and no `extensions:` setting are needed. Prove it in a fresh session before you commit.
 - Share code between extensions: put it under `home/agent/extensions/lib/` and import it with a relative path. Only direct `*.ts` files under `extensions/` load as extensions, so a subdirectory without `index.ts` stays a plain module.
-- Vendor a skill pack: pin the upstream commit, copy the files unchanged, and record the commit, the licence, and every local edit in `UPSTREAM.md`.
+- Vendor a skill pack: pin the upstream commit, copy the files unchanged, keep the upstream licence text in the pack, and record the commit, the licence, and every local edit in `UPSTREAM.md`. Rewrite the cross-skill references into the `skill://<name>` URI form; leave the rest of the upstream text alone.
+- Keep a repeated query in a script under `home/agent/scripts/` and call the script from the skill. The wayfinder frontier query lives there, because the label and blocking filters are easy to get subtly wrong per session.
 - Skill URIs resolve as `skill://<name>` for `SKILL.md` and `skill://<name>/<path>` for bundled files (verified 2026-09-13: `skill://jj-guide/references/workflows.md` returns `# jj Workflows`). Use those URIs in skill cross-references, not relative markdown paths.
 - OMP discovers skills once, at session start. A running session does not list a new skill until restart. `omp read skill://<name>` is not a discovery check — it answers `Unknown skill` for every skill, including installed ones. Start a fresh session (`omp -p …`) to confirm discovery.
 - `@sinamtz/pi-minimax-provider` stays disabled (`enabled: false` in `home/plugins/omp-plugins.lock.json`): it registers a custom `streamSimple` under the builtin `anthropic-messages` API, which omp ≥18.x rejects at startup (`Cannot register custom API ... built-in API names are reserved`, still present in 1.1.7). Re-enable only after upstream fixes it; for MiniMax models use a declarative `models.yml` provider (`baseUrl: https://api.minimax.io/anthropic`, `api: anthropic-messages`) instead.
@@ -51,5 +53,6 @@ Dendritic integration for `can1357/oh-my-pi` via prebuilt GitHub release binarie
 - `nix build .#omp` then `<out>/bin/omp --version` — proves the pinned asset is real and runs
 - `omp -p --no-session --no-title --model @smol "…"` — a fresh session that lists the skills, or that calls `render_html` and reports the output path. Skill discovery happens at session start, so this is the only real discovery check.
 - `nix eval --impure --raw .#nixosConfigurations.NIXPC.config.home-manager.users.davr.home.activation.ompHtmlTheme.data` — the HTML theme file that activation writes.
-- A `-p` run exits after one turn, so it cannot prove the form bridge. Drive a live session over RPC instead: `omp --mode rpc --no-session --auto-approve --model @smol`, send `{"type":"prompt","message":"…"}`, read the form URL off stdout, POST the answers to `<url>/answers`, and confirm the answers arrive as the next user message. Wait for `get_state` → `isStreaming: false` before the next prompt, or the prompt is rejected with "Agent is already processing".
+- `bash modules/features/omp/home/agent/scripts/wayfinder-frontier.sh <owner>/<repo>` — the wayfinder frontier query against any repo that has a map; expect only the open, labeled, unblocked, unclaimed tickets.
+- A `-p` run exits after one turn, so it cannot prove the form bridge. Drive a live session over RPC instead: `omp --mode rpc --no-session --auto-approve --model @smol`, send `{"type":"prompt","message":"…"}`, read the form base URL (`http://127.0.0.1:<port>/g/<token>`) off stdout, then POST `{"answers":{"<question-id>":"…"}}` to `<base>/round/<n>/answers`; the question ids are in `data/round-<n>.json` of the printed HTML environment folder. Confirm the answers arrive as the next user message. Wait for `get_state` → `isStreaming: false` before the next prompt, or the prompt is rejected with "Agent is already processing".
 - `nix flake check --impure`
