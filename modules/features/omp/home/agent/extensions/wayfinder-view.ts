@@ -14,6 +14,8 @@
  *   spending the API budget twice.
  * - The bridge server binds to 127.0.0.1 on an ephemeral port, and every route
  *   needs the per-process token. The server holds no timer: the browser polls.
+ * - One refetch costs about seven `gh` calls, so the page default is 30 s. A 5 s
+ *   page would spend the whole 5000-per-hour API budget on one open tab.
  * - The server handle is unref'd, and `session_shutdown` closes it.
  * - The snapshot under `<agent dir>/html/` carries no token and no script,
  *   because a file must not hold the token that unlocks the bridge.
@@ -369,7 +371,7 @@ function livePage(view: MapView, pollSeconds: number): string {
 export default function wayfinderViewExtension(pi: ExtensionAPI) {
   const z = pi.zod;
   const token = randomBytes(16).toString("hex");
-  let request: ViewRequest = { poll: 5 };
+  let request: ViewRequest = { poll: 30 };
   let memo: { at: number; view: MapView } | undefined;
   let server: Server | undefined;
   let starting: Promise<string> | undefined;
@@ -455,8 +457,8 @@ export default function wayfinderViewExtension(pi: ExtensionAPI) {
       "a map and after each ticket resolution. It reads GitHub through `gh` and writes one snapshot file.",
     parameters: z.object({
       repo: z.string().optional().describe("Repository to read, as `owner/name`. Defaults to the repository of the working directory."),
-      map: z.number().optional().describe("Map issue number. Defaults to the open issue labelled `wayfinder:map`."),
-      poll: z.number().optional().describe("Browser refresh interval in seconds. Default 5. Use 0 for a static page."),
+      map: z.number().int().positive().optional().describe("Map issue number. Defaults to the open issue labelled `wayfinder:map`."),
+      poll: z.number().optional().describe("Browser refresh interval in seconds. Default 30. Use 0 for a static page."),
       open: z.boolean().optional().describe("Open the page in the browser. Default true."),
     }),
     loadMode: "essential",
@@ -467,7 +469,7 @@ export default function wayfinderViewExtension(pi: ExtensionAPI) {
       request = {
         repo: typeof params.repo === "string" && params.repo.trim() ? params.repo.trim() : undefined,
         map: typeof params.map === "number" ? params.map : undefined,
-        poll: typeof params.poll === "number" && params.poll >= 0 ? params.poll : 5,
+        poll: typeof params.poll === "number" && params.poll >= 0 ? params.poll : 30,
       };
       memo = undefined;
 
