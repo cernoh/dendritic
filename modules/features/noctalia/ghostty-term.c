@@ -500,13 +500,17 @@ int main(int argc, char **argv) {
 
   Term t;
   memset(&t, 0, sizeof(t));
-  GhosttyTerminalOptions topts = {0};
-  topts.cols = cols;
-  topts.rows = rows;
-  topts.max_scrollback = 10000;
-  if (ghostty_terminal_new(NULL, &t.term, topts) != GHOSTTY_SUCCESS) {
+  /* libghostty-vt takes the geometry as arguments of ghostty_terminal_new and
+   * keeps the scrollback limit as a separate option. Keep 10000 lines of
+   * history, because the `s<n>` command needs history to scroll. */
+  if (ghostty_terminal_new(NULL, &t.term, cols, rows) != GHOSTTY_SUCCESS) {
     fprintf(stderr, "ghostty-term: terminal init failed\n");
     return 1;
+  }
+  size_t max_scrollback = 10000;
+  if (ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES,
+                           &max_scrollback) != GHOSTTY_SUCCESS) {
+    fprintf(stderr, "ghostty-term: scrollback limit rejected\n");
   }
   t.cols = cols;
   t.rows = rows;

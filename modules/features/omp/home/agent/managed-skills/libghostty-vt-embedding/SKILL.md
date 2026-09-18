@@ -38,9 +38,10 @@ nix-store -qR ./result | grep -c 'ghostty-1\.3\.1'    # must be 0
 
 ## 2. Trust the locked rev's headers, not GitHub main
 
-The API is explicitly unstable and has already moved. On the pinned rev `0.1.0-unstable-2026-07-20`:
+The API is explicitly unstable and has already moved. On the pinned rev `0.1.0-unstable-2026-08-06`:
 
-- `ghostty_terminal_new(alloc, &term, GhosttyTerminalOptions{cols,rows,max_scrollback})` — takes an **options struct**, not `(cols, rows)`.
+- `ghostty_terminal_new(alloc, &term, uint16_t cols, uint16_t rows)` — takes the **geometry as arguments**. Rev `2026-07-20` took a `GhosttyTerminalOptions` struct instead, so a source file written for that rev fails with `unknown type name 'GhosttyTerminalOptions'`.
+- `GhosttyTerminalOption` is an **enum of option identifiers**, not an options struct. Set the scrollback limit after creation: `size_t n = 10000; ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &n)` (`size_t*`); `GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_BYTES` takes the byte limit.
 - No `GHOSTTY_RENDER_STATE_DATA_COLORS` — use `ghostty_render_state_colors_get(state, &colors)`.
 - No `GhosttyRenderStateCursor` sized struct — query `GHOSTTY_RENDER_STATE_DATA_CURSOR_VIEWPORT_X/_Y`, `..._CURSOR_VISIBLE`, `..._CURSOR_VIEWPORT_HAS_VALUE` individually.
 - No `ghostty_render_state_clean` — clear dirty via `ghostty_render_state_set(st, GHOSTTY_RENDER_STATE_OPTION_DIRTY, &zero)`.
@@ -51,10 +52,11 @@ Compile against `$(pkg-config --cflags libghostty-vt)`. Blog posts and `main` he
 
 Create / drive:
 ```c
-GhosttyTerminalOptions o = {0};
-o.cols = 80; o.rows = 24; o.max_scrollback = 10000;
 GhosttyTerminal t;
-ghostty_terminal_new(NULL, &t, o);
+ghostty_terminal_new(NULL, &t, 80, 24);
+
+size_t sb = 10000;
+ghostty_terminal_set(t, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES, &sb);
 
 ghostty_terminal_vt_write(t, bytes, len);            // feed PTY output
 ghostty_terminal_resize(t, cols, rows, 0, 0);        // 0,0 = cell px unknown
