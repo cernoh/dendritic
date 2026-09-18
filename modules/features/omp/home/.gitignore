@@ -10,6 +10,8 @@
 
 agent/*
 !agent/RULES.md
+!agent/agents/
+!agent/agents/**
 !agent/managed-skills/
 !agent/managed-skills/**
 !agent/scripts/

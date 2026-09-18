@@ -35,4 +35,4 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 
 ## Child DOX Index
 - `noctalia/` — Noctalia shell feature, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper and its frame protocol, `mirai` Miracast CLI → `modules/features/noctalia/AGENTS.md`
-- `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent config, plugins → `modules/features/omp/AGENTS.md`
+- `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent definitions, agent config, plugins → `modules/features/omp/AGENTS.md`

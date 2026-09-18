@@ -24,6 +24,25 @@ If `git remote -v` reports at least one remote, treat the repository as a remote
 
 If no remote exists, use the normal local-branch workflow and do not create GitHub issues or PRs.
 
+## Rule 7: Delegate issue text to the `issue-scribe` agent
+
+Every GitHub issue title, issue body, sub-issue body, and issue comment that
+states a problem, a task, or an acceptance criterion MUST be written by the
+`issue-scribe` agent. The main agent does not write issue prose itself.
+
+1. Prepare the brief: repository, parent issue number, the problem, the
+   evidence, the acceptance criteria, the boundary, and the labels.
+2. Dispatch it with the `task` tool, `agent: "issue-scribe"`, and the brief in
+   the task text. The agent runs model `muse-spark-1.3-contributor` and holds
+   the parent until it finishes.
+3. Read the reported issue number and URL. Use them for the branch name and the
+   `Closes #<number>` keyword.
+4. Ask for a repair through a second dispatch when the text is wrong. Edit the
+   issue body yourself only when the scribe is unreachable.
+
+The scribe writes in Simplified Technical English and lints every body to zero
+violations, so the repository STE check passes on the first run.
+
 ## Rule 3: Stack changes requested in one message or context
 
 When one user message or context window requests multiple independent changes in a remote repository, create one issue and one branch per change, then use stacked pull requests. Build each branch on the previous branch in dependency order, and create/update the stack with the `gh stack` command. Every PR in the stack MUST reference its own issue with `Closes #<issue-number>` (or an equivalent GitHub closing keyword).
