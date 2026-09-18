@@ -8,6 +8,10 @@ Model list, caps, and prices re-checked 2026-09-16 against <https://opencode.ai/
 (the canonical pricing and cap table), the live account registry, and
 <https://opencode.ai/data/> (real usage ranking, updated 2026-09-16).
 
+Refreshed 2026-09-18 against the same three sources: 37 live registry ids, 28 of
+them on the docs endpoints table. The advisor role moved to
+`opencode-go/deepseek-v4.1-flash` on the same day.
+
 ## What OpenCode Go is
 
 - $10/month subscription for open coding models. Optional. Key from the OpenCode Zen console at <https://opencode.ai/auth>.
@@ -49,17 +53,28 @@ Base URL: `https://opencode.ai/zen/go/v1`. Selector format in client configs: `o
 | Qwen3.7 Max | `qwen3.7-max` | `/messages` |
 | Qwen3.7 Plus | `qwen3.7-plus` | `/messages` |
 | Qwen3.6 Plus | `qwen3.6-plus` | `/messages` |
-| Union Alpha Free | `union-alpha` | `/messages` |
 
 Model list metadata: `GET https://opencode.ai/zen/go/v1/models`.
 
-The account registry answers with more ids than the docs page. These ids have no
-docs row:
+The account registry serves 37 ids, and the docs endpoints table covers 28 of
+them. These 9 ids have no docs row:
 
 - Legacy ids: `glm-5`, `grok-4.5`, `kimi-k2.5`, `qwen3.5-plus`.
 - Extra ids: `mimo-v2-omni`, `mimo-v2-pro`, `hy3-preview`.
-- `ox-alpha-free`, named "Ox Alpha Free (Unlimited)": $0, 1M context, vision. No docs row, so treat it as a test model.
-- Null-metadata stubs: `deepseek-flash`, `omen-alpha`. They carry no context, price, or thinking level. Never use them.
+- Null-metadata ids: `deepseek-flash`, `omen-alpha`. The registry reports no context window, no output limit, and a zero price for both. Do not read the zero as a subsidy: `hy3-preview` shows the same zeros, while its documented twin `hy3` costs $0.14/$0.58. The zero is absent metadata.
+
+`omen-alpha` is not a stub in the wiring sense. Tested 2026-09-18: it answered a
+one-shot prompt, and it ran a full advisor review pass with tool calls and
+correct reasoning. The registry lists no price for it, and omp derives its local
+cost figure from that same metadata, so a local `cost.total` of zero proves
+nothing. The Zen console is the only authority on metering. The id carries no
+docs row and no declared context window, so keep it off a standing role. Use it
+through an explicit `--model opencode-go/omen-alpha` pick for non-private,
+throwaway work.
+
+Preview and promotional ids leave without notice. `ox-alpha-free` sat in the
+registry on 2026-09-16 and was gone on 2026-09-18, and `union-alpha` lost its
+docs row over the same two days. Re-check before you pin a role to a preview id.
 
 Monthly caps and prices change often. Treat the table below as a starting point, and re-check the docs page or the live catalog before you commit to a role model.
 
@@ -76,14 +91,11 @@ Qwen3.8 Flash            $30      MiMo V2.5 Pro        $15
 Qwen3.7 Max              $30      MiniMax M3/M2.7/M2.5 $60 each
 Qwen3.6 / Qwen3.7 Plus   $60      LongCat-2.0          $60
 Hy4 preview              $30      Hy3                  $60
-Grok 4.6                 $15      Union Alpha Free     unlimited+
+Grok 4.6                 $15
 ```
 
 \* DeepSeek V4.1 Flash runs a 4x cap promotion that ends 2026-09-20, then
 returns to $15. Re-check the table before you lean on that cap.
-
-\+ Union Alpha Free is free and unlimited for a limited time. The docs give no
-end date, so keep it off a role that must work next month.
 
 DeepSeek prices double at peak hours: 01:00-04:00 and 06:00-10:00 UTC, Monday through Friday. All other hours and all weekends are off-peak. Run large jobs off-peak.
 
@@ -129,28 +141,30 @@ WHERE provider_id LIKE 'opencode-go%' AND value->>'name' LIKE '%4.1%';
 
 The OpenCode team publishes real token volume per model. Treat it as a popularity proxy for quality — the most used models are usually the best ones, but a model can rank low from price alone.
 
-Top models, 2026-09-16 (tokens, weekly retention):
+Top models, 2026-09-18 (tokens, weekly retention):
 
 ```
-1  deepseek-v4.1-flash          34T   new
-2  muse-spark-1.3-contributor   32T   87%
-3  deepseek-v4-flash            17T   68%
-4  mimo-v2.5                    7.6T  73%
-5  glm-5.3-flash                3.2T  69%
-6  muse-spark-1.2-contributor   3.1T  81%
-7  nemotron-3-ultra             2.0T   no Go entry
-8  deepseek-v4-flash-vision-exp 928B  70%
-9  deepseek-v4-pro              620B  62%
-10 gpt-5.6-luna                 474B
-13 omen-alpha                   369B  82%   null metadata on Go
-14 qwen3.8-flash                298B  72%
+1  deepseek-v4.1-flash          46T    new
+2  muse-spark-1.3-contributor   34T    87.4%
+3  deepseek-v4-flash            17T    68.3%
+4  mimo-v2.5                    7.3T   72.9%
+5  glm-5.3-flash                3.2T   68.8%
+6  muse-spark-1.2-contributor   3.0T   81.5%
+7  nemotron-3-ultra             2.4T   no Go entry
+8  deepseek-v4-flash-vision-exp 966B   69.6%
+9  deepseek-v4-pro              649B
+10 ling-3.0-flash-fin           538B   no Go entry
+11 gpt-5.6-luna                 518B
+12 union-alpha                  470B   no Go entry
+14 qwen3.8-flash                302B   72.3%
+15 minimax-m3                   266B
 ```
 
-Author token share: DeepSeek 56.3%, Meta 29.1%, Xiaomi 5.6%, NVIDIA 3.7%, Zhipu 3.2%.
+Author token share: DeepSeek 59.1%, Meta 30.9%, Xiaomi 4.8%, NVIDIA 3.0%.
 
 The ranking spans every provider, so a top row can be absent from Go.
-`nemotron-3-ultra`, `nemotron-3.5-lightning`, and `ling-3.0-flash-fin` have no
-Go id.
+`nemotron-3-ultra`, `nemotron-3.5-lightning`, `ling-3.0-flash-fin`, and
+`union-alpha` have no Go id.
 
 ## Role picks: cheapest capable model per role
 
@@ -163,17 +177,17 @@ slow      deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
 smol      deepseek-v4-flash            0.15/0.60   1.0M / 384K    no      $30
 commit    deepseek-v4-flash            0.15/0.60   1.0M / 384K    no      $30
 vision    deepseek-v4-flash-vision-exp 0.15/0.60   1.0M / 384K    yes     $15
-advisor   muse-spark-1.3-contributor   0.10/0.20   1.0M / 131K    yes     $60
+advisor   deepseek-v4.1-flash          0.15/0.60   1.0M / 384K    yes     $60*
 ```
 
 Prices are off-peak, from the live registry. Caps are from the docs table.
 
 Why this shape:
 
-- DeepSeek V4.1 Flash drives every heavy role. It is the most used model on the 2026-09-16 ranking, the cheapest capable one, and it carries vision.
+- DeepSeek V4.1 Flash drives every heavy role. It is the most used model on the 2026-09-18 ranking, the cheapest capable one, and it carries vision.
+- `advisor` shares that model. Muse Spark 1.3 Contributor left the role on 2026-09-18, because it repeats blocker-severity notes with no new signal.
 - The cheap roles split across two extra DeepSeek caps (`deepseek-v4-flash` at $30, `vision-exp` at $15), so one cap wall does not stop everything.
-- `advisor` uses Muse Spark 1.3 Contributor ($0.10/$0.20). It holds rank 2 on the ranking, and it gives a different family for a second opinion.
-- Muse Spark Contributor permits Meta to train on prompts, so keep it on `advisor` only and out of the `default` chain.
+- Muse Spark Contributor permits Meta to train on prompts. Keep it out of the `default` chain. It serves only the `issue-scribe` agent, which receives a brief and repository reads instead of the session transcript.
 - Six roles keep vision support, so paste-a-screenshot flows work without a manual model switch.
 - Leave `modelRoles.tiny` unset while `providers.tinyModel` runs a local model. The local model costs nothing.
 
@@ -204,7 +218,7 @@ omp config get retry.fallbackChains --json
 2. Apply to the running install without a rebuild. Records take one JSON value, and dotted record paths fail with "Unknown setting".
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash","task":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4.1-flash","slow":"opencode-go/deepseek-v4.1-flash","smol":"opencode-go/deepseek-v4-flash","commit":"opencode-go/deepseek-v4-flash","vision":"opencode-go/deepseek-v4-flash-vision-exp","advisor":"opencode-go/muse-spark-1.3-contributor"}'
+omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash","task":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4.1-flash","slow":"opencode-go/deepseek-v4.1-flash","smol":"opencode-go/deepseek-v4-flash","commit":"opencode-go/deepseek-v4-flash","vision":"opencode-go/deepseek-v4-flash-vision-exp","advisor":"opencode-go/deepseek-v4.1-flash"}'
 ```
 
 3. Never commit `modules/features/omp/home/agent/config.yml`. Home Manager regenerates it wholesale from the settings through `home.activation.ompConfig`, and the live copy carries drift from `/settings` and migrations. Commit `default.nix` only.

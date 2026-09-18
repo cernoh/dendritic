@@ -240,7 +240,7 @@
           programs.omp.settings = {
             modelRoles = {
               # DeepSeek V4.1 Flash: 1M ctx, 384K out, vision, $0.15/$0.60.
-              # Rank #1 on opencode.ai/data (2026-09-16) — most used model.
+              # Rank #1 on opencode.ai/data (2026-09-18), 46T tokens.
               default = "opencode-go/deepseek-v4.1-flash";
               # Same model: tool-use workhorse, same price.
               task = "opencode-go/deepseek-v4.1-flash";
@@ -248,10 +248,13 @@
               plan = "opencode-go/deepseek-v4.1-flash";
               # Same model: replaces GLM-5.3 ($1.40/$4.40).
               slow = "opencode-go/deepseek-v4.1-flash";
-              # Muse Spark 1.3 Contributor: rank #2, second opinion,
-              # $0.10/$0.20, $60 cap. Meta trains on prompts; advisor only.
-              advisor = "opencode-go/muse-spark-1.3-contributor";
-              # DeepSeek V4 Flash: rank #3, own $30 cap, $0.15/$0.60.
+              # Same model: the reviewer matches the primary capability.
+              # Muse Spark 1.3 Contributor (rank #2, $60 cap) repeats
+              # blocker-severity notes and trains on prompts, so it left this
+              # role for the issue-scribe agent.
+              advisor = "opencode-go/deepseek-v4.1-flash";
+              # DeepSeek V4 Flash: rank #3 (17T tokens), own $30 cap,
+              # $0.15/$0.60.
               smol = "opencode-go/deepseek-v4-flash";
               commit = "opencode-go/deepseek-v4-flash";
               # DeepSeek V4 Flash Vision Exp: vision-first build, $0.15/$0.60.
@@ -284,9 +287,11 @@
                   "opencode-go/glm-5.3-flash"
                   "opencode-go/deepseek-v4-pro"
                 ];
+                # The advisor shares the default model, so the first hop is a
+                # different family and the second hop owns its own cap.
                 advisor = [
-                  "opencode-go/deepseek-v4.1-flash"
                   "opencode-go/mimo-v2.5"
+                  "opencode-go/deepseek-v4-flash"
                 ];
                 smol = [
                   "opencode-go/glm-5.3-flash"
