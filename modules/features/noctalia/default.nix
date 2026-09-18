@@ -38,9 +38,15 @@
   perSystem =
     { pkgs, lib, ... }:
     {
-      packages = lib.optionalAttrs (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.libghostty-vt) {
-        ghostty-term = pkgs.callPackage ./_ghostty-term.pkg.nix { };
-      };
+      packages =
+        lib.optionalAttrs (lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.libghostty-vt) {
+          ghostty-term = pkgs.callPackage ./_ghostty-term.pkg.nix { };
+        }
+        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          # Mirai is Linux-only (Miracast, miraclecast, PipeWire portals), so
+          # the package is not defined for the flake's darwin systems.
+          mirai = pkgs.callPackage ./_mirai.pkg.nix { src = inputs.mirai; };
+        };
     };
 
   flake.nixosModules.noctalia =
@@ -73,6 +79,7 @@
     { self', ... }:
     {
       config,
+      lib,
       ...
     }:
     {
@@ -95,12 +102,20 @@
       };
 
       # The terminal plugin drives this helper, so it must be on PATH for the
-      # user session whether or not the plugin is enabled for this host.
-      home.packages = [ self'.packages.ghostty-term ];
+      # user session whether or not the plugin is enabled for this host. Same
+      # for the `mirai` CLI the Mirai plugin shells out to; it is absent on the
+      # flake's darwin systems, which the guard covers.
+      home.packages = [
+        self'.packages.ghostty-term
+      ]
+      ++ lib.optional (self'.packages ? mirai) self'.packages.mirai;
 
       # Plugin runtime data must be writable/live, hence out-of-store.
       home.file.".local/share/noctalia/plugins/terminal".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/terminal";
+
+      home.file.".local/share/noctalia/plugins/mirai".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/mirai";
     }
   );
 }
