@@ -61,7 +61,14 @@ them. These 9 ids have no docs row:
 
 - Legacy ids: `glm-5`, `grok-4.5`, `kimi-k2.5`, `qwen3.5-plus`.
 - Extra ids: `mimo-v2-omni`, `mimo-v2-pro`, `hy3-preview`.
-- Null-metadata stubs: `deepseek-flash`, `omen-alpha`. They carry no context, price, or thinking level. Never use them.
+- Null-metadata ids: `deepseek-flash`, `omen-alpha`. The registry reports no context window, no output limit, and a zero price for both. Do not read the zero as a subsidy: `hy3-preview` shows the same zeros, while its documented twin `hy3` costs $0.14/$0.58. The zero is absent metadata.
+
+`omen-alpha` is not a stub in the wiring sense. Tested 2026-09-18: it answered a
+one-shot prompt, and it ran a full advisor review pass with tool calls and
+correct reasoning, at a recorded cost of zero. It carries no docs row and no
+declared context window, so keep it off a standing role. Use it through an
+explicit `--model opencode-go/omen-alpha` pick for non-private, throwaway work.
+The Zen console is the only place that settles the metering question.
 
 Preview and promotional ids leave without notice. `ox-alpha-free` sat in the
 registry on 2026-09-16 and was gone on 2026-09-18, and `union-alpha` lost its
