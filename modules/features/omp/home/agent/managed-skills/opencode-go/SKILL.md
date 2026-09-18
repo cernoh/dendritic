@@ -65,10 +65,12 @@ them. These 9 ids have no docs row:
 
 `omen-alpha` is not a stub in the wiring sense. Tested 2026-09-18: it answered a
 one-shot prompt, and it ran a full advisor review pass with tool calls and
-correct reasoning, at a recorded cost of zero. It carries no docs row and no
-declared context window, so keep it off a standing role. Use it through an
-explicit `--model opencode-go/omen-alpha` pick for non-private, throwaway work.
-The Zen console is the only place that settles the metering question.
+correct reasoning. The registry lists no price for it, and omp derives its local
+cost figure from that same metadata, so a local `cost.total` of zero proves
+nothing. The Zen console is the only authority on metering. The id carries no
+docs row and no declared context window, so keep it off a standing role. Use it
+through an explicit `--model opencode-go/omen-alpha` pick for non-private,
+throwaway work.
 
 Preview and promotional ids leave without notice. `ox-alpha-free` sat in the
 registry on 2026-09-16 and was gone on 2026-09-18, and `union-alpha` lost its
