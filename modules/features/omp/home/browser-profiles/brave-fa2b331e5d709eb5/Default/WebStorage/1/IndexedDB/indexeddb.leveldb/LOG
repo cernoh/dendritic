@@ -1,0 +1,14 @@
+2026/09/18-18:03:07.151 f7a14 Reusing MANIFEST /home/davr/.config/dendritic/modules/features/omp/home/browser-profiles/brave-fa2b331e5d709eb5/Default/WebStorage/1/IndexedDB/indexeddb.leveldb/MANIFEST-000001
+2026/09/18-18:03:07.151 f7a14 Recovering log #4
+2026/09/18-18:03:07.152 f7a14 Reusing old log /home/davr/.config/dendritic/modules/features/omp/home/browser-profiles/brave-fa2b331e5d709eb5/Default/WebStorage/1/IndexedDB/indexeddb.leveldb/000004.log 
+2026/09/18-18:04:18.203 f7a15 Level-0 table #8: started
+2026/09/18-18:04:18.214 f7a15 Level-0 table #8: 67508 bytes OK
+2026/09/18-18:04:18.224 f7a15 Delete type=0 #4
+2026/09/18-18:04:18.225 f7a14 Manual compaction at level-0 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)
+2026/09/18-18:04:18.225 f7a14 Manual compaction at level-1 from '\x00\x03\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at '\x00\x04\x01\x1f\x04\x03\x01\x06\x00Q\x00U\x00E\x00U\x00E\x00D\x03\x00\x00\x00\x00\x00\x00L@\x03\x00pu\x85W\x0bzB\x00\x03\x00\x00\x00\x00\x00\x00\xf0?' @ 749 : 1
+2026/09/18-18:04:18.225 f7a14 Compacting 1@1 + 1@2 files
+2026/09/18-18:04:18.232 f7a14 Generated table #9@1: 61 keys, 25294 bytes
+2026/09/18-18:04:18.232 f7a14 Compacted 1@1 + 1@2 files => 25294 bytes
+2026/09/18-18:04:18.242 f7a14 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/09/18-18:04:18.242 f7a14 Delete type=2 #8
+2026/09/18-18:04:18.242 f7a14 Manual compaction at level-1 from '\x00\x04\x01\x1f\x04\x03\x01\x06\x00Q\x00U\x00E\x00U\x00E\x00D\x03\x00\x00\x00\x00\x00\x00L@\x03\x00pu\x85W\x0bzB\x00\x03\x00\x00\x00\x00\x00\x00\xf0?' @ 749 : 1 .. '\x00\x04\x00\x00\x00' @ 0 : 0; will stop at (end)

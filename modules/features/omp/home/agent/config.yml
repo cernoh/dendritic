@@ -1,1 +1,98 @@
-{"advisor":{"enabled":true,"subagents":true,"syncBacklog":"5"},"astGrep":{"enabled":true},"autolearn":{"autoContinue":true,"enabled":true},"bash":{"autoBackground":{"enabled":true}},"bashInterceptor":{"enabled":true},"browser":{"headless":false},"compaction":{"handoffSaveToDisk":true},"defaultThinkingLevel":"auto","dev":{"autoqaConsent":"granted"},"edit":{"mode":"hashline"},"features":{"unexpectedStopDetection":true},"github":{"enabled":true},"hideThinkingBlock":true,"includeWorkspaceTree":true,"lsp":{"formatOnWrite":true},"mcp":{},"memory":{"backend":"off"},"modelRoles":{"advisor":"opencode-go/deepseek-v4-flash","default":"opencode-go/deepseek-v4-flash","plan":"opencode-go/deepseek-v4-flash","slow":"opencode-go/deepseek-v4-flash","task":"opencode-go/deepseek-v4-flash"},"providers":{"tinyModel":"lfm2-350m","tinyModelDevice":"gpu"},"setupVersion":1,"shellMinimizer":{"sourceOutlineLevel":"default"},"steeringMode":"one-at-a-time","symbolPreset":"nerd","task":{"eager":"default","isolation":{"mode":"auto"}},"theme":{"dark":"dark-catppuccin"}}
+advisor:
+  enabled: true
+  syncBacklog: "5"
+astGrep:
+  enabled: true
+autolearn:
+  autoContinue: true
+  enabled: true
+bash:
+  autoBackground:
+    enabled: true
+bashInterceptor:
+  enabled: true
+browser:
+  headless: true
+compaction:
+  handoffSaveToDisk: true
+defaultThinkingLevel: auto
+dev:
+  autoqaConsent: granted
+edit:
+  mode: hashline
+features:
+  unexpectedStopDetection: smart
+github:
+  enabled: true
+hideThinkingBlock: true
+includeWorkspaceTree: true
+lsp:
+  formatOnWrite: true
+mcp:
+  {}
+memory:
+  backend: "off"
+modelRoles:
+  default: opencode-go/deepseek-v4.1-flash
+  task: opencode-go/deepseek-v4.1-flash
+  plan: opencode-go/deepseek-v4.1-flash
+  slow: opencode-go/deepseek-v4.1-flash
+  smol: opencode-go/deepseek-v4-flash
+  commit: opencode-go/deepseek-v4-flash
+  vision: opencode-go/deepseek-v4-flash-vision-exp
+  advisor: opencode-go/deepseek-v4.1-flash
+providers:
+  tinyModel: lfm2.5-350m
+  tinyModelDevice: gpu
+retry:
+  fallbackChains:
+    default:
+      - opencode-go/deepseek-v4-flash
+      - opencode-go/glm-5.3-flash
+      - opencode-go/mimo-v2.5
+      - opencode-go/qwen3.8-flash
+    task:
+      - opencode-go/deepseek-v4-flash
+      - opencode-go/glm-5.3-flash
+      - opencode-go/mimo-v2.5
+    plan:
+      - opencode-go/deepseek-v4-flash
+      - opencode-go/glm-5.3-flash
+      - opencode-go/deepseek-v4-pro
+    slow:
+      - opencode-go/deepseek-v4-flash
+      - opencode-go/glm-5.3-flash
+      - opencode-go/deepseek-v4-pro
+    advisor:
+      - opencode-go/mimo-v2.5
+      - opencode-go/deepseek-v4-flash
+    smol:
+      - opencode-go/glm-5.3-flash
+      - opencode-go/mimo-v2.5
+    commit:
+      - opencode-go/glm-5.3-flash
+      - opencode-go/mimo-v2.5
+    vision:
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/gpt-5.6-luna
+      - opencode-go/qwen3.8-flash
+  modelFallback: true
+setupVersion: 2
+shellMinimizer:
+  sourceOutlineLevel: default
+steeringMode: one-at-a-time
+symbolPreset: nerd
+task:
+  eager: default
+  isolation:
+    enabled: true
+  agentAdvisor:
+    task: "on"
+  agentModelOverrides:
+    issue-scribe: opencode-go/omen-alpha
+theme:
+  dark: sepia
+isolation:
+  backend: auto
+composer:
+  shape: band
