@@ -1,6 +1,6 @@
 ---
 name: cargo-ndk-rust-cli-android-emulator
-description: "Cross-compile a Rust CLI (e.g. jj) as an Android executable with cargo-ndk inside a nix dev shell, then prove it on an emulator: the -o cdylib-only copy failure that masks a successful build, --platform vs -p, dev-shell PATH traps, readelf/strip recipe, and on-device runtime prerequisites (TMPDIR/HOME/config identity, missing git binary)."
+description: "Cross-compile a Rust CLI (e.g. jj) as an Android executable with cargo-ndk inside a nix dev shell, then prove it on an emulator: the -o cdylib-only copy failure that masks a successful build, --platform vs -p, dev-shell PATH traps, readelf/strip recipe, on-device runtime prerequisites (TMPDIR/HOME/config identity, missing git binary), and the APK side — packaging the binary as jniLibs/abi/lib*.so, the extractNativeLibs/useLegacyPackaging flag that decides whether an executable file even exists on disk, its mode and SELinux context, the SELinux block on exec from app storage, and a Gradle-free APK build to vary that flag."
 ---
 
 # Cross-compile a Rust CLI for Android and prove it on an emulator
@@ -8,7 +8,8 @@ description: "Cross-compile a Rust CLI (e.g. jj) as an Android executable with c
 Use when a project must ship a Rust **executable** (not a cdylib) inside an APK as
 `jniLibs/<abi>/lib<name>.so`, i.e. exec'd from the installer-extracted path. Verified
 2026-09-18 building jj 0.45.1 for `arm64-v8a` + `x86_64` in the jjsync dev shell; the same
-shape applies to any cargo workspace.
+shape applies to any cargo workspace. The extraction/exec half was measured 2026-09-19 (see
+the last section).
 
 ## Build
 
@@ -86,6 +87,13 @@ NIX_ANDROID_EMULATOR_FLAGS="-no-window -no-audio -gpu swiftshader_indirect -no-s
 adb push BIN /data/local/tmp/<bin> && adb shell 'chmod 755 ...; ... --version'
 ```
 
+**Pin the device on every `adb` call.** A leftover AVD from an earlier session answers on the
+next free port (an earlier one held `emulator-5554`, the fresh one took `emulator-5556`), so
+`adb devices` can list two identical images and an unpinned install lands on whichever adb
+picks. Confirm the serial by port owner — `ss -ltnp | grep 555` maps port to qemu pid, `ps`
+pids to start time — then pass `-s <serial>` everywhere, and let the probe report
+`Build.FINGERPRINT` plus `Build.SUPPORTED_ABIS` so the evidence names its own image.
+
 Write the device script to a file, `adb push` it, run with `sh` — quoting survives
 `adb shell` + `nix develop bash -c` layers far better than inline one-liners.
 
@@ -111,6 +119,77 @@ Runtime prerequisites to test for any bundled CLI, using the app's own shape:
   touch it (colocation writes `.git/refs/heads/main` itself via gix). A CLI config knob
   (`git.executable-path`) is the escape hatch if a binary is ever bundled.
 
-Leave extraction-permission proofs (exec from `jniLibs/<abi>/lib*.so` after install) to the
-ticket that owns them; this recipe only proves the binary is a correct Android artifact whose
-runtime dependencies are satisfied.
+## Extraction and exec: the flag decides, the layout does not
+
+Measured 2026-09-19 on an API 36 (Android 16) x86_64 AOSP emulator with jj 0.45.1 in both
+ABIs, by an app that reports its own filesystem and exec facts. Full evidence:
+`cernoh/jjsync` issue 5, `.design/research/jni-exec.md`. `push`-and-run from
+`/data/local/tmp` proves nothing here — that path is shell-owned and always executable.
+
+- **`android:extractNativeLibs="true"` is required.** The installer then writes
+  `<nativeLibraryDir>/lib<name>.so`: mode `555` (`-r-xr-xr-x`), owner `system:system`,
+  SELinux context `u:object_r:apk_data_file:s0`; only the device ABI is extracted; and the
+  app process (`u:r:untrusted_app`) executes it and runs the CLI normally. Omitting the
+  attribute behaves the same — the *platform* default is extraction.
+- **The AGP/Flutter default extracts nothing.** AGP packages native libraries uncompressed
+  and page-aligned, which it expresses as `extractNativeLibs="false"`; `<nativeLibraryDir>`
+  still exists and is readable but is **empty** (`list(): []`, `total 0`) — there is no file
+  to execute at all. Never infer extraction from the directory; list it and `stat` the file.
+- **The fix is one Gradle line**, and it is invisible in a manifest a build tool generates:
+
+  ```kotlin
+  android { packaging { jniLibs { useLegacyPackaging = true } } }
+  ```
+
+  Per the AGP DSL, `useLegacyPackaging` "replaces the manifest attribute
+  `extractNativeLibs`"; null means "uncompressed and page-aligned when minSdk >= 23". Legacy
+  packaging also *deflates* the payload inside the APK (46.1 MB stored vs 19.0 MB deflated
+  for both ABIs here) and costs the extracted copy per device ABI (24.8 MB x86_64, 21.3 MB
+  arm64) — report bytes, not `df`/`du` deltas, which on an emulator under-reported a 46.1 MB
+  APK as ~30.5 MB.
+- **The copy-to-app-storage workaround is dead above targetSdk 28.** Copying the entry out of
+  the APK (it is `STORED`, so `ZipFile` reads it) or out of `assets/`, then `chmod 0700`,
+  yields a file whose `File.canExecute()` and `chmod` both report success — and the exec
+  still fails with `IOException: Cannot run program ...: error=13, Permission denied`, i.e.
+  `avc: denied { execute_no_trans } ... tcontext=u:object_r:app_data_file:s0`. At targetSdk
+  28 the same route works because the domain becomes `u:r:untrusted_app_27`, which is not
+  usable for a store release. **`canExecute()`/`chmod` are not an exec test; run the binary.**
+- Treat a missing extracted file as a hard, explicit error in the app: the only honest
+  pre-flight check is the file plus a real run.
+
+## Build an APK without Gradle to vary one manifest attribute
+
+Gradle is not needed to test packaging semantics, and a hand-built APK has no AGP opinion:
+
+```sh
+BT="$ANDROID_HOME/build-tools/37.0.0"; PLATFORM="$ANDROID_HOME/platforms/android-36/android.jar"
+"$BT/aapt2" compile --dir res -o res.zip
+"$BT/aapt2" link -o base.apk -I "$PLATFORM" --manifest AndroidManifest.xml -R res.zip --java gen
+javac -nowarn -Xlint:-options -source 8 -target 8 -bootclasspath "$PLATFORM" \
+  -classpath "$PLATFORM" -d classes $(find src gen -name '*.java')   # 8, not 11: -bootclasspath
+"$BT/d8" --lib "$PLATFORM" --min-api 26 --output dex $(find classes -name '*.class')
+cp base.apk app.apk && ( cd stage && jar -0 -u -f ../app.apk classes.dex lib assets )
+"$BT/zipalign" -f -p 4 app.apk app-aligned.apk        # -p page-aligns uncompressed .so
+"$BT/apksigner" sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android \
+  --ks-key-alias androiddebugkey --out app.apk app-aligned.apk
+```
+
+- `jar -0` stores the `.so` uncompressed (what `extractNativeLibs="false"` demands); drop the
+  `-0` for compressed legacy packaging.
+- Sign **after** `zipalign`; `-p` (4 KB) only matters for the uncompressed route, and 16 KB
+  page-size devices need `-P 16`.
+- Debug keystore: `keytool -genkeypair -keystore debug.keystore -storepass android -keypass
+  android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android
+  Debug,O=Android,C=US"`.
+- Write the probe in Java against `android.jar` only: `java.lang.Process` collides with
+  `android.os.Process` (qualify it), lambdas fail to compile at `-source 8` because the
+  android.jar stub exposes no `LambdaMetafactory.metafactory`, and `d8` needs its `--output`
+  directory to exist. Have the app write its report to `getExternalFilesDir(null)` so it can
+  be pulled without root, and run the same binary through several manifests (`true`, `false`,
+  absent, deflated) instead of trusting one build's default.
+
+## Cleanup
+
+`adb -s <serial> emu kill` for the AVD this session started, and remove anything pushed into
+the device's `/data/local/tmp`. Do not kill an emulator whose pid predates your session —
+another session may own it.
