@@ -27,6 +27,9 @@
       boot.supportedFilesystems.btrfs = true;
       environment.systemPackages = with pkgs; [
         btrfs-progs
+        # BitTorrent client (Qt front end). NIXPC-only; the shared desktop
+        # bundle stays without it.
+        transmission_4-qt
       ];
       # Spare SATA data disks (sda1 + sdb1 ext4), pinned by UUID. nofail
       # keeps boot green if a disk is absent or unmountable.
