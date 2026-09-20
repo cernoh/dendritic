@@ -6,6 +6,12 @@
     "aarch64-darwin"
   ];
 
+  # Expose the flake-parts option trees (`debug.options`, `currentSystem.options`)
+  # so nixd can complete `flake.*` and per-system option paths in this repo's
+  # modules. See flake.parts/debug and the flake-parts entries in nixd's
+  # configuration.md. The outputs are pure eval results: they add no build step.
+  config.debug = true;
+
   # flake-parts predeclares mergeable options for NixOS-flavored outputs
   # (flake.nixosModules etc.) but NOT home-manager ones. An undeclared
   # output attr gets a unique, non-mergeable option, so two files that each

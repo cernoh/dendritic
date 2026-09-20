@@ -24,25 +24,45 @@
         # Don't clobber pre-existing dotfiles on first switch; move them aside.
         backupFileExtension = "hm-backup";
 
-        users.${userName} = {
-          imports = with self.homeManagerModules; [
-            nvf
-            omp
-            agent-browser
-            herdr-web
-            programming
-            fish
-            nushell
-            opencode
-            waylandBase
-            stylix
-          ];
-          home = {
-            username = userName;
-            homeDirectory = "/home/${userName}";
-            stateVersion = "25.05";
+        users.${userName} =
+          {
+            options,
+            lib,
+            ...
+          }:
+          {
+            imports = with self.homeManagerModules; [
+              nvf
+              omp
+              agent-browser
+              herdr-web
+              programming
+              fish
+              nushell
+              opencode
+              waylandBase
+              stylix
+            ];
+
+            # The home-manager option tree of this user, read back by nixd
+            # (modules/features/nvf/_nixd.nix). The imported feature modules
+            # above exist only in this evaluated submodule — the submodule
+            # *type* of `home-manager.users` carries the shared modules alone —
+            # so no other expression can reach `programs.nvf` or `stylix`.
+            options.dendritic.nixdOptionTree = lib.mkOption {
+              type = lib.types.raw;
+              internal = true;
+            };
+
+            config = {
+              home = {
+                username = userName;
+                homeDirectory = "/home/${userName}";
+                stateVersion = "25.05";
+              };
+              dendritic.nixdOptionTree = options;
+            };
           };
-        };
       };
     };
 }

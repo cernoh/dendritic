@@ -1,88 +1,91 @@
 {
-  languages = {
-    enableTreesitter = true;
-    enableFormat = true;
-    enableDAP = true;
+        languages = {
+                enableTreesitter = true;
+                enableFormat = true;
+                enableDAP = true;
+                enableExtraDiagnostics = true;
 
-    nix = {
-      enable = true;
-      extraDiagnostics.enable = true;
-      lsp.servers = [ "nixd" ];
-      # Formatter for conform-nvim (formatOnSave). nvf's nixfmt preset
-      # bundles the binary via an absolute store path, so formatting works
-      # with nothing on $PATH — previously this silently defaulted to
-      # alejandra while _nixd.nix pointed at a PATH-installed nixfmt.
-      format.type = [ "nixfmt" ];
-    };
-    qml.enable = true;
-    python = {
-      enable = true;
-      extraDiagnostics.enable = true;
-    };
-    css = {
-      enable = true;
-      format.enable = true;
-    };
-    dart = {
-      enable = true;
-      flutter-tools = {
-        enable = true;
-        color = {
-          enable = true;
-          virtualText.enable = true;
+                nix = {
+                        enable = true;
+                        lsp.servers = [ "nixd" ];
+                        # Formatter for conform-nvim (formatOnSave). nvf's nixfmt preset
+                        # bundles the binary via an absolute store path, so formatting works
+                        # with nothing on $PATH — previously this silently defaulted to
+                        # alejandra while _nixd.nix pointed at a PATH-installed nixfmt.
+                        format.type = [ "nixfmt" ];
+                };
+                qml.enable = true;
+                python = {
+                        enable = true;
+                        extraDiagnostics.enable = true;
+                };
+                css = {
+                        enable = true;
+                        format.enable = true;
+                };
+                dart = {
+                        enable = true;
+                        flutter-tools = {
+                                enable = true;
+                                color = {
+                                        enable = true;
+                                        virtualText.enable = true;
+                                };
+                        };
+                };
+                kotlin = {
+                        enable = true;
+                };
+                lua = {
+                        enable = true;
+                        extraDiagnostics.enable = true;
+                };
+
+                sql = {
+                        enable = true;
+                        extraDiagnostics.enable = true;
+                };
+                typst = {
+                        enable = true;
+                        extensions.typst-preview-nvim = {
+                                enable = true;
+                        };
+                };
+                html.enable = true;
+                typescript = {
+                        enable = true;
+                        lsp.servers = [ "deno" ];
+                        extensions.ts-error-translator.enable = true;
+                        format.type = [ "prettier" ];
+                };
+                json = {
+                        enable = true;
+                };
+                rust = {
+                        enable = true;
+                        extensions.crates-nvim.enable = true;
+                        lsp.enable = true;
+                        lsp.servers = [ "rust-analyzer" ];
+                        dap.enable = true;
+                        dap.debugger = [ "lldb" ];
+                        format.enable = true;
+                };
+                go = {
+                        enable = true;
+                        # LSP is enabled explicitly (like rust above) so gopls does not depend
+                        # on the global vim.lsp.enable default staying on.
+                        lsp.enable = true;
+                        lsp.servers = [ "gopls" ];
+                };
+                clang.enable = true;
+                java.enable = true;
+                markdown = {
+                        enable = true;
+                        extensions.render-markdown-nvim.enable = true;
+                };
+                svelte = {
+                        enable = true;
+                        extraDiagnostics.enable = true;
+                };
         };
-      };
-    };
-    lua = {
-      enable = true;
-      extraDiagnostics.enable = true;
-    };
-
-    sql = {
-      enable = true;
-      extraDiagnostics.enable = true;
-    };
-    typst = {
-      enable = true;
-      extensions.typst-preview-nvim = {
-        enable = true;
-      };
-    };
-    html.enable = true;
-    typescript = {
-      enable = true;
-      lsp.servers = [ "deno" ];
-      extensions.ts-error-translator.enable = true;
-      format.type = [ "prettier" ];
-    };
-    json = {
-      enable = true;
-    };
-    rust = {
-      enable = true;
-      extensions.crates-nvim.enable = true;
-      lsp.enable = true;
-      lsp.servers = [ "rust-analyzer" ];
-      dap.enable = true;
-      dap.debugger = [ "lldb" ];
-      format.enable = true;
-    };
-    go = {
-      enable = true;
-      # LSP is enabled explicitly (like rust above) so gopls does not depend
-      # on the global vim.lsp.enable default staying on.
-      lsp.enable = true;
-      lsp.servers = [ "gopls" ];
-    };
-    clang.enable = true;
-    java.enable = true;
-    markdown = {
-      enable = true;
-      extensions.render-markdown-nvim.enable = true;
-    };
-    svelte = {
-      enable = true;
-      extraDiagnostics.enable = true;
-    };
-  };
 }
