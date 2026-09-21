@@ -42,6 +42,7 @@
               opencode
               waylandBase
               stylix
+              retrosmartCursor
             ];
 
             # The home-manager option tree of this user, read back by nixd

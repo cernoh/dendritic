@@ -85,6 +85,16 @@
       url = "github:Leriart/Mirai/1e7148b392107eec748b0213ef65c23f62fdfc1e";
       flake = false;
     };
+    # Pinned tag (v2.0.1), flake = false: consumed as a plain source tree by the
+    # cursor build in modules/features/retrosmart-cursor/_retrosmart-cursor.pkg.nix.
+    # The fork lives off github.com, so the URL is spelled out; the URL form is
+    # the tag archive, because this host's Nix cannot fetch a git+https input
+    # (its git transport fails even for github.com). The input carries no flake;
+    # only its XPM artwork and build scripts cross the boundary.
+    retrosmart-cursor = {
+      url = "https://github.laiyagushi.com/useless-anvil/retrosmart-cursor/archive/refs/tags/v2.0.1.tar.gz";
+      flake = false;
+    };
     mangowm = {
       url = "github:mangowm/mango";
       inputs.nixpkgs.follows = "nixpkgs";
