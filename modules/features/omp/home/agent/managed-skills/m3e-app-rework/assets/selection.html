@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>M3 Expressive rework — selection round</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet" />
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@m3e/web@2.8.2/dist/all.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        background: #faf9f5;
+        color: #141413;
+      }
+      body[data-theme="dark"] {
+        background: #141413;
+        color: #e6e2d8;
+      }
+      .page { max-width: 1080px; margin: 0 auto; padding: 40px 24px 120px; }
+      header.page-head { margin-bottom: 32px; }
+      .eyebrow {
+        font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #87867f;
+        margin: 0 0 8px;
+      }
+      h1 { font-size: 32px; font-weight: 500; margin: 0 0 8px; }
+      .sub { color: #87867f; margin: 0; }
+      h2 {
+        font-size: 20px;
+        font-weight: 500;
+        margin: 40px 0 12px;
+        padding-bottom: 8px;
+        border-bottom: 1.5px solid rgba(135, 134, 127, 0.3);
+      }
+      .muted { color: #87867f; }
+      .bar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        margin: 0 -16px 24px;
+        background: rgba(250, 249, 245, 0.92);
+        backdrop-filter: blur(6px);
+        border-bottom: 1px solid rgba(135, 134, 127, 0.25);
+      }
+      body[data-theme="dark"] .bar { background: rgba(20, 20, 19, 0.92); }
+      .bar .grow { flex: 1; }
+      button {
+        font: inherit;
+        border: 1.5px solid rgba(135, 134, 127, 0.5);
+        background: #fff;
+        color: inherit;
+        border-radius: 999px;
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+      body[data-theme="dark"] button { background: #24231f; }
+      button:hover { border-color: #d97757; }
+      button.primary { background: #d97757; border-color: #d97757; color: #fff; }
+      button.primary:disabled { opacity: 0.55; cursor: progress; }
+      .screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+      .screen {
+        border: 1.5px solid rgba(135, 134, 127, 0.35);
+        border-radius: 12px;
+        background: #fff;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      body[data-theme="dark"] .screen { background: #1d1c19; }
+      .screen img {
+        width: 100%;
+        border-radius: 8px;
+        background: repeating-conic-gradient(#eee 0% 25%, #ddd 0% 50%) 50% / 16px 16px;
+        cursor: zoom-in;
+        display: block;
+      }
+      .shot-missing {
+        aspect-ratio: 9 / 19;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        border: 1.5px dashed rgba(135, 134, 127, 0.6);
+        color: #87867f;
+        font-size: 13px;
+        text-align: center;
+        padding: 8px;
+      }
+      .screen h3 { font-size: 14px; font-weight: 600; margin: 0; }
+      .screen .meta { font: 11px/1.5 ui-monospace, Menlo, monospace; color: #87867f; }
+      .screen input[type="file"] { font-size: 11px; max-width: 100%; }
+      .card {
+        border: 1.5px solid rgba(135, 134, 127, 0.35);
+        border-radius: 12px;
+        background: #fff;
+        padding: 18px;
+        margin: 16px 0;
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+        gap: 20px;
+      }
+      body[data-theme="dark"] .card { background: #1d1c19; }
+      .card.wide { grid-template-columns: minmax(0, 1fr); }
+      .card.decided-apply { border-color: #788c5d; }
+      .card.decided-skip { opacity: 0.62; }
+      .card.decided-prototype { border-color: #d97757; }
+      .card h3 { font-size: 17px; font-weight: 600; margin: 0 0 6px; }
+      .badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+      .badge {
+        font: 11px/1 ui-monospace, Menlo, monospace;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(135, 134, 127, 0.5);
+        color: #87867f;
+      }
+      .badge.tactic { border-color: #788c5d; color: #788c5d; }
+      .badge.optin { border-color: #b04a3f; color: #b04a3f; }
+      .body p { margin: 0 0 8px; }
+      .kv { margin: 10px 0 0; display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; font-size: 13px; }
+      .kv dt { color: #87867f; font-family: ui-monospace, Menlo, monospace; font-size: 11px; align-self: center; }
+      .kv dd { margin: 0; overflow-wrap: anywhere; }
+      .kv code { font-size: 12px; }
+      a { color: #b04a3f; }
+      .preview {
+        border: 1.5px dashed rgba(135, 134, 127, 0.5);
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 120px;
+        max-height: 320px;
+        display: grid;
+        place-items: center;
+        gap: 10px;
+        overflow: auto;
+      }
+      .preview img { max-width: 100%; border-radius: 8px; }
+      .preview .preview-label {
+        font: 11px/1.4 ui-monospace, Menlo, monospace;
+        color: #87867f;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .preview .preview-body { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; max-width: 100%; }
+      .preview .preview-body:empty::after { content: "preview unavailable"; color: #87867f; font-size: 12px; }
+      .choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+      .choice {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1.5px solid rgba(135, 134, 127, 0.5);
+        border-radius: 999px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .choice:has(input:checked) { border-color: #d97757; background: rgba(217, 119, 87, 0.14); }
+      .choice input { accent-color: #d97757; }
+      .variants { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+      .variants button { padding: 4px 10px; font-size: 12px; }
+      .variants button[aria-pressed="true"] { border-color: #d97757; color: #b04a3f; }
+      textarea, input.note {
+        width: 100%;
+        margin-top: 10px;
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1.5px solid rgba(135, 134, 127, 0.5);
+        background: transparent;
+        color: inherit;
+        resize: vertical;
+      }
+      .note-row { display: grid; grid-template-columns: 1fr; gap: 8px; }
+      .foot {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        background: rgba(250, 249, 245, 0.95);
+        border-top: 1px solid rgba(135, 134, 127, 0.25);
+        backdrop-filter: blur(6px);
+      }
+      body[data-theme="dark"] .foot { background: rgba(20, 20, 19, 0.95); }
+      .result {
+        border: 1.5px solid #788c5d;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 24px 0;
+        background: rgba(120, 140, 93, 0.1);
+      }
+      .result.fail { border-color: #b04a3f; background: rgba(176, 74, 63, 0.1); }
+      .zoom {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 20, 19, 0.9);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        z-index: 20;
+        cursor: zoom-out;
+      }
+      .zoom img { max-width: 100%; max-height: 100%; border-radius: 8px; }
+      #json-out { margin-top: 12px; font: 12px/1.5 ui-monospace, Menlo, monospace; min-height: 160px; }
+      .warn { color: #b04a3f; }
+      @media (max-width: 720px) {
+        .card { grid-template-columns: minmax(0, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-head">
+        <p class="eyebrow">Material 3 Expressive rework</p>
+        <h1 id="title">Selection round</h1>
+        <p class="sub" id="subtitle"></p>
+      </header>
+
+      <div class="bar">
+        <span id="progress" class="muted">0 / 0 decided</span>
+        <span class="grow"></span>
+        <button id="all-recommended" type="button">Take all recommendations</button>
+        <button id="all-skip" type="button">Skip everything</button>
+        <button id="theme-toggle" type="button">Toggle dark</button>
+      </div>
+
+      <div id="m3e-warning" hidden class="result fail">
+        The Material 3 Expressive preview bundle did not load (no network, or the CDN is blocked). Previews are static
+        images where the agent supplied one. This does not change the selection.
+      </div>
+
+      <section id="screens-section">
+        <h2>Screens</h2>
+        <p class="muted" id="screens-note"></p>
+        <div class="screens" id="screens"></div>
+      </section>
+
+      <section id="decisions-section">
+        <h2>Decisions</h2>
+        <p class="muted">
+          One decision per candidate. <strong>Apply</strong> = build it in the plan. <strong>Prototype</strong> = build a
+          throwaway first. <strong>Defer</strong> = keep it, not in this round. <strong>Skip</strong> = drop it.
+        </p>
+        <div id="decisions"></div>
+      </section>
+
+      <section id="result-section"></section>
+    </div>
+
+    <div class="foot">
+      <span id="foot-progress" class="muted">0 / 0 decided</span>
+      <button id="submit" class="primary" type="button">Submit selection</button>
+      <button id="copy" type="button">Copy answers JSON</button>
+    </div>
+
+    <!-- LEDGER: replace the JSON object below with the filled ledger (see SKILL.md). Inside a JSON
+         string, write a closing script tag as an escaped slash, or the page script ends early. -->
+    <script type="application/json" id="ledger">
+      {
+        "app": { "name": "Example app", "round": 1, "title": "Selection round" },
+        "transport": { "mode": "copy" },
+        "screens": [],
+        "decisions": []
+      }
+    </script>
+    <script>
+      (function () {
+        "use strict";
+        var ledger = JSON.parse(document.getElementById("ledger").textContent);
+        var app = ledger.app || {};
+        var transport = ledger.transport || { mode: "copy" };
+        var screens = ledger.screens || [];
+        var decisions = ledger.decisions || [];
+        var m3eMissing = false;
+
+        document.getElementById("title").textContent = app.title || "Selection round";
+        document.getElementById("subtitle").textContent =
+          (app.name || "the app") + (app.package ? " (" + app.package + ")" : "") + (app.sub ? " — " + app.sub : "");
+        document.title = (app.name || "App") + " — M3E selection";
+
+        function el(tag, attrs, kids) {
+          var node = document.createElement(tag);
+          for (var k in attrs || {}) {
+            if (attrs[k] === null || attrs[k] === undefined) continue;
+            if (k === "text") node.textContent = attrs[k];
+            else if (k === "html") node.innerHTML = attrs[k];
+            else node.setAttribute(k, attrs[k]);
+          }
+          (kids || []).forEach(function (kid) {
+            if (kid) node.appendChild(kid);
+          });
+          return node;
+        }
+
+        function badge(text, cls) {
+          return el("span", { class: "badge" + (cls ? " " + cls : ""), text: text });
+        }
+
+        // ---- screens ----
+        var screenHost = document.getElementById("screens");
+        if (!screens.length) {
+          document.getElementById("screens-section").hidden = true;
+        } else {
+          var missing = screens.filter(function (s) {
+            return !s.shot;
+          }).length;
+          document.getElementById("screens-note").textContent =
+            screens.length +
+            " destinations, " +
+            missing +
+            " without a capture." +
+            (transport.shotsDir ? " Save the missing ones in " + transport.shotsDir + " as <id>.png." : "");
+          screens.forEach(function (s) {
+            var card = el("div", { class: "screen", "data-screen": s.id });
+            card.appendChild(el("h3", { text: s.label || s.id }));
+            if (s.shot) {
+              var img = el("img", { src: s.shot, alt: s.label || s.id, loading: "lazy" });
+              img.addEventListener("click", function () {
+                var zoom = el("div", { class: "zoom" }, [el("img", { src: s.shot, alt: s.label || s.id })]);
+                zoom.addEventListener("click", function () {
+                  zoom.remove();
+                });
+                document.body.appendChild(zoom);
+              });
+              card.appendChild(img);
+            } else if (transport.mode === "collector") {
+              var input = el("input", { type: "file", accept: "image/png,image/jpeg" });
+              input.addEventListener("change", function () {
+                var file = input.files && input.files[0];
+                if (!file) return;
+                var holder = el("div", { class: "shot-missing", text: "uploading " + file.name + "…" });
+                card.replaceChild(holder, card.querySelector(".shot-missing") || card.children[1]);
+                fetch("/api/shot?name=" + encodeURIComponent(s.id), {
+                  method: "POST",
+                  headers: { "content-type": file.type || "image/png" },
+                  body: file,
+                })
+                  .then(function (r) {
+                    return r.json();
+                  })
+                  .then(function (res) {
+                    if (res && res.ok) {
+                      holder.textContent = "captured " + (res.file || file.name);
+                      var preview = el("img", { src: "/shots/" + s.id + ".png?t=" + Date.now(), alt: s.label || s.id });
+                      preview.addEventListener("click", function () {
+                        window.open(preview.src, "_blank");
+                      });
+                      card.insertBefore(preview, holder);
+                    } else {
+                      holder.textContent = "upload failed: " + ((res && res.error) || "unknown");
+                      holder.className = "shot-missing warn";
+                    }
+                  })
+                  .catch(function (error) {
+                    holder.textContent = "upload failed: " + error.message;
+                    holder.className = "shot-missing warn";
+                  });
+              });
+              var picker = el("div", { class: "shot-missing" }, [
+                el("span", { text: "no capture — drop " + s.id + ".png here or pick a file" }),
+              ]);
+              picker.addEventListener("dragover", function (event) {
+                event.preventDefault();
+              });
+              picker.addEventListener("drop", function (event) {
+                event.preventDefault();
+                input.files = event.dataTransfer.files;
+                input.dispatchEvent(new Event("change"));
+              });
+              card.appendChild(picker);
+              card.appendChild(input);
+            } else {
+              card.appendChild(el("div", { class: "shot-missing", text: "no capture for " + s.id }));
+            }
+            if (s.route || s.reach) {
+              card.appendChild(
+                el("div", { class: "meta", text: [s.route, s.reach].filter(Boolean).join(" · ") })
+              );
+            }
+            screenHost.appendChild(card);
+          });
+        }
+
+        // ---- decisions ----
+        var state = {};
+        decisions.forEach(function (d) {
+          state[d.id] = { choice: "", variant: "", note: "" };
+        });
+
+        function recalcProgress() {
+          var done = decisions.filter(function (d) {
+            return state[d.id].choice;
+          }).length;
+          var text = done + " / " + decisions.length + " decided";
+          document.getElementById("progress").textContent = text;
+          document.getElementById("foot-progress").textContent = text;
+          document.getElementById("submit").disabled = done !== decisions.length;
+        }
+
+        var host = document.getElementById("decisions");
+        decisions.forEach(function (d) {
+          var card = el("div", { class: "card", "data-decision": d.id });
+          if (!d.preview && !d.previewShot) card.className += " wide";
+
+          if (d.preview || d.previewShot) {
+            var holder = el("div", { class: "preview" }, [
+              el("div", { class: "preview-label", text: (d.family || "candidate") + " · live preview" }),
+              el("div", { class: "preview-body" }),
+            ]);
+            if (d.previewShot) {
+              holder.querySelector(".preview-body").appendChild(
+                el("img", { src: d.previewShot, alt: "preview of " + d.title })
+              );
+            }
+            if (d.preview) {
+              holder.querySelector(".preview-body").innerHTML = d.preview;
+            }
+            card.appendChild(holder);
+          }
+
+          var body = el("div", { class: "body" });
+          body.appendChild(el("h3", { text: d.title }));
+          var badges = el("div", { class: "badges" });
+          if (d.family) badges.appendChild(badge(d.family));
+          if (d.tactic) badges.appendChild(badge(d.tactic, "tactic"));
+          if (d.kotlin && d.kotlin.optIn) badges.appendChild(badge(d.kotlin.optIn, "optin"));
+          if (d.effort) badges.appendChild(badge("effort " + d.effort));
+          if (d.risk) badges.appendChild(badge("risk " + d.risk));
+          body.appendChild(badges);
+
+          (d.body || "").split("\n\n").forEach(function (para) {
+            if (para.trim()) body.appendChild(el("p", { text: para }));
+          });
+
+          var kv = el("dl", { class: "kv" });
+          function row(key, value) {
+            if (!value) return;
+            kv.appendChild(el("dt", { text: key }));
+            kv.appendChild(el("dd", { html: value }));
+          }
+          if (d.kotlin) {
+            row("api", "<code>" + (d.kotlin.api || "") + "</code>");
+            if (d.kotlin.imports) row("import", "<code>" + d.kotlin.imports + "</code>");
+          }
+          if (d.catalog) {
+            row(
+              "catalog",
+              d.catalog.url ? '<a href="' + d.catalog.url + '" target="_blank">' + d.catalog.path + "</a>" : d.catalog.path
+            );
+          }
+          if (d.current) row("today", "<code>" + d.current + "</code>");
+          if (d.screens && d.screens.length) row("screens", d.screens.join(", "));
+          if (d.dependsOn && d.dependsOn.length) row("depends", d.dependsOn.join(", "));
+          if (d.evidence) row("evidence", d.evidence);
+          body.appendChild(kv);
+
+          if (d.recommendation) {
+            body.appendChild(el("p", { class: "muted", text: "Recommendation: " + d.recommendation }));
+          }
+
+          var choices = el("div", { class: "choices" });
+          ["apply", "prototype", "defer", "skip"].forEach(function (choice) {
+            var input = el("input", { type: "radio", name: "choice-" + d.id, value: choice, "data-decision": d.id });
+            input.addEventListener("change", function () {
+              state[d.id].choice = choice;
+              card.className = card.className.replace(/ decided-\w+/g, "") + " decided-" + choice;
+              recalcProgress();
+            });
+            choices.appendChild(el("label", { class: "choice" }, [input, el("span", { text: choice })]));
+          });
+          body.appendChild(choices);
+
+          if (d.variants && d.variants.length) {
+            var variants = el("div", { class: "variants" });
+            d.variants.forEach(function (variant) {
+              var button = el("button", { type: "button", "aria-pressed": "false", text: variant });
+              button.addEventListener("click", function () {
+                var pressed = button.getAttribute("aria-pressed") === "true";
+                Array.prototype.forEach.call(variants.children, function (sibling) {
+                  sibling.setAttribute("aria-pressed", "false");
+                });
+                button.setAttribute("aria-pressed", pressed ? "false" : "true");
+                state[d.id].variant = pressed ? "" : variant;
+              });
+              variants.appendChild(button);
+            });
+            body.appendChild(variants);
+          }
+
+          var note = el("textarea", { rows: "2", placeholder: "notes for this decision (optional)" });
+          note.addEventListener("input", function () {
+            state[d.id].note = note.value;
+          });
+          body.appendChild(note);
+
+          card.appendChild(body);
+          host.appendChild(card);
+        });
+
+        function takeAll(choice) {
+          decisions.forEach(function (d) {
+            var target = choice === "recommended" ? d.recommended || "apply" : choice;
+            var input = document.querySelector('input[data-decision="' + d.id + '"][value="' + target + '"]');
+            if (input) {
+              input.checked = true;
+              input.dispatchEvent(new Event("change"));
+            }
+          });
+        }
+
+        document.getElementById("all-recommended").addEventListener("click", function () {
+          takeAll("recommended");
+        });
+        document.getElementById("all-skip").addEventListener("click", function () {
+          takeAll("skip");
+        });
+        document.getElementById("theme-toggle").addEventListener("click", function () {
+          document.body.dataset.theme = document.body.dataset.theme === "dark" ? "light" : "dark";
+        });
+
+        if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+          document.body.dataset.theme = "dark";
+        }
+
+        function answersPayload() {
+          var answers = {};
+          // The bridge declares its questions itself, so its answer keys are q1..qN in the
+          // order the questions were passed to grill_form — one question per decision.
+          var positionKeys = transport.answerIds === "position";
+          decisions.forEach(function (d, index) {
+            var entry = state[d.id];
+            var parts = [];
+            if (entry.choice) parts.push(entry.choice.toUpperCase());
+            if (entry.variant) parts.push("variant=" + entry.variant);
+            if (entry.note.trim()) parts.push("note: " + entry.note.trim());
+            answers[positionKeys ? "q" + (index + 1) : d.id] = parts.join(" | ");
+          });
+          var extra = (document.getElementById("extra") || {}).value || "";
+          return { answers: answers, extra: extra };
+        }
+
+        var out = document.getElementById("result-section");
+        function showResult(ok, message, payload) {
+          var box = el("div", { class: "result" + (ok ? "" : " fail") }, [el("p", { text: message })]);
+          if (!ok) {
+            box.appendChild(el("p", { class: "muted", text: "The selection is still in the page. Copy the JSON below and paste it into the session." }));
+            var area = el("textarea", { id: "json-out", rows: "8" });
+            area.value = JSON.stringify(payload, null, 2);
+            box.appendChild(area);
+            var copy2 = el("button", { type: "button", text: "Copy JSON" });
+            copy2.addEventListener("click", function () {
+              area.select();
+              document.execCommand("copy");
+              copy2.textContent = "Copied";
+            });
+            box.appendChild(copy2);
+          }
+          out.innerHTML = "";
+          out.appendChild(box);
+          box.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        document.getElementById("submit").addEventListener("click", function () {
+          var payload = answersPayload();
+          if (transport.submitUrl) {
+            fetch(transport.submitUrl, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(payload),
+            })
+              .then(function (response) {
+                return response.json().then(function (data) {
+                  return { status: response.status, data: data };
+                });
+              })
+              .then(function (result) {
+                if (result.status === 200 && result.data && result.data.ok) {
+                  showResult(true, "Submitted — the answers are now the next message in the session.", payload);
+                } else {
+                  showResult(false, "Submit failed: " + JSON.stringify(result.data), payload);
+                }
+              })
+              .catch(function (error) {
+                showResult(false, "Submit failed: " + error.message, payload);
+              });
+            return;
+          }
+          showResult(false, "No submit endpoint is configured for this page.", payload);
+        });
+
+        document.getElementById("copy").addEventListener("click", function () {
+          var payload = answersPayload();
+          var text = JSON.stringify(payload, null, 2);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+              function () {
+                showResult(false, "Answers JSON copied to the clipboard — paste it into the session.", payload);
+              },
+              function () {
+                showResult(false, "Clipboard blocked — copy the JSON below.", payload);
+              }
+            );
+          } else {
+            showResult(false, "Clipboard unavailable — copy the JSON below.", payload);
+          }
+        });
+
+        if (window.customElements && customElements.whenDefined) {
+          var timer = setTimeout(function () {
+            if (!customElements.get("m3e-button")) {
+              m3eMissing = true;
+              document.getElementById("m3e-warning").hidden = false;
+              document.body.setAttribute("data-m3e", "missing");
+            }
+          }, 8000);
+          customElements.whenDefined("m3e-button").then(function () {
+            clearTimeout(timer);
+            document.body.setAttribute("data-m3e", "ready");
+          });
+        }
+
+        recalcProgress();
+      })();
+    </script>
+  </body>
+</html>

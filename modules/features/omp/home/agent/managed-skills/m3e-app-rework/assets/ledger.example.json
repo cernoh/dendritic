@@ -1,0 +1,158 @@
+{
+  "app": {
+    "name": "Note keeper",
+    "package": "dev.example.notekeeper",
+    "round": 1,
+    "title": "M3 Expressive rework — round 1",
+    "sub": "12 screens captured, 5 candidates from the expressive catalog"
+  },
+  "transport": {
+    "mode": "copy"
+  },
+  "screens": [
+    {
+      "id": "s1",
+      "label": "Library (list)",
+      "route": "library",
+      "reach": "first screen",
+      "shot": ""
+    },
+    {
+      "id": "s2",
+      "label": "Note detail",
+      "route": "note/{id}",
+      "reach": "tap a list row",
+      "shot": ""
+    },
+    {
+      "id": "s3",
+      "label": "Sort sheet",
+      "route": "sheet:sort",
+      "reach": "tap the sort icon on the library",
+      "shot": ""
+    }
+  ],
+  "decisions": [
+    {
+      "id": "f1",
+      "title": "Connected button group for the library filters",
+      "family": "button-group",
+      "tactic": "6. leverage component flexibility",
+      "body": "The library header holds three independent ToggleButtons for All / Notes / Todos. A connected button group makes the three a single control, gives the group press-time shape morphing, and moves overflow into a menu when the labels stop fitting.\n\nThe group also survives the narrow layout: the overflow indicator keeps the control usable at 320 dp, where the three-toggle row currently clips.",
+      "recommendation": "apply",
+      "variants": ["standard", "connected", "connected + multi"],
+      "kotlin": {
+        "api": "ButtonGroup(overflowIndicator = { state -> FilledIconButton(onClick = { ... }) { Icon(Icons.Filled.MoreVert, null) } }) { ... }",
+        "imports": "androidx.compose.material3.ButtonGroup",
+        "optIn": "ExperimentalMaterial3ExpressiveApi"
+      },
+      "catalog": {
+        "path": "components/buttongroup/ButtonGroupComposable.kt",
+        "url": "https://github.com/meticha/material-3-expressive-catalog/blob/main/app/src/main/java/com/cavin/material3expressivecatalog/components/buttongroup/ButtonGroupComposable.kt"
+      },
+      "current": "app/library/ListControls.kt:88-104 — three ToggleButtons in a Row",
+      "screens": ["s1"],
+      "effort": "S",
+      "risk": "low",
+      "evidence": "3 production call sites; no preview-only uses",
+      "preview": "<m3e-button-group variant=\"connected\"><m3e-button variant=\"outlined\">All</m3e-button><m3e-button variant=\"outlined\">Notes</m3e-button><m3e-button variant=\"outlined\">Todos</m3e-button></m3e-button-group>"
+    },
+    {
+      "id": "f2",
+      "title": "Split button for the note detail primary action",
+      "family": "split-button",
+      "tactic": "6. leverage component flexibility",
+      "body": "The detail screen pairs Save with a separate overflow IconButton for Save as copy / Export / Delete. A split button keeps the primary action large and puts the menu behind the trailing half, which is what the catalog's SplitButtonVariant1 does.\n\nThe trailing half rotates its chevron on expand, so the open state is visible without a second control.",
+      "recommendation": "apply",
+      "variants": ["filled", "tonal", "outlined", "elevated"],
+      "kotlin": {
+        "api": "SplitButtonLayout(leadingButton = { SplitButtonDefaults.LeadingButton(onClick = {}) { Text(\"Save\") } }, trailingButton = { SplitButtonDefaults.TrailingButton(checked, onCheckedChange) { Icon(Icons.Filled.KeyboardArrowDown, null) } })",
+        "imports": "androidx.compose.material3.SplitButtonLayout, androidx.compose.material3.SplitButtonDefaults",
+        "optIn": "ExperimentalMaterial3ExpressiveApi"
+      },
+      "catalog": {
+        "path": "components/splitbutton/SplitButtonVariant1.kt",
+        "url": "https://github.com/meticha/material-3-expressive-catalog/blob/main/app/src/main/java/com/cavin/material3expressivecatalog/components/splitbutton/SplitButtonVariant1.kt"
+      },
+      "current": "app/detail/DetailActions.kt:42-71 — Button + IconButton in a Row",
+      "screens": ["s2"],
+      "effort": "S",
+      "risk": "low",
+      "evidence": "2 production call sites, one @Preview",
+      "preview": "<m3e-split-button variant=\"filled\" size=\"medium\"><m3e-button slot=\"primary-action\" variant=\"filled\"><m3e-icon slot=\"icon\" name=\"save\"></m3e-icon>Save</m3e-button><m3e-button slot=\"secondary-action\" variant=\"filled\"><m3e-icon name=\"arrow_drop_down\"></m3e-icon></m3e-button></m3e-split-button>"
+    },
+    {
+      "id": "f3",
+      "title": "Wavy progress indicator for the sync banner",
+      "family": "progress-indicators",
+      "tactic": "5. add fluid and natural motion",
+      "body": "Sync draws a stock LinearProgressIndicator. The expressive wavy indicator is the same API family with variant = Wavy, and it reads as motion rather than as a stalled bar.\n\nKeep the determinate mode: the sync job already reports progress.",
+      "recommendation": "prototype",
+      "variants": ["wavy determinate", "wavy indeterminate", "loading indicator"],
+      "kotlin": {
+        "api": "LinearWavyProgressIndicator(progress = { fraction })",
+        "imports": "androidx.compose.material3.LinearWavyProgressIndicator",
+        "optIn": "ExperimentalMaterial3ExpressiveApi"
+      },
+      "catalog": {
+        "path": "components/progressindicators/ProgressIndicatorComposables.kt",
+        "url": "https://github.com/meticha/material-3-expressive-catalog/blob/main/app/src/main/java/com/cavin/material3expressivecatalog/components/progressindicators/ProgressIndicatorComposables.kt"
+      },
+      "current": "app/sync/SyncBanner.kt:31-38 — LinearProgressIndicator(progress)",
+      "screens": ["s1", "s3"],
+      "effort": "XS",
+      "risk": "medium",
+      "evidence": "1 production call site; the banner is below the fold on the library",
+      "preview": "<m3e-linear-progress-indicator variant=\"wavy\" value=\"62\"></m3e-linear-progress-indicator>"
+    },
+    {
+      "id": "t1",
+      "title": "Shape: break the detail hero out of the surrounding shape style",
+      "family": "shape library",
+      "tactic": "1. use a variety of shapes",
+      "body": "The blog's first tactic: at the base level, the shapes of components and containers set the tone. The detail screen's attachment strip, the folder buttons and the note covers are all rounded rectangles, so nothing leads the eye.\n\nA candidate: give the pinned-note cover a shape from the 35-shape library and morph it on pin. This is the cheapest hero moment on the screen.",
+      "recommendation": "defer",
+      "variants": ["4-sided-cookie", "flower", "sunny", "gem"],
+      "kotlin": {
+        "api": "MaterialShapes.Cookie4Sided.toShape()",
+        "imports": "androidx.compose.material3.MaterialShapes",
+        "optIn": "ExperimentalMaterial3ExpressiveApi"
+      },
+      "screens": ["s2"],
+      "effort": "M",
+      "risk": "medium",
+      "preview": "<m3e-shape name=\"4-sided-cookie\" style=\"width:56px;height:56px\"></m3e-shape>"
+    },
+    {
+      "id": "t2",
+      "title": "Hero moment: which interaction gets the full expressive treatment",
+      "family": "tactic 7",
+      "tactic": "7. combine tactics to create hero moments",
+      "body": "The blog allows one or two hero moments per product. Candidates from the inventory: (a) opening a note, (b) completing a todo, (c) the first sync.\n\nPick one. A hero moment combines shape, motion and typography, so it costs more than a component swap and it must not be spread thin.",
+      "recommendation": "defer",
+      "variants": ["opening a note", "completing a todo", "first sync", "none this round"],
+      "screens": ["s1", "s2"],
+      "effort": "L",
+      "risk": "medium"
+    },
+    {
+      "id": "g1",
+      "title": "Color: keep dynamic color or adopt the expressive palettes",
+      "family": "theme",
+      "tactic": "2. apply rich and nuanced colors",
+      "body": "The app already builds its scheme from the wallpaper on Android 12+ (dynamicLightColorScheme / dynamicDarkColorScheme). The expressive schemes (expressiveLightColorScheme and its dark counterpart) are the alternative, and they raise the contrast between the roles.\n\nThe guide asks for contrast to prioritize actions; keeping dynamic color keeps the user's palette at a lower contrast.",
+      "recommendation": "apply",
+      "variants": ["dynamic color", "expressive scheme", "expressive on API < 33 only"],
+      "kotlin": {
+        "api": "MaterialExpressiveTheme(colorScheme = expressiveLightColorScheme(), motionScheme = MotionScheme.expressive())",
+        "imports": "androidx.compose.material3.MaterialExpressiveTheme",
+        "optIn": "ExperimentalMaterial3ExpressiveApi"
+      },
+      "current": "app/ui/theme/Theme.kt:24-38",
+      "screens": ["s1", "s2", "s3"],
+      "effort": "M",
+      "risk": "low",
+      "preview": "<m3e-theme color=\"#6750A4\" motion=\"expressive\"><div style=\"display:flex;gap:8px\"><m3e-button variant=\"filled\">Filled</m3e-button><m3e-button variant=\"tonal\">Tonal</m3e-button><m3e-button variant=\"outlined\">Outlined</m3e-button></div></m3e-theme>"
+    }
+  ]
+}
