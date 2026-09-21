@@ -58,7 +58,10 @@
         # #95); the compositor channel is the one that actually reaches
         # greeter-spawned mango and its spawns.
         env = [
-          "XCURSOR_SIZE,24"
+          # Name and size come from the retrosmart cursor feature, so the
+          # compositor channel on both hosts names the same theme.
+          "XCURSOR_SIZE,${toString self.retrosmartCursor.size}"
+          "XCURSOR_THEME,${self.retrosmartCursor.name}"
           "TERMINAL,ghostty"
           "GBM_BACKEND,nvidia-drm"
           "__GLX_VENDOR_LIBRARY_NAME,nvidia"

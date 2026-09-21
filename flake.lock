@@ -565,6 +565,19 @@
         "type": "github"
       }
     },
+    "retrosmart-cursor": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788888659,
+        "narHash": "sha256-zZwxtdFlxYUNbyGtC8nNWqrvS9DW1H+2YOYr7LdcEVU=",
+        "type": "tarball",
+        "url": "https://github.laiyagushi.com/useless-anvil/retrosmart-cursor/archive/refs/tags/v2.0.1.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.laiyagushi.com/useless-anvil/retrosmart-cursor/archive/refs/tags/v2.0.1.tar.gz"
+      }
+    },
     "root": {
       "inputs": {
         "asahi": "asahi",
@@ -579,6 +592,7 @@
         "noctalia": "noctalia",
         "noctalia-greeter": "noctalia-greeter",
         "nvf": "nvf",
+        "retrosmart-cursor": "retrosmart-cursor",
         "stremio-kai": "stremio-kai",
         "stylix": "stylix",
         "wrappers": "wrappers"
