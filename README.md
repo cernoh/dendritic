@@ -27,6 +27,15 @@ sudo nixos-rebuild switch --impure --flake ~/.config/dendritic#ASAHI
 Evaluated anywhere else, hosts fall back to a placeholder root filesystem —
 evaluation still succeeds, deploys only happen from the machine itself.
 
+The `fish` feature adds `nom-switch`, which runs the same command through
+[nix-output-monitor](https://github.com/maralorn/nix-output-monitor) so a long
+build renders as a tree of derivations:
+
+```fish
+nom-switch          # the local host
+nom-switch ASAHI    # a named host
+```
+
 ## Features
 
 One directory per app/concern under `modules/features/`. Import IS enabling:
