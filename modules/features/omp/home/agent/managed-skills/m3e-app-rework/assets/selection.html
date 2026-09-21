@@ -143,10 +143,11 @@
         border-radius: 12px;
         padding: 16px;
         min-height: 120px;
+        max-height: 320px;
         display: grid;
         place-items: center;
         gap: 10px;
-        overflow-x: auto;
+        overflow: auto;
       }
       .preview img { max-width: 100%; border-radius: 8px; }
       .preview .preview-label {
@@ -155,7 +156,7 @@
         text-transform: uppercase;
         letter-spacing: 0.06em;
       }
-      .preview .preview-body { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .preview .preview-body { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; max-width: 100%; }
       .preview .preview-body:empty::after { content: "preview unavailable"; color: #87867f; font-size: 12px; }
       .choices { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
       .choice {

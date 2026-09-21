@@ -24,20 +24,36 @@ Sources of truth, in this order:
 
 ## Phase 1 — Every screen, captured
 
-**Enumerate from source first.** Read the navigation graph, so the inventory is complete
-before you touch a device. Grep for the app's own vocabulary:
+**Enumerate from source first.** Find the navigation graph, then read its destination list with the
+app's own DSL — not with a pattern guessed from another app. Three shapes cover almost every Compose
+app:
 
+| Navigation | The graph | The destination entries | The route names |
+| --- | --- | --- | --- |
+| Navigation Compose | `NavHost(` | `composable(`, `animatedComposable(`, `navEntry(` | `object Route { const val … }` |
+| Navigation 3 | `NavDisplay(` | `entryProvider`, `entry<…>` | `@Serializable data object` |
+| Voyager | `Navigator(` | `ScreenModel` + `screen { }` | `object …Screen : Screen` |
+
+```bash
+grep -rn "NavHost(\|NavDisplay(\|Navigator(" <src>
+grep -rn "composable(\|animatedComposable(\|navEntry(\|entryProvider\|entry<" <src>
+grep -rn "object Route\|sealed class .*Screen\|sealed interface .*Route\|@Serializable data object" <src>
 ```
-grep -rn "NavHost(\|composable(\|NavDisplay(\|entryProvider\|Serializable" <src>
-grep -rn "sealed class .*Screen\|sealed interface .*Route\|@Serializable data class .*Route" <src>
-```
 
-One row per destination, then add the surfaces that have no route: modal bottom sheets,
-dialogs, menus, toolbars and their overflow, the empty, loading, error and permission states,
-and the first-run flow.
+Then close the list three ways:
 
-**Walk it on an emulator.** Build and install, then drive the app destination by destination.
-The mechanics are already measured:
+- **Nested graphs.** A `navigation(startDestination = X, route = Y) { … }` sub-graph holds most of
+  the screens in a settings-heavy app. Measured on Sealplus: 22 of 36 destinations live in one
+  `settingsGraph`.
+- **The surfaces without a route.** Modal bottom sheets, dialogs, menus, the navigation drawer
+  itself, toolbars and overflow, the empty, loading, error and permission states, and the first-run
+  flow.
+- **Cross-check the top-level items** against the drawer or bottom bar item list. A destination that
+  no menu reaches needs its entry point named in `reach`, or the walk cannot find it (Sealplus:
+  `task_list` is in the graph but not in the drawer).
+
+**Walk it on an emulator.** Build and install, then drive the app destination by destination. The
+mechanics are already measured:
 
 - `skill://nixos-agp-emulator-screenshot-loop` — dev shell, the `-Pandroid.aapt2FromMavenOverride`
   fix, headless boot, `screencap`, and the rule that tap coordinates come from
@@ -45,15 +61,46 @@ The mechanics are already measured:
 - `skill://android-emulator-screenshot-state-seeding` — bypass a first-run wizard, seed a
   fixture, and prove which build is installed before trusting a capture.
 
+**Write the walk as a script, and tap by label, not by remembered coordinates.** The script is the
+re-runnable half of phase 4: the after-pairs must repeat the before-paths. One step is: dump, find
+the node whose `text` or `content-desc` equals the label, tap its centre, wait, capture, record.
+
 ```bash
-adb -s emulator-5554 shell uiautomator dump /sdcard/ui.xml
-adb -s emulator-5554 pull /sdcard/ui.xml /tmp/ui.xml        # bounds="[x1,y1][x2,y2]" in real pixels
+adb -s emulator-5554 shell rm -f /sdcard/ui.xml                # before every dump
+adb -s emulator-5554 shell uiautomator dump /sdcard/ui.xml      # fail -> "ERROR: could not get idle state"
+adb -s emulator-5554 pull /sdcard/ui.xml /tmp/walk-ui.xml       # bounds="[x1,y1][x2,y2]" in real pixels
 adb -s emulator-5554 shell input tap <cx> <cy>
 adb -s emulator-5554 exec-out screencap -p > <dir>/shots/<id>.png
 ```
 
-Record the tap path for every capture (`reach` in the ledger). A screen reached by a tap path
-is reproducible; a screen captured by accident is not.
+Five things break that loop, all measured on Sealplus (2026-09-21):
+
+- **A failed dump leaves a stale file.** `uiautomator dump` returns `ERROR: could not get idle
+  state.` on an animating screen, and the previous `ui.xml` stays on the device — so the next tap
+  lands on the wrong surface and you capture the wrong screen. Delete the file first, retry the
+  dump up to three times, and never tap from a dump you did not just take.
+- **The dump is XML-escaped.** `Look &amp; feel` never matches `Look & feel`. Decode `&amp;`,
+  `&lt;`, `&gt;` before matching, or the tap silently misses.
+- **The app's own overlays are steps, not noise.** Sealplus raises a battery-optimisation dialog on
+  every visit to Home, an "Exit Seal Plus?" confirm on `BACK` at the root, and a three-page
+  onboarding flow before Home exists. Give the walk a `dismissOverlays()` step (tap `Skip`/`Cancel`
+  when the dump shows them) and verify the screen **by its text after the tap** before you name the
+  capture: a capture named `home` that is really onboarding page 2 costs the whole round.
+- **A screenshot can be corrupt and still look like a file.** `adb exec-out screencap -p` written
+  through a text pipeline (a captured string, a shell function that round-trips `stdout`) produces
+  bytes that are not a PNG — and a downscale or a browser then reports `improper image header`.
+  Capture as bytes, then assert the signature and the size:
+
+```bash
+head -c 8 <shot>.png | xxd -p          # 89504e470d0a1a0a
+```
+
+- **The first install can be refused.** `INSTALL_FAILED_UPDATE_INCOMPATIBLE … signatures do not
+  match` means the emulator already holds the app signed by a different debug keystore (the debug
+  key lives under `$ANDROID_USER_HOME`). `adb uninstall <package>.debug` and install again.
+
+Run the walk as one long-lived script, not inside a fixed 30 s tool call: a 36-destination app is
+minutes of adb, and a killed cell loses the driver's state mid-walk.
 
 **When the walk is impossible, collect from the user.** These are the blockers that end the
 emulator route, and each one is a fact to state, not to hide: no `/dev/kvm`; no JDK or SDK on
@@ -71,9 +118,15 @@ The plain fallback needs no server: print the exact target path and names
 when Deno is unavailable.
 
 **Capture hygiene.** One PNG per screen, real pixels. Downscale for the ledger so the JSON
-stays readable — `nix shell nixpkgs#imagemagick -c magick <in>.png -resize 540x <out>.png`,
-then inline it as a `data:image/png;base64,…` URI. A blank capture still writes a file: check
-the size, and never claim a screen that did not render.
+stays readable:
+
+```bash
+nix shell nixpkgs#imagemagick -c magick mogrify -resize 540x -path <dir>/small <dir>/shots/*.png
+```
+
+That command also rejects a corrupt capture by name (`improper image header`), which is how the
+broken ones surface. A blank capture still writes a file: check the size, and never claim a screen
+that did not render.
 
 ## Phase 2 — Candidates, grounded in the catalog
 
@@ -127,6 +180,29 @@ name them in the ledger.
 | app bars (blog) | `MediumFlexibleTopAppBar`, `LargeFlexibleTopAppBar`, `TwoRowsTopAppBar` | `m3e-app-bar size="small\|medium\|large"` |
 | sliders (blog) | `Slider` with expressive `SliderDefaults` | `m3e-slider` |
 
+**When an API is absent at the pinned version, the row does not die — it changes class.** Decide this
+once, as the first row of the round, and let the rest depend on it. Sealplus (material3 1.4.0, BOM
+2026.05.01) is the worked case: `ButtonGroup`, `SplitButtonLayout`, `FloatingActionButtonMenu`,
+`LoadingIndicator`, `Horizontal/VerticalFloatingToolbar`, `MaterialShapes` and the wavy progress
+indicators are absent, and `MaterialExpressiveTheme` is `internal`. Four candidate classes remain:
+
+1. **The version-line row.** One decision that names the cost of moving to the newer line, with the
+   measured absent/present list as its evidence. Everything else that needs the new APIs depends on
+   it. Do not spend a round on component rows that cannot compile.
+2. **A tactic.** Shape, colour, typography, containment and motion are design tactics, not
+   components, and most of them work on the current line. Sealplus already owns the motion
+   vocabulary (`EmphasizeEasing`, `common/motion/AnimationSpecs.kt`), so springs and shape morphing
+   are reachable today.
+3. **An API that is present at the pinned version.** Measure it; do not assume the component set is
+   all-or-nothing. At 1.4.0 `ShortNavigationBar`, `WideNavigationRail`, `AppBarRow`, `AppBarColumn`
+   and `SegmentedButton` are present, and `NavigationSuiteScaffold` arrives with
+   `material3-adaptive-navigation-suite` on the same stable line — the adaptive shell is buildable
+   without moving the version.
+4. **A different artifact for the same capability.** The 35-shape library is `MaterialShapes` in
+   material3 and `androidx.graphics:graphics-shapes` (`RoundedPolygon`) in graphics, which Sealplus
+   already depends on. Check whether the app has the capability under another coordinate before
+   calling it gated.
+
 **The 7 tactics and 4 expressive styles are candidates too.** They carry no component but
 they change the most pixels: shapes, rich and nuanced color, emphasized typography, containment
 for emphasis, fluid motion, component flexibility for foldables and large screens, and one or
@@ -168,6 +244,18 @@ and a note box; it answers every decision as `CHOICE | variant=… | note: …`.
 key is the decision id, except with `"answerIds": "position"` (the bridge transport), where the
 page writes `q1 … qN` in decision order. Escape any `</script` inside a JSON string as
 `<\/script`, or the page script ends early.
+
+### Building the page
+
+Two mechanical steps, both worth scripting because the ledger is large:
+
+1. **Splice the ledger into the page.** Copy `assets/selection.html`, then replace everything between
+   `id="ledger">` and the *first* `</script>` after it with the ledger JSON. Keying on that marker
+   matters: the page's own script follows, and a greedy match swallows it.
+2. **Inline the captures.** Downscale (`magick mogrify -resize 540x`, above), then embed each as
+   `data:image/png;base64,…`. A 540 px-wide capture is 40–150 KB, so ten screens make a page of
+   1–2 MB — measured on Sealplus: 10 captures and 9 decisions made a 1.75 MB page that Chrome
+   renders without trouble. Do not skip the downscale: a raw 1080×2400 capture is 10× that.
 
 ### Transport 1 — the session bridge (preferred)
 
@@ -306,6 +394,20 @@ Measured 2026-09-21 on NIXPC, so the shape of both outcomes is known before the 
 | screenshot upload from the page | `M3E-SHOT s3 70 bytes (2 captures)`, `/shots/s3.png` served as `image/png` |
 | bridge, live session over RPC | `grill_form` round 1 URL and `Environment: /tmp/omp-html-env-*`; round ids `["q1","q2"]`; a custom page under `public/` served at `<base>/env/m3e-selection.html` (200); POST `<base>/round/1/answers` → `{"ok":true,"answers":2}`; the marker text arrived in the next user message |
 | bridge keys by position | `"answerIds":"position"` turned six decisions into `q1 … q6` in decision order |
+
+Measured again 2026-09-21 on a real app, `cernoh/Sealplus` (material3 1.4.0, 36 destinations in one
+`NavHost` plus a nested settings graph, x86_64 emulator, `/dev/kvm`):
+
+| Step | Result |
+| --- | --- |
+| emulator walk, first install | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` — a different debug keystore was in the AVD; `adb uninstall com.maheshtechnicals.sealplus.debug` first |
+| source enumeration | 22 of 36 destinations sit inside `settingsGraph`; `task_list` is in the graph but in no menu, so its `reach` is unresolved |
+| captures | 10 of 20 listed screens captured in one pass (3 onboarding pages, home, drawer, settings, look & feel, download directory, more tools, troubleshooting, about, downloads empty state); 10 rows left for the collector |
+| screenshots written through a text pipeline | corrupt — `improper image header` from ImageMagick, 4 of 12 captures lost; a byte capture plus the PNG signature check is the fix |
+| `uiautomator dump` on an animating screen | `ERROR: could not get idle state.`, stale `ui.xml` reused, two taps landed on the previous screen |
+| dump text | XML-escaped: `Look &amp; feel` never matched `Look & feel` |
+| the app's own overlays | a battery dialog re-raised on every Home visit, an "Exit Seal Plus?" confirm on `BACK` at the root, three onboarding pages |
+| page over http | `data-m3e="ready"`, 9 cards, 20 screen rows (10 with loading images, 10 file pickers), 29 variant toggles, `--md-sys-color-primary` `#6750a4`, 1.75 MB page |
 
 ## Related skills
 
