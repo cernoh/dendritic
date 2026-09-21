@@ -28,7 +28,8 @@
 #     users' directories.
 #   - Rebuild helpers retargeted at this flake (see config.fish/functions).
 #   - Companion binaries the config invokes are packaged here: zoxide fzf
-#     bat eza fastfetch lazygit. nvim comes from the nvf feature.
+#     bat eza fastfetch lazygit. nix-output-monitor backs the nom-switch
+#     function. nvim comes from the nvf feature.
 { ... }: {
   # Home-manager feature module. Import IS enabling.
   flake.homeManagerModules.fish =
@@ -99,6 +100,8 @@
         fzf
         zoxide
         lazygit
+        # nom-switch renders a rebuild as a build tree (functions/).
+        nix-output-monitor
       ];
     };
 }
