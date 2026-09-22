@@ -9,11 +9,6 @@
 -- Entries exchange plain values through noctalia.state, so the panel posts work
 -- to the "request" key and bumps "request_rev". A counter is necessary because
 -- two identical requests in a row must still both run.
---
--- Frame shape (one JSON object per line):
---   {"t":"f","s":<seq>,"c":<cols>,"r":<rows>,
---    "dfg":"#rrggbb","dbg":"#rrggbb",
---    "L":[[{"t":"text","f":"#rrggbb","b":true}, ...], ...]}
 
 local COLS = 100
 local ROWS = 28
@@ -102,7 +97,6 @@ local function handleLine(line)
     return
   end
   lastSequence = sequence
-
   noctalia.state.set("frame", frame)
 end
 
@@ -152,7 +146,9 @@ local function handleRequest(request)
   local kind = request.kind
   local payload = request.payload
 
-  if kind == "run" then
+  if kind == "text" then
+    send("i" .. escapeText(tostring(payload or "")))
+  elseif kind == "run" then
     send("i" .. escapeText(tostring(payload or "")) .. "\\n")
   elseif kind == "key" then
     send("k" .. tostring(payload or ""))

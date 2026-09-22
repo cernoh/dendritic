@@ -369,6 +369,7 @@ static const struct {
     {"shift+tab", GHOSTTY_KEY_TAB, GHOSTTY_MODS_SHIFT, NULL},
     {"backspace", GHOSTTY_KEY_BACKSPACE, 0, "\x7f"},
     {"delete", GHOSTTY_KEY_DELETE, 0, NULL},
+    {"del", GHOSTTY_KEY_DELETE, 0, NULL},
     {"escape", GHOSTTY_KEY_ESCAPE, 0, "\x1b"},
     {"up", GHOSTTY_KEY_ARROW_UP, 0, NULL},
     {"down", GHOSTTY_KEY_ARROW_DOWN, 0, NULL},
