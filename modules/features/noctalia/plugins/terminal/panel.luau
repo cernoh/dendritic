@@ -7,7 +7,7 @@
 -- herdr controls.
 
 local FONT_SIZE = 13
-local MAX_ROWS = 40
+local MAX_ROWS = 42
 local MAX_RUNS = 64
 
 local open = false
@@ -219,6 +219,10 @@ function onOpen()
   frame = noctalia.state.get("frame") or frame
   status = noctalia.state.get("status") or status
   statusMessage = noctalia.state.get("status_message") or ""
+  local geometry = noctalia.state.get("geometry")
+  if geometry == nil or geometry.cols ~= 140 or geometry.rows ~= 42 then
+    request("resize", "140x42")
+  end
   render()
 end
 

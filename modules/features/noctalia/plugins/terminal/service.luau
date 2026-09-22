@@ -10,8 +10,8 @@
 -- to the "request" key and bumps "request_rev". A counter is necessary because
 -- two identical requests in a row must still both run.
 
-local COLS = 100
-local ROWS = 28
+local COLS = 140
+local ROWS = 42
 
 local dataDir = noctalia.pluginDataDir()
 local fifo = dataDir and (dataDir .. "/term.fifo") or nil
