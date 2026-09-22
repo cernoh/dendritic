@@ -35,12 +35,12 @@ memory:
 modelRoles:
   advisor: opencode-go/deepseek-v4.1-flash
   commit: opencode-go/deepseek-v4-flash
-  default: opencode-go/deepseek-v4.1-flash
   plan: opencode-go/deepseek-v4.1-flash
   slow: opencode-go/deepseek-v4.1-flash
   smol: opencode-go/deepseek-v4-flash
   task: opencode-go/deepseek-v4.1-flash
   vision: opencode-go/deepseek-v4-flash-vision-exp
+  default: opencode-go/deepseek-v4.1-flash
 providers:
   tinyModel: lfm2.5-350m
   tinyModelDevice: gpu
