@@ -1,5 +1,15 @@
-# MangoWM feature: NIXPC's compositor session, ported from
-# ~/.config/home-manager-v3/config/mango.nix.
+# MangoWM feature: the compositor session of both hosts (issue #245), ported
+# from ~/.config/home-manager-v3/config/mango.nix, which NIXPC ran alone.
+#
+# Every fact about a machine lives in that machine's
+# modules/hosts/<HOST>/_mango-settings.nix and arrives through the
+# `dendritic.mango` options below:
+#   monitorRule — the host's outputs (NIXPC's two monitors, ASAHI's panel)
+#   extraEnv    — the NVIDIA/Wayland GPU vars (NIXPC)
+#   extraBinds  — the two-monitor tagmon binds (NIXPC)
+#   gaps, borderWidth — the tuned layout values, which differ per host
+# The values left in `settings` are the ones the hosts share. Where the hosts
+# differ, the default mirrors the niri session ASAHI ran before.
 #
 # The input's modules default `package` to their own build
 # (packages.<system>.mango), so no overlay wiring is needed — unlike hm-v3,
@@ -25,11 +35,16 @@
 {
   flake.nixosModules.mango =
     {
+      config,
       lib,
       pkgs,
       ...
     }:
     let
+      # This machine's facts, from its hosts/<HOST>/_mango-settings.nix
+      # through the options declared at the end of this module.
+      host = config.dendritic.mango;
+
       realMango = inputs.mangowm.packages.${pkgs.stdenv.hostPlatform.system}.mango;
 
       # Same renderer the mangowm HM module used, so the config text is
@@ -48,37 +63,25 @@
       '';
 
       settings = {
-        # Mango setenv()s these entries in-process; children of
-        # spawn_shell inherit them. TERMINAL and the NVIDIA/Wayland GPU
-        # vars live HERE (not the ghostty/nixpc-desktop features) because
-        # nixpkgs' module system rejects any def of an option undeclared
-        # on the host — including mkIf-false guards — and ASAHI has no
-        # mango options (issue #86). The same vars are also delivered via
-        # environment.sessionVariables for login-shell consumers (issue
-        # #95); the compositor channel is the one that actually reaches
-        # greeter-spawned mango and its spawns.
+        # Mango setenv()s these entries in-process; children of spawn_shell
+        # inherit them, and that is the only channel that reaches a
+        # greeter-spawned compositor — neither the session root nor spawn_shell
+        # sources a profile (issue #86). The same vars also reach login shells
+        # through environment.sessionVariables (issue #95). The host appends
+        # its own entries (NIXPC: the NVIDIA/Wayland GPU vars) through
+        # dendritic.mango.extraEnv.
         env = [
           # Name and size come from the retrosmart cursor feature, so the
           # compositor channel on both hosts names the same theme.
           "XCURSOR_SIZE,${toString self.retrosmartCursor.size}"
           "XCURSOR_THEME,${self.retrosmartCursor.name}"
+          # $TERMINAL is expanded by the SUPER+T binding below.
           "TERMINAL,ghostty"
-          "GBM_BACKEND,nvidia-drm"
-          "__GLX_VENDOR_LIBRARY_NAME,nvidia"
-          "LIBVA_DRIVER_NAME,nvidia"
-          "WLR_NO_HARDWARE_CURSORS,1"
-          "WLR_RENDERER_ALLOW_SOFTWARE,1"
-          "SDL_VIDEODRIVER,wayland,x11"
-          "STEAM_USE_DYNAMIC_VGUI,1"
-        ];
-        # EDID-verified 2026-09-07 via wlr-randr: DP-1 = AOC 24G2W1G3-,
-        # DP-2 = HUAWEI AD80HW (earlier comments had these reversed).
-        # DP-1 is the AOC; place it at the center/left of the two connected outputs.
-        monitorrule = [
-          "name:^DP-1$,x:0,y:0,scale:1"
-          # DP-2 is the HUAWEI; place it immediately to the right.
-          "name:^DP-2$,x:1920,y:0,scale:1"
-        ];
+        ]
+        ++ host.extraEnv;
+
+        # Outputs belong to the machine: see dendritic.mango.monitorRule.
+        monitorrule = host.monitorRule;
 
         repeat_rate = 35;
         repeat_delay = 200;
@@ -98,11 +101,12 @@
         focus_cross_monitor = 1;
         exchange_cross_monitor = 1;
 
-        gappih = 10;
-        gappiv = 10;
-        gappoh = 10;
-        gappov = 10;
-        borderpx = 5;
+        # Layout values are per host (dendritic.mango.gaps / borderWidth).
+        gappih = host.gaps;
+        gappiv = host.gaps;
+        gappoh = host.gaps;
+        gappov = host.gaps;
+        borderpx = host.borderWidth;
         # Sepia palette, from features/scheme. mango takes 0xRRGGBBAA.
         focuscolor = "0x${self.scheme.palette.primary}ff";
         bordercolor = "0x${self.scheme.palette.outline}ff";
@@ -157,10 +161,9 @@
           "SUPER,DOWN,viewtoright_have_client"
         ];
 
-        # Move the focused client to the AOC (DP-1, left) or HUAWEI (DP-2, right) monitor.
+        # The two-monitor binds tagmon to DP-1/DP-2 and belong to NIXPC
+        # (issue #114); they arrive through dendritic.mango.extraBinds.
         bind = [
-          "SUPER+ALT,H,tagmon,DP-1,1"
-          "SUPER+ALT,L,tagmon,DP-2,1"
           "SUPER,T,spawn_shell,$TERMINAL"
           "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
           "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
@@ -250,7 +253,8 @@
           "SUPER+SHIFT,P,spawn_shell,wlr-dpms off"
           "SUPER,Home,focusstack,prev"
           "SUPER,End,focusstack,next"
-        ];
+        ]
+        ++ host.extraBinds;
 
         bindl = [
           "NONE,XF86AudioRaiseVolume,spawn_shell,wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
@@ -299,37 +303,92 @@
       };
     in
     {
+      # Machine facts, set by each host from its own _mango-settings.nix. The
+      # defaults describe a generic single-output desktop — niri's gaps and
+      # ring width, no GPU env — not any particular machine.
+      options.dendritic.mango = {
+        monitorRule = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            `monitorrule` lines for this host. Empty leaves every output to
+            mango's own layout and mode selection.
+          '';
+        };
+
+        extraEnv = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Entries appended to the compositor's `env` list, in mango's
+            `NAME,value` form. Use it for variables the whole session needs
+            (the GPU backend, for example), not for per-application settings.
+          '';
+        };
+
+        extraBinds = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Bindings appended to the shared `bind` list, in mango's
+            `MODIFIERS,key,action,argument` form. Use it for bindings that
+            name this host's outputs.
+          '';
+        };
+
+        gaps = lib.mkOption {
+          type = lib.types.int;
+          default = 16;
+          description = ''
+            Window gaps in logical pixels; sets gappih, gappiv, gappoh, and
+            gappov together.
+          '';
+        };
+
+        borderWidth = lib.mkOption {
+          type = lib.types.int;
+          default = 4;
+          description = "Window border width in logical pixels (mango's `borderpx`).";
+        };
+      };
+
       imports = [ inputs.mangowm.nixosModules.mango ];
 
-      programs.mango = {
-        enable = true;
-        package = mangoWrapped;
-      };
+      # The option block above forces the rest into an explicit `config`
+      # attribute: a module that declares `options` cannot also carry
+      # configuration attributes at the top level. `imports` stays a module
+      # key, so it sits outside.
+      config = {
+        programs.mango = {
+          enable = true;
+          package = mangoWrapped;
+        };
 
-      # Same session target the mangowm HM module declared (systemd.enable),
-      # so user services bound to mango-session.target keep working. (NixOS
-      # option shape: lowercase flat attrs, unlike HM's systemd module.)
-      systemd.user.targets.mango-session = {
-        description = "mango compositor session";
-        documentation = [ "man:systemd.special(7)" ];
-        bindsTo = [ "graphical-session.target" ];
-        wants = [ "graphical-session-pre.target" ];
-        after = [ "graphical-session-pre.target" ];
-      };
+        # Same session target the mangowm HM module declared (systemd.enable),
+        # so user services bound to mango-session.target keep working. (NixOS
+        # option shape: lowercase flat attrs, unlike HM's systemd module.)
+        systemd.user.targets.mango-session = {
+          description = "mango compositor session";
+          documentation = [ "man:systemd.special(7)" ];
+          bindsTo = [ "graphical-session.target" ];
+          wants = [ "graphical-session-pre.target" ];
+          after = [ "graphical-session-pre.target" ];
+        };
 
-      # Helper binaries referenced by bindings/autostart. Noctalia (including
-      # its notification daemon, which claims org.freedesktop.Notifications)
-      # and the terminal are deliberately absent — they are separate features.
-      # (Formerly home.packages in the HM module; moved system-side with the
-      # homelessness change, issue #97.)
-      environment.systemPackages = with pkgs; [
-        udiskie
-        brightnessctl
-        grim
-        slurp
-        wl-clipboard-rs
-        # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
-        swaylock-effects
-      ];
+        # Helper binaries referenced by bindings/autostart. Noctalia (including
+        # its notification daemon, which claims org.freedesktop.Notifications)
+        # and the terminal are deliberately absent — they are separate features.
+        # (Formerly home.packages in the HM module; moved system-side with the
+        # homelessness change, issue #97.)
+        environment.systemPackages = with pkgs; [
+          udiskie
+          brightnessctl
+          grim
+          slurp
+          wl-clipboard-rs
+          # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
+          swaylock-effects
+        ];
+      };
     };
 }

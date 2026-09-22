@@ -35,6 +35,11 @@
     {
       networking.hostName = "ASAHI";
 
+      # This machine's MangoWM facts (the panel's scale, niri's gaps and ring
+      # width); the mango feature holds the settings both hosts share
+      # (issue #245).
+      dendritic.mango = import ./_mango-settings.nix;
+
       # 8 GiB RAM + 5.5 GiB zram: `max-jobs = auto` (8) OOM-killed the build
       # (earlyoom SIGTERM, issue #108). 2×4 still OOM-kills `jj-lib` rustc
       # (913 MiB VmRSS, 2026-09-06 journalctl: earlyoom -m10 -s10 SIGTERM).

@@ -10,7 +10,7 @@ auto-registered by [import-tree](https://github.com/vic/import-tree) — see the
 | Host | System | Desktop | Notes |
 |---|---|---|---|
 | `NIXPC` | x86_64-linux | MangoWM + Noctalia Shell | NVIDIA GPU, gaming (Steam bundle + tools), MCP containers, Paseo web UI on the tailnet |
-| `ASAHI` | aarch64-linux | Niri + Noctalia Shell | Apple Silicon via [nixos-apple-silicon](https://github.com/tpwrules/nixos-apple-silicon), Widevine DRM Firefox |
+| `ASAHI` | aarch64-linux | MangoWM (default) + Niri + Noctalia Shell | Apple Silicon via [nixos-apple-silicon](https://github.com/tpwrules/nixos-apple-silicon), Widevine DRM Firefox |
 
 ## Rebuild
 
@@ -54,8 +54,8 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `herdr-web` | Mobile web UI for `herdr` ([eyalev/herdr-web](https://github.com/eyalev/herdr-web)): the bridge runs as a systemd user service on loopback, with `node-pty` compiled so panes reflow to the phone width. NIXPC publishes it on the tailnet through `tailscale serve` |
 | `lazygit` | lazygit built by this flake, into `environment.systemPackages` |
 | `leetcode` | LeetCode runner (kawre/leetcode.nvim) inside nvf: fzf-lua picker + plenary/nui/devicons bundled, `<leader>l*` bindings, login via `:Leet cookie update` |
-| `mango` | MangoWM session + its home-manager user config |
-| `niri` | Niri compositor + session, live-editable `config.kdl` |
+| `mango` | MangoWM session on both hosts; the settings both hosts share live in the feature, the machine facts (outputs, GPU env, monitor binds, gaps) in each host's `_mango-settings.nix` |
+| `niri` | Niri compositor + session on ASAHI, live-editable `config.kdl` |
 | `nautilus` | Nautilus file manager (replaces Thunar) plus gvfs, and the default handler for `inode/directory`. Enabled by the `desktop` bundle |
 | `nixpc-desktop` | NIXPC desktop application suite (browsers, media, utilities) |
 | `noctalia` | Noctalia desktop shell v5 (bars, panels, launcher, lock screen); settings are per-host. Includes the `cernoh/terminal` panel plugin and its `ghostty-term` helper (libghostty-vt), and the `cernoh/mirai` Miracast panel with the `mirai` CLI it drives |

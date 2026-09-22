@@ -1,11 +1,11 @@
 # hosts — host presets
 
 ## Purpose
-One directory per machine producing `flake.nixosConfigurations.<HOST>`. Assembles `self.nixosModules` bundles + features into a concrete NixOS system. Two hosts: `NIXPC` (`x86_64-linux`, MangoWM, NVIDIA) and `ASAHI` (`aarch64-linux`, Niri, Apple Silicon).
+One directory per machine producing `flake.nixosConfigurations.<HOST>`. Assembles `self.nixosModules` bundles + features into a concrete NixOS system. Two hosts: `NIXPC` (`x86_64-linux`, MangoWM, NVIDIA) and `ASAHI` (`aarch64-linux`, MangoWM + Niri, Apple Silicon).
 
 ## Ownership
-- `NIXPC/` — `default.nix` (system assembly), `nixpcConfiguration.nix` (host-specific NixOS config), `_noctalia-settings.nix` (per-host Noctalia settings), `RESCUE.md` if present.
-- `ASAHI/` — `default.nix`, `asahiConfiguration.nix`, `RESCUE.md`, `_noctalia-settings.nix` (per-host Noctalia settings).
+- `NIXPC/` — `default.nix` (system assembly), `nixpcConfiguration.nix` (host-specific NixOS config), `_noctalia-settings.nix`, `_mango-settings.nix`, `RESCUE.md` if present.
+- `ASAHI/` — `default.nix`, `asahiConfiguration.nix`, `RESCUE.md`, `_noctalia-settings.nix`, `_mango-settings.nix`.
 
 ## Local Contracts
 - **Assembly is `nixosSystem`:** each `default.nix` calls `inputs.nixpkgs.lib.nixosSystem { system = "<arch>-linux"; modules = with self.nixosModules; [ … ]; }`.
@@ -14,7 +14,8 @@ One directory per machine producing `flake.nixosConfigurations.<HOST>`. Assemble
 - **Shared base is `desktop`:** both hosts import `desktop` (from `attrs/desktop` → `core` + `network` + `audio` + `homeManager` + `act` + `waylandBase` + `computerUse` + `stylix` + `nautilus` + common `environment.systemPackages` + `allowUnfree`). Host `default.nix` then adds its compositor, drivers, and extras. Neither `stylix` nor `nautilus` is host-specific, so they live in the bundle rather than in a host's module list.
 - **Per-host deltas:**
   - `NIXPC`: `nixpcConfiguration`, `nixpcDesktop`, `nvidiaDrivers`, `gaming`, `mango`, `noctaliaGreeter --session Mango`, `mcpContainers` (via `desktop→act→docker`; do not re-import `docker`), `herdr-web` with `services.herdr-web.tailscaleServe.enable = true` (the bridge reaches the phone over tailnet HTTPS), `remoteBuilder` (the `remotebuild` build account, issue #209), `paseo` (the daemon and web UI container behind `tailscale serve`, issue #201).
-  - `ASAHI`: `asahiConfiguration`, `asahiPlatform` (apple-silicon support), `widevine`, `niri`, `noctaliaGreeter --session Niri`, `stability`/`timeSync`/`flatpak`/`obs`/`portals`, `distributedBuilds` (sends aarch64-linux work to NIXPC, issue #209).
+  - `ASAHI`: `asahiConfiguration`, `asahiPlatform` (apple-silicon support), `widevine`, `niri`, `mango`, `noctaliaGreeter --session Mango`, `stability`/`timeSync`/`flatpak`/`obs`/`portals`, `distributedBuilds` (sends aarch64-linux work to NIXPC, issue #209).
+- **Machine facts of a shared feature live in `_<feature>-settings.nix`:** the host module imports the file and assigns it to the feature's options. `mango` (issue #245) is the reference: each host imports `_mango-settings.nix` into `dendritic.mango`, because mango runs on both hosts but only NIXPC has two monitors and an NVIDIA GPU, and only ASAHI has a HiDPI panel that needs an explicit scale.
 - **The build link spans both hosts:** `NIXPC` imports `remoteBuilder`, `ASAHI` imports `distributedBuilds`, and both read `system/distributed-builds/_link.nix`. ASAHI needs the private key at `/root/.ssh/remotebuild` before its first switch, because `nix.buildMachines.sshKey` cannot come from the store. The link addresses NIXPC as `nixpc` on the tailnet, so both hosts need `tailscale` and a completed `tailscale up`.
 - **`tailscale` is imported by both hosts:** the module enables `services.tailscale` (tailscaled). Auth is interactive, so run `sudo tailscale up` once per machine after the switch that adds the module.
 - **`inputs.asahi` must follow nixpkgs** (`inputs.nixpkgs.follows = "nixpkgs"` in `flake.nix`) — otherwise apple-silicon packages resolve against the wrong `nixpkgs` and break cross-machine eval (issue #16).
