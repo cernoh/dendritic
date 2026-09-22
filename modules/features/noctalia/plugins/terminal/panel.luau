@@ -139,14 +139,15 @@ local function render()
     return
   end
 
-  local background = frame ~= nil and frame.dbg or "surface_variant"
+  -- Match Ghostty's scheme-driven surface instead of the PTY's black default.
+  local background = "surface"
   local isReady = status == "ready"
 
   panel.render(ui.column({
     flexGrow = 1,
     gap = 8,
     padding = 10,
-    fill = "surface",
+    fill = "surface_variant/0.92",
     radius = 12,
     border = focused and "primary" or "outline",
     borderWidth = 1,
@@ -236,7 +237,7 @@ function onKey(chord, pressed)
     return
   end
   if CONTROL_KEYS[chord] then
-    request("key", chord == "del" and "delete" or chord)
+    request("key", chord)
     return
   end
   local text = textForChord(chord)

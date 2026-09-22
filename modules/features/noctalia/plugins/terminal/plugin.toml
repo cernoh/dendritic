@@ -1,6 +1,6 @@
 id = "cernoh/terminal"
 name = "Terminal"
-version = "2.1.0"
+version = "2.1.1"
 plugin_api = 21
 author = "cernoh"
 license = "MIT"
@@ -23,8 +23,8 @@ entry = "shortcut.luau"
 [[panel]]
 id = "panel"
 entry = "panel.luau"
-width = 900
-height = 560
+width = 1200
+height = 720
 placement = "attached"
 keyboard_focus = "exclusive"
 dismiss_on_outside_click = false
