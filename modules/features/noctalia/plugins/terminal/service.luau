@@ -76,6 +76,11 @@ local function handleLine(line)
     return
   end
 
+  if frame.t == "clipboard" then
+    noctalia.copyToClipboard(tostring(frame.d or ""), "text/plain")
+    return
+  end
+
   if frame.t == "init" then
     noctalia.state.set("geometry", { cols = frame.c, rows = frame.r })
     return
@@ -156,6 +161,18 @@ local function handleRequest(request)
     send("s" .. tostring(tonumber(payload) or 0))
   elseif kind == "resize" then
     send("z" .. tostring(payload or ""))
+  elseif kind == "copy" then
+    local frame = noctalia.state.get("frame")
+    local lines = {}
+    for _, row in ipairs((frame ~= nil and frame.L) or {}) do
+      local line = {}
+      for _, run in ipairs(row) do table.insert(line, tostring(run.t or "")) end
+      table.insert(lines, table.concat(line))
+    end
+    noctalia.copyToClipboard(table.concat(lines, "\n"), "text/plain")
+  elseif kind == "paste" then
+    local text = noctalia.clipboardText()
+    if text ~= nil then send("i" .. escapeText(text)) end
   elseif kind == "restart" then
     ready = false
     startHelper()

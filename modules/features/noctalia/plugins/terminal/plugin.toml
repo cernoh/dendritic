@@ -150,4 +150,6 @@ capture_keys = [
   "ctrl+k",
   "ctrl+w",
   "ctrl+z",
+  "ctrl+shift+c",
+  "ctrl+shift+v",
 ]
