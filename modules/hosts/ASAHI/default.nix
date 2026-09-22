@@ -18,6 +18,10 @@
       asahiPlatform
       widevine
       niri
+      # MangoWM runs beside niri (issue #245): the greeter below starts mango
+      # by default, niri stays installed as the second session. The feature
+      # reads this host's facts from hosts/ASAHI/_mango-settings.nix.
+      mango
       noctalia
       ghostty
       programming
@@ -35,7 +39,7 @@
       flatpak
       obs
       portals
-      ({ programs.noctalia-greeter.greeter-args = "--session Niri"; })
+      ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
     ];
   };
 }

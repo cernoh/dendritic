@@ -5,7 +5,7 @@
 # their session inline, because --session expects that host's compositor's
 # desktop-entry Name=:
 #   NIXPC: programs.noctalia-greeter.greeter-args = "--session Mango";
-#   ASAHI: programs.noctalia-greeter.greeter-args = "--session Niri";
+#   ASAHI: programs.noctalia-greeter.greeter-args = "--session Mango";
 #
 # The upstream module (inputs.noctalia-greeter) enables greetd and
 # accounts-daemon by default, renders the command as

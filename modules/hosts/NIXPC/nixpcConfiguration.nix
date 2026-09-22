@@ -14,6 +14,10 @@
     {
       networking.hostName = "NIXPC";
 
+      # This machine's MangoWM facts (outputs, GPU env, monitor binds, gaps);
+      # the mango feature holds the settings both hosts share (issue #245).
+      dendritic.mango = import ./_mango-settings.nix;
+
       # Pin the kernel to the 7.1 series (resolves to 7.1.10 in the current
       # nixos-unstable pin). The default nixos-unstable kernel (6.18.x) is too
       # old for this host's hardware/driver requirements.
