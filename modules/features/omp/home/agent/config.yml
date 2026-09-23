@@ -33,49 +33,47 @@ mcp:
 memory:
   backend: "off"
 modelRoles:
-  advisor: opencode-go/deepseek-v4.1-flash
-  commit: opencode-go/deepseek-v4-flash
-  plan: opencode-go/deepseek-v4.1-flash
-  slow: opencode-go/deepseek-v4.1-flash
-  smol: opencode-go/deepseek-v4-flash
-  task: opencode-go/deepseek-v4.1-flash
-  vision: opencode-go/deepseek-v4-flash-vision-exp
-  default: opencode-go/deepseek-v4.1-flash
+  default: commandcode/zai-org/GLM-5.2
+  task: commandcode/zai-org/GLM-5.2
+  plan: commandcode/zai-org/GLM-5.2
+  slow: commandcode/tencent/hy3-paid
+  advisor: commandcode/zai-org/GLM-5.2
+  smol: commandcode/deepseek/deepseek-v4-flash
+  commit: commandcode/deepseek/deepseek-v4-flash
+  vision: commandcode/deepseek/deepseek-v4.1-flash
 providers:
-  tinyModel: lfm2.5-350m
   tinyModelDevice: gpu
 retry:
   fallbackChains:
-    advisor:
-      - opencode-go/mimo-v2.5
-      - opencode-go/deepseek-v4-flash
-    commit:
-      - opencode-go/glm-5.3-flash
-      - opencode-go/mimo-v2.5
     default:
-      - opencode-go/deepseek-v4-flash
-      - opencode-go/glm-5.3-flash
-      - opencode-go/mimo-v2.5
-      - opencode-go/qwen3.8-flash
-    plan:
-      - opencode-go/deepseek-v4-flash
-      - opencode-go/glm-5.3-flash
-      - opencode-go/deepseek-v4-pro
-    slow:
-      - opencode-go/deepseek-v4-flash
-      - opencode-go/glm-5.3-flash
-      - opencode-go/deepseek-v4-pro
-    smol:
-      - opencode-go/glm-5.3-flash
-      - opencode-go/mimo-v2.5
+      - commandcode/tencent/hy3-paid
+      - commandcode/deepseek/deepseek-v4-flash
+      - commandcode/Qwen/Qwen3.8-27B
     task:
-      - opencode-go/deepseek-v4-flash
-      - opencode-go/glm-5.3-flash
-      - opencode-go/mimo-v2.5
+      - commandcode/tencent/hy3-paid
+      - commandcode/deepseek/deepseek-v4-flash
+      - commandcode/Qwen/Qwen3.8-27B
+    plan:
+      - commandcode/tencent/hy3-paid
+      - commandcode/deepseek/deepseek-v4-flash
+      - commandcode/gpt-5.6-sol
+    slow:
+      - commandcode/zai-org/GLM-5.2
+      - commandcode/Qwen/Qwen3.8-27B
+      - commandcode/deepseek/deepseek-v4-flash
+    advisor:
+      - commandcode/tencent/hy3-paid
+      - commandcode/deepseek/deepseek-v4-flash
+    smol:
+      - commandcode/tencent/hy3-paid
+      - commandcode/Qwen/Qwen3.8-27B
+    commit:
+      - commandcode/tencent/hy3-paid
+      - commandcode/Qwen/Qwen3.8-27B
     vision:
-      - opencode-go/deepseek-v4.1-flash
-      - opencode-go/gpt-5.6-luna
-      - opencode-go/qwen3.8-flash
+      - commandcode/deepseek/deepseek-v4.1-flash
+      - commandcode/gpt-5.6-sol
+      - commandcode/Qwen/Qwen3.8-27B
   modelFallback: true
 setupVersion: 2
 shellMinimizer:

@@ -1,6 +1,6 @@
 ---
 name: omp-model-role-retarget
-description: "Retarget OMP model roles to a different provider model in the dendritic flake: find the real model slug from live provider discovery, write it from both the declarative settings and the live config, and ship it as an issue-linked PR. Use when asked to change which model omp uses, when a provider released a newer model, or when refreshing the opencode-go model list."
+description: "Retarget OMP model roles to a different provider model in the dendritic flake: find the real model slug from live provider discovery, write it from both the declarative settings and the live config. Use when asked to change which model omp uses, when a provider releases a newer model, or when refreshing the model list."
 ---
 
 # Retargeting OMP model roles
@@ -9,16 +9,15 @@ Verified 2026-09-10 on `cernoh/dendritic` (retarget `opencode-go` roles to DeepS
 
 ## 1. Resolve the real model slug, never guess it
 
-Provider display names, ids, and selectors differ. `deepseek-v4.1-flash` is "DeepSeek V4.1 Flash"; the bare `deepseek-flash` id is a null-metadata stub — never use it.
+Provider display names, ids, and selectors differ. `deepseek/deepseek-v4.1-flash` is "DeepSeek V4.1 Flash"; the bare `deepseek-flash` id is a null-metadata stub — never use it.
 
 ```bash
 omp models --json <provider> > /tmp/m.json     # fields: provider, id, selector, name
-nu -c 'open /tmp/m.json | get models | where id =~ "deepseek" | select id name'
-# or read the per-account discovery cache directly:
-nu -c 'open ~/.omp/agent/models.db | get model_cache
-       | where provider_id =~ "opencode-go"
-       | select provider_id authoritative updated_at'
 ```
+
+Selector format in client configs: `commandcode/<model-id>` (for example
+`commandcode/deepseek/deepseek-v4.1-flash`; keep the `deepseek/` double
+segment, the `Qwen/` capital, and any `:free` suffix from the registry).
 
 The authoritative rows come from live provider endpoint discovery, so a newly released model appears there before any local update. Bundled-catalog probes of the binary are unnecessary and easy to get wrong: `~/.local/bin/omp` is a 336-byte bash shim, the real Bun binary is `~/.local/bin/omp.bin`.
 
@@ -26,17 +25,15 @@ The authoritative rows come from live provider endpoint discovery, so a newly re
 
 `omp models` already merges discovery, so a model missing from a hand-maintained list is not a reason to add `models.yml`. A custom provider entry is only needed when the endpoint itself does not expose the model.
 
-## 3. Write the change in two places
-
-- Declarative source of truth: `modules/features/omp/default.nix`, `programs.omp.settings.modelRoles = { default; task; plan; slow; advisor; }`. Home Manager regenerates the file wholesale at activation: `home.activation.ompConfig` runs `cat > ~/.omp/agent/config.yml`.
+- Declarative source of truth: `modules/features/omp/default.nix`, `programs.omp.settings.modelRoles` plus `retry.fallbackChains`. Home Manager regenerates the file wholesale at activation: `home.activation.ompConfig` runs `cat > ~/.omp/agent/config.yml`.
 - Live effect: `~/.omp/agent/config.yml` is the out-of-store target of `~/.omp`, so edit it in place to change the running install before the next switch.
 
 `omp config set` needs the whole record as one JSON value. Dotted paths fail with `Unknown setting`:
 
 ```bash
-omp config set modelRoles '{"default":"opencode-go/deepseek-v4.1-flash",
- "task":"opencode-go/deepseek-v4.1-flash","plan":"opencode-go/deepseek-v4.1-flash",
- "slow":"opencode-go/deepseek-v4.1-flash","advisor":"opencode-go/deepseek-v4.1-flash"}'
+omp config set modelRoles '{"default":"commandcode/zai-org/GLM-5.2",
+ "task":"commandcode/zai-org/GLM-5.2","plan":"commandcode/zai-org/GLM-5.2",
+ "slow":"commandcode/tencent/hy3-paid","advisor":"commandcode/zai-org/GLM-5.2"}'
 omp config get modelRoles
 ```
 

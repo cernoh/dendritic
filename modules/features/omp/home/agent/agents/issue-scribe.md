@@ -1,7 +1,7 @@
 ---
 name: issue-scribe
 description: Write and repair GitHub issue text in Simplified Technical English. Use for every issue body, sub-issue body, and issue comment that states a problem, a task, or an acceptance criterion. The agent drafts, lints, and posts the text, and reports the issue number with its lint total.
-model: opencode-go/muse-spark-1.3-contributor
+model: commandcode/meta/muse-spark-1.3-contributor
 tools: read, write, grep, glob, bash, github, web_search
 blocking: true
 autoloadSkills: ste-writing, ste-lint-measurement-recipe
