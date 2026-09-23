@@ -67,11 +67,19 @@ in
         registry.nixpkgs.flake = inputs.nixpkgs;
         nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
         optimise.automatic = true;
-        gc = {
-          automatic = true;
-          dates = "weekly";
-          options = "--delete-older-than 14d";
-        };
+        # GC runs via `nh clean` (programs.nh below): nix.gc.automatic
+        # stays off — nixpkgs warns when both collectors are enabled.
+      };
+      # nh CLI helper (nix-community/nh, from nixpkgs): `nh os switch`
+      # replaces the nixos-rebuild invocations in README, and `nh clean`
+      # is this host's GC — nix.gc.automatic stays off (nixpkgs warns
+      # when both collectors are enabled). flake points at this checkout
+      # so bare `nh os switch` picks the local host's nixosConfiguration.
+      programs.nh = {
+        enable = true;
+        clean.enable = true;
+        clean.extraArgs = "--keep-since 4d --keep 3";
+        flake = "/home/${config.dendritic.userName}/.config/dendritic";
       };
 
       # Steam, CopilotChat's language server, DaVinci Resolve, ...
