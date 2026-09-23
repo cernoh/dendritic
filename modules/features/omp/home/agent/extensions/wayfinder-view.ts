@@ -27,6 +27,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import { dirname, join } from "node:path";
 import { agentDir, escapeHtml, humanDate, openInBrowser, pageShell, safeUrl, slugify, stamp } from "./lib/html";
+import { ensureMap } from "./lib/dashboard";
 
 const TYPE_LABEL = "wayfinder:";
 const MEMO_MS = 3000;
@@ -474,8 +475,8 @@ export default function wayfinderViewExtension(pi: ExtensionAPI) {
       memo = undefined;
 
       const view = currentView();
+      ensureMap(view.repo, view.map.number, view.map.title);
       const snapshot = join(agentDir(), "html", `wayfinder-${slugify(view.repo)}-${stamp()}.html`);
-      mkdirSync(dirname(snapshot), { recursive: true });
       writeFileSync(snapshot, livePage(view, 0), "utf8");
 
       const base = await startBridge();

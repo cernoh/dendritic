@@ -19,11 +19,10 @@
 #   - create the data dir on the 2TB ext4 disk before the first start
 #   - publish the dashboard on the tailnet with `tailscale serve`
 #
-# Omp side (separate change): the session registers the map it is asked about
-# (POST /api/maps, idempotent), records each grill round (POST
-# .../rounds with the questions + formUrl), and records answers back
-# (POST .../answers). The dashboard embeds the live grill_form page, so the
-# submit still injects into the session.
+# Omp feeds it from the session: `wayfinder_view` ensures the current map,
+# `grill_form` records each round it serves and each submit it stores (see
+# `home/agent/extensions/lib/dashboard.ts`). The dashboard embeds the live
+# grill_form page, so the submit still injects into the session.
 {
   self,
   ...
@@ -49,8 +48,9 @@
 
       # Host port from compose.yaml. The container binds loopback only.
       webPort = 8787;
-      # Tailnet port for `tailscale serve`, beside paseo (:80) and herdr-web.
-      tailnetPort = 8787;
+      # Tailnet HTTPS port. Must differ from webPort: tailscaled listens here
+      # while Docker binds webPort, so sharing one port collides.
+      tailnetPort = 18787;
 
       imageBuild = pkgs.writeShellApplication {
         name = "wayfinder-dashboard-image-build";

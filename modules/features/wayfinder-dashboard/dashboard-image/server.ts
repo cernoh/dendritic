@@ -126,9 +126,10 @@ padding:6px 12px;font-size:13px;background:var(--surface-variant)}
 .q{margin:8px 0}.q .a{background:var(--surface-variant);border-radius:8px;padding:8px 10px;white-space:pre-wrap}
 iframe.live{width:100%;min-height:560px;border:1px solid var(--outline);border-radius:12px;background:#fff}
 .meta{color:var(--dim);font-size:12px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-label{font-size:13px;color:var(--dim)}
-</style></head><body>
-<header class="top"><h1>Wayfinder dashboard</h1><span class="sub" id="boot"></span></header>
+</style>
+<script src="/m3e.js" defer></script>
+</head><body>
+<m3e-theme color="${theme.primary}" variant="expressive" scheme="dark" motion="expressive">
 <main>
 <section class="card"><h2>Maps</h2><div class="row">
 <select id="maps" aria-label="Wayfinder map"></select>
@@ -146,9 +147,8 @@ label{font-size:13px;color:var(--dim)}
 <label>Storage subdir under /data <input type="text" id="subdir" size="16"></label>
 <button id="saveSub" class="ghost">Save</button>
 <span class="meta" id="subMsg"></span></div></section>
-</main>
+</main></m3e-theme>
 <script>
-const $=id=>document.getElementById(id);
 let sinceBoot=true,maps=[],current=null,boot="";
 async function j(u,o){const r=await fetch(u,o);if(!r.ok)throw new Error(await r.text());return r.json();}
 async function loadBoot(){boot=(await j("/api/boot")).bootTime;
@@ -211,6 +211,13 @@ Deno.serve({ port: PORT, hostname: "0.0.0.0" }, async (req) => {
     if (url.pathname === "/webmcp.js") {
       return new Response(webmcpJs(), { headers: { "content-type": "text/javascript" } });
     }
+    if (url.pathname === "/m3e.js") {
+      try {
+        return new Response(await Deno.readFile("./m3e.js"), { headers: { "content-type": "text/javascript" } });
+      } catch {
+        return new Response("/* m3e bundle absent: rebuild the image */", { headers: { "content-type": "text/javascript" } });
+      }
+    }
     if (url.pathname === "/api/boot") return json({ bootTime: await bootTime() });
     if (url.pathname === "/api/settings") {
       if (req.method === "GET") return json(await readSettings());
@@ -235,7 +242,7 @@ Deno.serve({ port: PORT, hostname: "0.0.0.0" }, async (req) => {
       }
       return json(e);
     }
-    const m = url.pathname.match(/^\/api\/maps\/([^/]+)\/(history|rounds|answers)$/);
+    const m = url.pathname.match(/^\/api\/maps\/(.+)\/(history|rounds|answers)$/);
     if (m) {
       const id = decodeURIComponent(m[1]);
       const h = await readHistory(id);
