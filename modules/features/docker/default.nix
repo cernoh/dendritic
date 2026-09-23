@@ -4,9 +4,7 @@
 # from the host preset that needs containers.
 #
 # Why it exists here:
-#   - The omp MCP stack (modules/features/omp/home/agent/mcp.json) runs its
-#     HTTP servers in containers: scrapling :8000, agentwebsearch :8902,
-#     hindsight :8888.
+#     HTTP servers in containers: scrapling :8000, agentwebsearch :8902.
 {
   ...
 }:
