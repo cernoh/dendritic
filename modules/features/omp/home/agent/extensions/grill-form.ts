@@ -19,12 +19,13 @@
  * - Question text is escaped. The page never runs source text as HTML.
  */
 import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
-import { randomBytes, randomUUID } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { join, normalize, resolve, sep } from "node:path";
 import { escapeHtml, humanDate, openInBrowser, pageShell, slugify, stamp } from "./lib/html";
 import { htmlEnv } from "./lib/env";
+import { ensureMap, recordAnswers, recordRound } from "./lib/dashboard";
 
 interface GrillQuestion {
   id: string;
@@ -444,8 +445,28 @@ export default function grillFormExtension(pi: ExtensionAPI) {
   let reportPath: string | undefined;
   let bridge: Bridge | undefined;
   let starting: Promise<Bridge> | undefined;
+  let dashboardMap: string | undefined;
 
-  const env = () => htmlEnv();
+  // Best-effort mirror of rounds + answers to the wayfinder-dashboard
+  // container. Silent when no map is set or the container is down.
+  function recordDashboardRound(round: Round, page: string): void {
+    if (!dashboardMap) return;
+    const failure = recordRound(dashboardMap, { number: round.number, title: round.title, intro: round.intro, questions: round.questions, formUrl: page });
+    if (failure) console.error(`dashboard: ${failure}`);
+  }
+  function recordDashboardAnswers(round: Round, submitted: { id: string; title: string; answer: string }[], extra: string): void {
+    if (!dashboardMap) return;
+    const failure = recordAnswers(dashboardMap, { round: round.number, answers: submitted, extra });
+    if (failure) console.error(`dashboard: ${failure}`);
+  }
+  function currentRepo(): string | undefined {
+    try {
+      const out = spawnSync("gh", ["repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner"], { encoding: "utf8", timeout: 5000 }).stdout.trim();
+      return out || undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   function send(response: ServerResponse, status: number, body: string, type = "text/plain; charset=utf-8"): void {
     response.writeHead(status, { "content-type": type, "cache-control": "no-store" });
@@ -486,6 +507,7 @@ export default function grillFormExtension(pi: ExtensionAPI) {
       ),
     );
     answered += submitted.filter((entry) => entry.answer.trim().length > 0).length;
+    recordDashboardAnswers(round, submitted, extra);
     try {
       pi.sendUserMessage(answersMessage(round, submitted, extra));
     } catch (error) {
@@ -631,6 +653,8 @@ export default function grillFormExtension(pi: ExtensionAPI) {
           }),
         )
         .describe("The questions of this round, one per decision on the frontier."),
+      map: z.number().int().positive().optional().describe("Wayfinder map issue number. Records this round on the dashboard under that map."),
+      repo: z.string().optional().describe("Repository holding the map, as `owner/name`. Defaults to the working directory repo."),
       open: z.boolean().optional().describe("Open the page in the browser. Default true."),
     }),
     loadMode: "essential",
@@ -660,14 +684,21 @@ export default function grillFormExtension(pi: ExtensionAPI) {
       if (index >= 0) rounds[index] = round;
       else rounds.push(round);
       finished = false;
+      if (typeof params.map === "number") {
+        const repo = params.repo?.trim() || currentRepo();
+        if (repo) {
+          const ensured = ensureMap(repo, params.map, params.title);
+          dashboardMap = "id" in ensured ? ensured.id : undefined;
+        }
+      }
 
       const active = await startBridge();
       writeFileSync(
         join(env().dataDir, `round-${number}.json`),
         JSON.stringify({ number, title: round.title, intro: round.intro, questions }, null, 2),
       );
-      writeFileSync(join(env().publicDir, round.file), roundPage(round, active.base));
       const page = `${active.base}/round/${number}`;
+      recordDashboardRound(round, page);
       if (params.open !== false) openInBrowser(page);
 
       return {

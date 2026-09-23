@@ -42,6 +42,9 @@
       mcpContainers
       # Paseo daemon + bundled web UI in a container, on the tailnet.
       paseo
+      # Wayfinder grill history + map switcher (Deno container, tailnet).
+      # NIXPC only: ASAHI storage stays without it.
+      wayfinder-dashboard
     ];
   };
 }
