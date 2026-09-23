@@ -12,108 +12,108 @@
 # prepended; `-e` composes after them (the `ghostty -e top` form used by
 # Noctalia's terminalCommand and Mango's SUPER,T via $TERMINAL is unchanged).
 {
-  self,
-  ...
+        self,
+        ...
 }:
 {
-  flake.nixosModules.ghostty =
-    {
-      pkgs,
-      lib,
-      ...
-    }:
-    let
-      # The palette comes from modules/features/scheme. ghostty has a builtin
-      # theme for every bundled scheme, but not for this one, so the wrapper
-      # passes the colors directly. A static file cannot read nix values; this
-      # wrapper can, so repointing the scheme needs no manual sync.
-      scheme = self.scheme;
+        flake.nixosModules.ghostty =
+                {
+                        pkgs,
+                        lib,
+                        ...
+                }:
+                let
+                        # The palette comes from modules/features/scheme. ghostty has a builtin
+                        # theme for every bundled scheme, but not for this one, so the wrapper
+                        # passes the colors directly. A static file cannot read nix values; this
+                        # wrapper can, so repointing the scheme needs no manual sync.
+                        scheme = self.scheme;
 
-      # ANSI names in index order: 0-7 normal, 8-15 bright.
-      ansiOrder = [
-        "black"
-        "red"
-        "green"
-        "yellow"
-        "blue"
-        "magenta"
-        "cyan"
-        "white"
-      ];
-      paletteFlags =
-        lib.imap0 (index: name: "--palette=${toString index}=${scheme.ansiNormal.${name}}") ansiOrder
-        ++ lib.imap0 (
-          index: name: "--palette=${toString (index + 8)}=${scheme.ansiBright.${name}}"
-        ) ansiOrder;
+                        # ANSI names in index order: 0-7 normal, 8-15 bright.
+                        ansiOrder = [
+                                "black"
+                                "red"
+                                "green"
+                                "yellow"
+                                "blue"
+                                "magenta"
+                                "cyan"
+                                "white"
+                        ];
+                        paletteFlags =
+                                lib.imap0 (index: name: "--palette=${toString index}=${scheme.ansiNormal.${name}}") ansiOrder
+                                ++ lib.imap0 (
+                                        index: name: "--palette=${toString (index + 8)}=${scheme.ansiBright.${name}}"
+                                ) ansiOrder;
 
-      # Flake-owned settings, previously modules/features/ghostty/config.
-      configFlags = [
-        # Cascadia Code NF draws a dotted zero and ships a real italic face.
-        # The italic face alone carries `ss01`, which swaps f, l, r and s for
-        # their cursive alternates; the regular face has no `ss01`, so plain
-        # text keeps its forms. `zero` swaps in the slashed glyph, and
-        # `font-style-italic` pins the italic face instead of letting ghostty
-        # synthesize an oblique. All of these belong to the family, so they sit
-        # beside it.
-        "--font-family=Cascadia Code NF"
-        "--font-style-italic=Italic"
-        "--font-feature=ss01"
-        "--font-feature=zero"
-        "--font-size=15"
-        "--window-padding-x=10"
-        "--window-padding-y=10"
-        "--window-theme=dark"
-        "--macos-option-as-alt=true"
-        "--background-opacity=0.85"
-        "--background-blur=true"
-        "--background=${scheme.hex.base}"
-        "--foreground=${scheme.hex.text}"
-        "--cursor-color=${scheme.hex.primary}"
-        "--cursor-text=${scheme.hex.base}"
-        "--selection-background=${scheme.hex.selection}"
-        "--selection-foreground=${scheme.hex.onSelection}"
-        "--cursor-style=block"
-      ]
-      ++ paletteFlags;
+                        # Flake-owned settings, previously modules/features/ghostty/config.
+                        configFlags = [
+                                # Cascadia Code NF draws a dotted zero and ships a real italic face.
+                                # The italic face alone carries `ss01`, which swaps f, l, r and s for
+                                # their cursive alternates; the regular face has no `ss01`, so plain
+                                # text keeps its forms. `zero` swaps in the slashed glyph, and
+                                # `font-style-italic` pins the italic face instead of letting ghostty
+                                # synthesize an oblique. All of these belong to the family, so they sit
+                                # beside it.
+                                "--font-family=Cascadia Code NF"
+                                "--font-style-italic=Italic"
+                                "--font-feature=ss01"
+                                "--font-feature=zero"
+                                "--font-size=11"
+                                "--window-padding-x=10"
+                                "--window-padding-y=10"
+                                "--window-theme=dark"
+                                "--macos-option-as-alt=true"
+                                "--background-opacity=0.85"
+                                "--background-blur=true"
+                                "--background=${scheme.hex.base}"
+                                "--foreground=${scheme.hex.text}"
+                                "--cursor-color=${scheme.hex.primary}"
+                                "--cursor-text=${scheme.hex.base}"
+                                "--selection-background=${scheme.hex.selection}"
+                                "--selection-foreground=${scheme.hex.onSelection}"
+                                "--cursor-style=block"
+                        ]
+                        ++ paletteFlags;
 
-      ghosttyWrapped = pkgs.symlinkJoin {
-        name = "ghostty-wrapped";
-        paths = [ pkgs.ghostty ];
-        postBuild = ''
-          rm -f "$out/bin/ghostty"
-          cat > "$out/bin/ghostty" <<'WRAPPER'
-          #!${pkgs.runtimeShell}
-          real="${pkgs.ghostty}/bin/ghostty"
-          case "''${1-}" in
-            +*) exec "$real" "$@" ;;
-            *) exec "$real" ${lib.escapeShellArgs configFlags} "$@" ;;
-          esac
-          WRAPPER
-          chmod +x "$out/bin/ghostty"
-        '';
-      };
-    in
-    {
-      # Cascadia Code NF is the active ghostty family; Droid Sans Mono rides
-      # along for editor/UI use.
-      fonts.packages = [
-        pkgs.cascadia-code
-        pkgs.nerd-fonts.droid-sans-mono
-      ];
+                        ghosttyWrapped = pkgs.symlinkJoin {
+                                name = "ghostty-wrapped";
+                                paths = [ pkgs.ghostty ];
+                                postBuild = ''
+                                        rm -f "$out/bin/ghostty"
+                                        cat > "$out/bin/ghostty" <<'WRAPPER'
+                                        #!${pkgs.runtimeShell}
+                                        real="${pkgs.ghostty}/bin/ghostty"
+                                        case "''${1-}" in
+                                          +*) exec "$real" "$@" ;;
+                                          *) exec "$real" ${lib.escapeShellArgs configFlags} "$@" ;;
+                                        esac
+                                        WRAPPER
+                                        chmod +x "$out/bin/ghostty"
+                                '';
+                        };
+                in
+                {
+                        # Cascadia Code NF is the active ghostty family; Droid Sans Mono rides
+                        # along for editor/UI use.
+                        fonts.packages = [
+                                pkgs.cascadia-code
+                                pkgs.nerd-fonts.droid-sans-mono
+                        ];
 
-      environment.systemPackages = [ ghosttyWrapped ];
-    };
+                        environment.systemPackages = [ ghosttyWrapped ];
+                };
 
-  flake.homeManagerModules.ghostty = { ... }: {
-    # Compositor bindings spawn "$TERMINAL" (Mango's SUPER,T). The session
-    # root compositor is greeter-spawned and never sources ~/.profile, so
-    # sessionVariables alone never reaches spawn_shell's non-login `sh -c`.
-    # TERMINAL is registered into mango's settings.env inside the mango
-    # feature module instead: nixpkgs' module system rejects any definition
-    # of an option that is not declared on the host — including mkIf-false
-    # ones — so a guarded def here would break every non-mango host (issue
-    # #86). NIXPC pairs mango with ghostty, so the entry is unconditional.
-    # Kept alongside the wrapper: it still serves login shells (SSH, PTYs).
-    home.sessionVariables.TERMINAL = "ghostty";
-  };
+        flake.homeManagerModules.ghostty = { ... }: {
+                # Compositor bindings spawn "$TERMINAL" (Mango's SUPER,T). The session
+                # root compositor is greeter-spawned and never sources ~/.profile, so
+                # sessionVariables alone never reaches spawn_shell's non-login `sh -c`.
+                # TERMINAL is registered into mango's settings.env inside the mango
+                # feature module instead: nixpkgs' module system rejects any definition
+                # of an option that is not declared on the host — including mkIf-false
+                # ones — so a guarded def here would break every non-mango host (issue
+                # #86). NIXPC pairs mango with ghostty, so the entry is unconditional.
+                # Kept alongside the wrapper: it still serves login shells (SSH, PTYs).
+                home.sessionVariables.TERMINAL = "ghostty";
+        };
 }
