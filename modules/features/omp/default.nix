@@ -425,10 +425,6 @@
                   "$schema" =
                     "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
                   mcpServers = {
-                    hindsight = {
-                      type = "http";
-                      url = "http://localhost:8888/mcp";
-                    };
                     scrapling = {
                       type = "http";
                       url = "http://127.0.0.1:8000/mcp";
