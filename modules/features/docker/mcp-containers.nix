@@ -8,15 +8,8 @@
 # Container contract (must keep matching omp's mcp.json ports):
 #   scrapling-mcp        127.0.0.1:8000  pyd4vinci/scrapling, mcp --http --no-auth
 #   agentwebsearch-mcp   127.0.0.1:8902  built from the in-repo skill dir
-#   hindsight-api        host network    ghcr.io/vectorize-io/hindsight-api:0.8.4
-#   hindsight-control-plane host network same tag
 #
 # Invariants carried over from v3:
-#   - The Hindsight LLM key lives ONLY in the primary user's
-#     ~/.config/hindsight/.env, never in the store: the api unit gets it via
-#     EnvironmentFile and a pre-start check hard-fails when the file is
-#     absent (v3 skipped provisioning then; a red unit is the honest
-#     declarative equivalent).
 #   - agentwebsearch-mcp is built locally from the omp feature's skill dir;
 #     a oneshot service builds the image only when missing and the container
 #     unit requires+orders after it with pull = "never".
@@ -25,16 +18,8 @@
   flake.nixosModules.mcpContainers =
     {
       pkgs,
-      config,
       ...
     }:
-    let
-      # The env file belongs to the host's primary user, not to any fixed
-      # login name (issue #61): derive it from dendritic.userName so importing
-      # this module on a host with a different primary user keeps pointing at
-      # a real path.
-      hindsightEnv = "${config.users.users.${config.dendritic.userName}.home}/.config/hindsight/.env";
-    in
     {
       virtualisation.oci-containers = {
         backend = "docker";
@@ -61,20 +46,6 @@
             # Built locally by agentwebsearch-image.service below; never pull.
             pull = "never";
             ports = [ "127.0.0.1:8902:8902" ];
-          };
-
-          hindsight-api = {
-            image = "ghcr.io/vectorize-io/hindsight-api:0.8.4";
-            autoStart = true;
-            extraOptions = [ "--network=host" ];
-            environmentFiles = [ hindsightEnv ];
-            volumes = [ "hindsight-data:/home/hindsight/.pg0" ];
-          };
-
-          hindsight-control-plane = {
-            image = "ghcr.io/vectorize-io/hindsight-control-plane:0.8.4";
-            autoStart = true;
-            extraOptions = [ "--network=host" ];
           };
         };
       };
@@ -125,21 +96,6 @@
           after = [ "agentwebsearch-image.service" ];
           requires = [ "agentwebsearch-image.service" ];
         };
-        docker-hindsight-api.serviceConfig.ExecStartPre =
-          let
-            envCheck = pkgs.writeShellApplication {
-              name = "hindsight-env-check";
-              text = ''
-                if [ ! -f ${hindsightEnv} ]; then
-                  echo "hindsight-api: ${hindsightEnv} missing — refusing to start (LLM key must come from this file)" >&2
-                  exit 1
-                fi
-              '';
-            };
-          in
-          [
-            "${envCheck}/bin/hindsight-env-check"
-          ];
       };
     };
 }

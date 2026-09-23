@@ -47,7 +47,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `act` | GitHub Actions local runner via [nektos/act](https://github.com/nektos/act); composes `docker`, ships a default runner image in `~/.actrc`. Enabled by the `desktop` bundle |
 | `computer-use` | Wayland desktop-control toolchain: `grim`, `slurp`, `wtype`, `wlrctl`, `wlr-randr`, `wayland-utils`. Enabled by the `desktop` bundle |
 | `davinci` | DaVinci Resolve (from the `davinci` input) |
-| `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902, hindsight host-networked) as systemd-managed oci-containers |
+| `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
 | `gaming-tools` | Lutris, MangoHud, Wine, Vulkan tooling and friends — beyond Steam |
 | `ghostty` | Ghostty terminal; the flake settings (Cascadia Code NF with a slashed zero and the cursive italic, the sepia palette) travel in a CLI-flag wrapper over `pkgs.ghostty`, so no user config file exists |
