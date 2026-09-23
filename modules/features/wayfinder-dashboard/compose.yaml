@@ -1,0 +1,31 @@
+# Compose source of truth for the wayfinder-dashboard feature. compose2nix
+# turns this file into the NixOS module `_wayfinder-dashboard.nix` beside it,
+# which `default.nix` imports. Regenerate after every edit here:
+#
+#   cd modules/features/wayfinder-dashboard
+#   nix run github:aksiksi/compose2nix -- \
+#     -inputs compose.yaml -output _wayfinder-dashboard.nix \
+#     -project wayfinder-dashboard -runtime docker -check_bind_mounts
+#
+# What compose2nix cannot express lives in default.nix: the image build, the
+# data-dir provisioning, the tailnet serve unit, and the data-disk ordering.
+#
+# Port contract: loopback 127.0.0.1:8787 only. tailscaled publishes it on the
+# tailnet (see default.nix). omp reaches it at http://127.0.0.1:8787.
+name: wayfinder-dashboard
+
+services:
+  wayfinder-dashboard:
+    # Built from ./dashboard-image by the `wayfinder-dashboard-image` systemd
+    # unit; no registry carries this tag.
+    image: wayfinder-dashboard
+    container_name: wayfinder-dashboard
+    restart: unless-stopped
+    # Loopback only. tailscaled publishes the UI to the tailnet.
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      PORT: "8787"
+    volumes:
+      # Grill history and map registry on the 2TB ext4 disk.
+      - /mnt/2tb-ext4/wayfinder-dashboard:/data
