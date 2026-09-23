@@ -20,11 +20,6 @@
       "enabledFeatures": null,
       "enabled": true
     },
-    "@imsus/pi-extension-minimax-coding-plan-mcp": {
-      "version": "1.0.2",
-      "enabledFeatures": null,
-      "enabled": true
-    },
     "pi-subagents": {
       "version": "0.31.0",
       "enabledFeatures": null,
@@ -47,6 +42,11 @@
     },
     "pi-herdr-sudo-task": {
       "version": "0.1.5",
+      "enabledFeatures": null,
+      "enabled": true
+    },
+    "@philogag/pi-provider-omniroute": {
+      "version": "0.2.1",
       "enabledFeatures": null,
       "enabled": true
     }
