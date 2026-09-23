@@ -1,8 +1,7 @@
 ---
 name: opencode-go
-description: "Work with OpenCode Go (opencode-go) models in omp: the doc fact sheet (models, ids, endpoints, plan limits, DeepSeek peak hours, privacy), omp provider wiring and live discovery, model id vs display name traps, the cheap per-role model picks, fallback chains, and how to write it all into the dendritic flake."
+description: "ARCHIVED: OpenCode Go (opencode-go) models in omp. Roles moved to commandcode GOAT models 2026-09-23; kept for endpoint/registry/cap history only."
 ---
-
 Trawled from <https://opencode.ai/docs/go/> plus local verification on NIXPC, 2026-09-16.
 Model list, caps, and prices re-checked 2026-09-16 against <https://opencode.ai/docs/go/#usage-limits>
 (the canonical pricing and cap table), the live account registry, and
@@ -166,7 +165,10 @@ The ranking spans every provider, so a top row can be absent from Go.
 `nemotron-3-ultra`, `nemotron-3.5-lightning`, `ling-3.0-flash-fin`, and
 `union-alpha` have no Go id.
 
-## Role picks: cheapest capable model per role
+## Role picks (ARCHIVED 2026-09-23)
+
+Roles now use `commandcode` GOAT models (see `modules/features/omp/default.nix`).
+The table below is the last opencode-go shape, kept for history.
 
 ```text
 role      model                        in / out    ctx / max-out  vision  cap/mo

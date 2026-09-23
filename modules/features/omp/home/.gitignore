@@ -46,3 +46,4 @@ autoqa.db
 omp-session-*
 
 plugins/node_modules/
+wt/

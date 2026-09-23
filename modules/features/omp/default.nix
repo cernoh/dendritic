@@ -239,26 +239,25 @@
           programs.omp.useLatestBinary = lib.mkDefault true;
           programs.omp.settings = {
             modelRoles = {
-              # DeepSeek V4.1 Flash: 1M ctx, 384K out, vision, $0.15/$0.60.
-              # Rank #1 on opencode.ai/data (2026-09-18), 46T tokens.
-              default = "opencode-go/deepseek-v4.1-flash";
-              # Same model: tool-use workhorse, same price.
-              task = "opencode-go/deepseek-v4.1-flash";
+              # GLM-5.2: 1M ctx, $1.40/$4.40, GOAT $70 allowance (plan text).
+              default = "commandcode/zai-org/GLM-5.2";
+              # Same model: tool-use workhorse, same allowance.
+              task = "commandcode/zai-org/GLM-5.2";
               # Same model: planning needs reasoning, not a pricier tier.
-              plan = "opencode-go/deepseek-v4.1-flash";
-              # Same model: replaces GLM-5.3 ($1.40/$4.40).
-              slow = "opencode-go/deepseek-v4.1-flash";
+              plan = "commandcode/zai-org/GLM-5.2";
+              # Tencent Hy3: 262K ctx, $0.14/$0.58, GOAT $70 allowance.
+              slow = "commandcode/tencent/hy3-paid";
               # Same model: the reviewer matches the primary capability.
-              # Muse Spark 1.3 Contributor (rank #2, $60 cap) repeats
-              # blocker-severity notes and trains on prompts, so it left this
-              # role for the issue-scribe agent.
-              advisor = "opencode-go/deepseek-v4.1-flash";
-              # DeepSeek V4 Flash: rank #3 (17T tokens), own $30 cap,
-              # $0.15/$0.60.
-              smol = "opencode-go/deepseek-v4-flash";
-              commit = "opencode-go/deepseek-v4-flash";
-              # DeepSeek V4 Flash Vision Exp: vision-first build, $0.15/$0.60.
-              vision = "opencode-go/deepseek-v4-flash-vision-exp";
+              # Muse Spark trains on prompts, so it left this role for the
+              # issue-scribe agent.
+              advisor = "commandcode/zai-org/GLM-5.2";
+              # DeepSeek V4 Flash: 1M ctx, text-only, $0.22/$0.66.
+              # GOAT $60 allowance (plan text).
+              smol = "commandcode/deepseek/deepseek-v4-flash";
+              commit = "commandcode/deepseek/deepseek-v4-flash";
+              # DeepSeek V4.1 Flash: only commandcode model with image input
+              # (registry 2026-09-23). Allowance is not in the $70 plan list.
+              vision = "commandcode/deepseek/deepseek-v4.1-flash";
             };
             # Cross-family chains: each hop owns a separate monthly cap, so a
             # cap wall or an outage fails over instead of blocking the turn.
@@ -267,44 +266,43 @@
               fallbackChains = {
                 # Also the catch-all chain for roles without their own entry.
                 default = [
-                  "opencode-go/deepseek-v4-flash"
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/mimo-v2.5"
-                  "opencode-go/qwen3.8-flash"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/deepseek/deepseek-v4-flash"
+                  "commandcode/Qwen/Qwen3.8-27B"
                 ];
                 task = [
-                  "opencode-go/deepseek-v4-flash"
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/mimo-v2.5"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/deepseek/deepseek-v4-flash"
+                  "commandcode/Qwen/Qwen3.8-27B"
                 ];
                 plan = [
-                  "opencode-go/deepseek-v4-flash"
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/deepseek-v4-pro"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/deepseek/deepseek-v4-flash"
+                  "commandcode/gpt-5.6-sol"
                 ];
                 slow = [
-                  "opencode-go/deepseek-v4-flash"
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/deepseek-v4-pro"
+                  "commandcode/zai-org/GLM-5.2"
+                  "commandcode/Qwen/Qwen3.8-27B"
+                  "commandcode/deepseek/deepseek-v4-flash"
                 ];
                 # The advisor shares the default model, so the first hop is a
                 # different family and the second hop owns its own cap.
                 advisor = [
-                  "opencode-go/mimo-v2.5"
-                  "opencode-go/deepseek-v4-flash"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/deepseek/deepseek-v4-flash"
                 ];
                 smol = [
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/mimo-v2.5"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/Qwen/Qwen3.8-27B"
                 ];
                 commit = [
-                  "opencode-go/glm-5.3-flash"
-                  "opencode-go/mimo-v2.5"
+                  "commandcode/tencent/hy3-paid"
+                  "commandcode/Qwen/Qwen3.8-27B"
                 ];
                 vision = [
-                  "opencode-go/deepseek-v4.1-flash"
-                  "opencode-go/gpt-5.6-luna"
-                  "opencode-go/qwen3.8-flash"
+                  "commandcode/deepseek/deepseek-v4.1-flash"
+                  "commandcode/gpt-5.6-sol"
+                  "commandcode/Qwen/Qwen3.8-27B"
                 ];
               };
             };
@@ -362,7 +360,11 @@
         (lib.mkIf config.programs.omp.enable (
           lib.mkMerge [
             {
-              home.packages = lib.optionals (config.programs.omp.package != null) [
+              # python3 is an allowed omp tool (ste-lint.py, probes, scripts).
+              home.packages = [
+                pkgs.python3
+              ]
+              ++ lib.optionals (config.programs.omp.package != null) [
                 config.programs.omp.package
               ];
             }
