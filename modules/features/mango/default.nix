@@ -149,6 +149,7 @@
                                 windowrule = [
                                         "isfloating:1,appid:firefox,title:^Picture-in-Picture$"
                                         "allow_csd:0,appid:.*"
+                                        "confine_pointer:1,appid:steam_app_.*"
                                 ];
 
                                 mousebind = [
