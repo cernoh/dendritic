@@ -7,7 +7,7 @@
         # DP-2 = HUAWEI AD80HW (earlier notes had these reversed). DP-1 is the AOC
         # at the center/left; DP-2 is the HUAWEI immediately to its right.
         monitorRule = [
-                "name:^DP-1$, vrr:1, refresh:165,x:0,y:0,scale:1"
+                "name:^DP-1$, vrr:1, refresh:165.003006,x:0,y:0,scale:1"
                 "name:^DP-2$,x:1920,y:0,scale:1"
         ];
 
