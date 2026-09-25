@@ -7,7 +7,7 @@ NixOS modules shared by every desktop host (or available to any host). Composed 
 Each subdirectory is one system concern exporting `flake.nixosModules.<name>`:
 
 - `core/` — base system bundle, `nix-settings.nix` (caches, keep in sync with `flake.nix:nixConfig`), `boot.nix`, `hardware.nix`, `locale.nix`, `user.nix`; defines `flake.lib.hardwareFromMachine`.
-- `home-manager/` — wires `inputs.home-manager` into NixOS, sets `useGlobalPkgs`/`useUserPackages`/`backupFileExtension`, enables the default HM feature set (`nvf`, `omp`, `agent-browser`, `herdr-web`, `programming`, `fish`, `nushell`, `opencode`, `waylandBase`, `stylix`) for `config.dendritic.userName`. Keep this list in step with the `imports` there.
+- `home-manager/` — wires `inputs.home-manager` into NixOS, sets `useGlobalPkgs`/`useUserPackages`/`backupFileExtension`, enables the default HM feature set (`nvf`, `agent-browser`, `herdr-web`, `programming`, `fish`, `nushell`, `opencode`, `waylandBase`, `stylix`) for `config.dendritic.userName`. Keep this list in step with the `imports` there. The `omp` feature still ships in the flake, but no host imports it.
 - `distributed-builds/` — the NIXPC build link. `builder.nix` exports `remoteBuilder` (imported by `hosts/NIXPC`), `client.nix` exports `distributedBuilds` (imported by `hosts/ASAHI`), and both import `_link.nix` for the shared account, key path, address, and host key.
 - `network/`, `audio/`, `drivers/` (`asahi.nix`, `nvidia.nix`), `flatpak/`, `portals/`, `tailscale/`, `time-sync/`, `stability/`, `obs/`, `home-manager/` — one concern each.
 
