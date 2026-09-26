@@ -4,31 +4,32 @@
 #   - Home-manager side (editor + dev env): import self.homeManagerModules.programming;
 #     system/home-manager already enables it for the primary user alongside nvf/omp.
 {
-  self,
-  moduleWithSystem,
-  ...
+        self,
+        moduleWithSystem,
+        ...
 }:
 {
-  flake.nixosModules.programming = moduleWithSystem (
-    { ... }:
-    let
-      modules = with self.nixosModules; [
-        lazygit
-        dojjo
-        agent-browser
-      ];
-    in
-    {
-      # Editor env for login shells, systemd user units and any process not
-      # started from an interactive shell's own config (GH_EDITOR fallback,
-      # git, systemd services...). Fish/nushell additionally pin nvim
-      # per-shell; this is the system-wide baseline (issue #95).
-      environment.sessionVariables = {
-        EDITOR = "nvim";
-        VISUAL = "nvim";
-      };
+        flake.nixosModules.programming = moduleWithSystem (
+                { ... }:
+                let
+                        modules = with self.nixosModules; [
+                                lazygit
+                                dojjo
+                                agent-browser
+                                pi-coding-agent
+                        ];
+                in
+                {
+                        # Editor env for login shells, systemd user units and any process not
+                        # started from an interactive shell's own config (GH_EDITOR fallback,
+                        # git, systemd services...). Fish/nushell additionally pin nvim
+                        # per-shell; this is the system-wide baseline (issue #95).
+                        environment.sessionVariables = {
+                                EDITOR = "nvim";
+                                VISUAL = "nvim";
+                        };
 
-      imports = modules;
-    }
-  );
+                        imports = modules;
+                }
+        );
 }
