@@ -1,12 +1,12 @@
 id = "cernoh/terminal"
 name = "Terminal"
-version = "2.0.0"
+version = "2.1.1"
 plugin_api = 21
 author = "cernoh"
 license = "MIT"
 tags = ["terminal", "shell", "productivity"]
 icon = "terminal-2"
-description = "A real terminal panel, backed by libghostty-vt."
+description = "A themed dropdown terminal pane, backed by libghostty-vt."
 
 [[service]]
 id = "shell"
@@ -23,24 +23,133 @@ entry = "shortcut.luau"
 [[panel]]
 id = "panel"
 entry = "panel.luau"
-width = 900
-height = 560
+width = 1200
+height = 720
 placement = "attached"
 keyboard_focus = "exclusive"
 dismiss_on_outside_click = false
 
-# Chords the panel forwards to the shell. Every name here is one the helper's
-# key table knows, and one Noctalia documents as a valid chord. Escape is left
-# out on purpose: Noctalia keeps it as the panel-close action, so it can never
-# be captured.
+# The panel has no visible command box. Printable chords are converted to PTY
+# input by panel.luau; control chords are encoded by ghostty-term. The names
+# follow XKB keysym names accepted by Noctalia's key chord parser.
+# Escape remains the panel-close action and cannot be captured.
 capture_keys = [
+  "enter",
+  "tab",
+  "shift+tab",
+  "backspace",
+  "del",
   "up",
   "down",
   "left",
   "right",
-  "tab",
-  "shift+tab",
-  "del",
+  "home",
+  "end",
+  "insert",
+  "space",
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "g",
+  "h",
+  "i",
+  "j",
+  "k",
+  "l",
+  "m",
+  "n",
+  "o",
+  "p",
+  "q",
+  "r",
+  "s",
+  "t",
+  "u",
+  "v",
+  "w",
+  "x",
+  "y",
+  "z",
+  "shift+0",
+  "shift+1",
+  "shift+2",
+  "shift+3",
+  "shift+4",
+  "shift+5",
+  "shift+6",
+  "shift+7",
+  "shift+8",
+  "shift+9",
+  "shift+a",
+  "shift+b",
+  "shift+c",
+  "shift+d",
+  "shift+e",
+  "shift+f",
+  "shift+g",
+  "shift+h",
+  "shift+i",
+  "shift+j",
+  "shift+k",
+  "shift+l",
+  "shift+m",
+  "shift+n",
+  "shift+o",
+  "shift+p",
+  "shift+q",
+  "shift+r",
+  "shift+s",
+  "shift+t",
+  "shift+u",
+  "shift+v",
+  "shift+w",
+  "shift+x",
+  "shift+y",
+  "shift+z",
+  "minus",
+  "equal",
+  "bracketleft",
+  "bracketright",
+  "backslash",
+  "semicolon",
+  "apostrophe",
+  "comma",
+  "period",
+  "slash",
+  "grave",
+  "shift+minus",
+  "shift+equal",
+  "shift+bracketleft",
+  "shift+bracketright",
+  "shift+backslash",
+  "shift+semicolon",
+  "shift+apostrophe",
+  "shift+comma",
+  "shift+period",
+  "shift+slash",
+  "shift+grave",
   "ctrl+c",
-  "ctrl+s",
+  "ctrl+d",
+  "ctrl+l",
+  "ctrl+u",
+  "ctrl+a",
+  "ctrl+e",
+  "ctrl+k",
+  "ctrl+w",
+  "ctrl+z",
+  "ctrl+shift+c",
+  "ctrl+shift+v",
 ]

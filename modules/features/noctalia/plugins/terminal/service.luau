@@ -9,14 +9,9 @@
 -- Entries exchange plain values through noctalia.state, so the panel posts work
 -- to the "request" key and bumps "request_rev". A counter is necessary because
 -- two identical requests in a row must still both run.
---
--- Frame shape (one JSON object per line):
---   {"t":"f","s":<seq>,"c":<cols>,"r":<rows>,
---    "dfg":"#rrggbb","dbg":"#rrggbb",
---    "L":[[{"t":"text","f":"#rrggbb","b":true}, ...], ...]}
 
-local COLS = 100
-local ROWS = 28
+local COLS = 140
+local ROWS = 42
 
 local dataDir = noctalia.pluginDataDir()
 local fifo = dataDir and (dataDir .. "/term.fifo") or nil
@@ -81,6 +76,11 @@ local function handleLine(line)
     return
   end
 
+  if frame.t == "clipboard" then
+    noctalia.copyToClipboard(tostring(frame.d or ""), "text/plain")
+    return
+  end
+
   if frame.t == "init" then
     noctalia.state.set("geometry", { cols = frame.c, rows = frame.r })
     return
@@ -102,7 +102,6 @@ local function handleLine(line)
     return
   end
   lastSequence = sequence
-
   noctalia.state.set("frame", frame)
 end
 
@@ -152,7 +151,9 @@ local function handleRequest(request)
   local kind = request.kind
   local payload = request.payload
 
-  if kind == "run" then
+  if kind == "text" then
+    send("i" .. escapeText(tostring(payload or "")))
+  elseif kind == "run" then
     send("i" .. escapeText(tostring(payload or "")) .. "\\n")
   elseif kind == "key" then
     send("k" .. tostring(payload or ""))
@@ -160,6 +161,18 @@ local function handleRequest(request)
     send("s" .. tostring(tonumber(payload) or 0))
   elseif kind == "resize" then
     send("z" .. tostring(payload or ""))
+  elseif kind == "copy" then
+    local frame = noctalia.state.get("frame")
+    local lines = {}
+    for _, row in ipairs((frame ~= nil and frame.L) or {}) do
+      local line = {}
+      for _, run in ipairs(row) do table.insert(line, tostring(run.t or "")) end
+      table.insert(lines, table.concat(line))
+    end
+    noctalia.copyToClipboard(table.concat(lines, "\n"), "text/plain")
+  elseif kind == "paste" then
+    local text = noctalia.clipboardText()
+    if text ~= nil then send("i" .. escapeText(text)) end
   elseif kind == "restart" then
     ready = false
     startHelper()

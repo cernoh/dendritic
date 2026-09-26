@@ -353,6 +353,46 @@ static void write_all(int fd, const char *p, size_t n) {
     }
   }
 }
+static void write_pty_callback(GhosttyTerminal terminal, void *userdata, const uint8_t *data, size_t len) {
+  (void)terminal;
+  Term *t = userdata;
+  write_all(t->master, (const char *)data, len);
+}
+
+static bool device_attributes_callback(GhosttyTerminal terminal, void *userdata,
+                                       GhosttyDeviceAttributes *out) {
+  (void)terminal;
+  (void)userdata;
+  memset(out, 0, sizeof(*out));
+  out->primary.conformance_level = 62;
+  out->primary.features[0] = GHOSTTY_DA_FEATURE_ANSI_COLOR;
+  out->primary.features[1] = GHOSTTY_DA_FEATURE_CLIPBOARD;
+  out->primary.num_features = 2;
+  out->secondary.device_type = GHOSTTY_DA_DEVICE_TYPE_VT220;
+  out->secondary.firmware_version = 1;
+  return true;
+}
+static GhosttyClipboardWriteResult clipboard_callback(GhosttyTerminal terminal, void *userdata,
+                                                       const GhosttyClipboardWrite *write) {
+  (void)terminal;
+  (void)userdata;
+  (void)terminal;
+  if (write->contents_len == 0) return GHOSTTY_CLIPBOARD_WRITE_RESULT_SUCCESS;
+  for (size_t i = 0; i < write->contents_len; i++) {
+    const GhosttyClipboardContent *content = &write->contents[i];
+    if (content->mime.len != strlen("text/plain")) continue;
+    if (memcmp(content->mime.ptr, "text/plain", content->mime.len) != 0) continue;
+    Buf out = {0};
+    buf_puts(&out, "{\"t\":\"clipboard\",\"d\":");
+    json_string(&out, (const char *)content->data.ptr, content->data.len);
+    buf_puts(&out, "}\n");
+    fwrite(out.p, 1, out.len, stdout);
+    fflush(stdout);
+    free(out.p);
+    break;
+  }
+  return GHOSTTY_CLIPBOARD_WRITE_RESULT_SUCCESS;
+}
 
 /* Keys the panel can capture are forwarded as encoded key events. libghostty
  * converts them to the right escape sequence for the mode the running program
@@ -369,6 +409,7 @@ static const struct {
     {"shift+tab", GHOSTTY_KEY_TAB, GHOSTTY_MODS_SHIFT, NULL},
     {"backspace", GHOSTTY_KEY_BACKSPACE, 0, "\x7f"},
     {"delete", GHOSTTY_KEY_DELETE, 0, NULL},
+    {"del", GHOSTTY_KEY_DELETE, 0, NULL},
     {"escape", GHOSTTY_KEY_ESCAPE, 0, "\x1b"},
     {"up", GHOSTTY_KEY_ARROW_UP, 0, NULL},
     {"down", GHOSTTY_KEY_ARROW_DOWN, 0, NULL},
@@ -507,11 +548,33 @@ int main(int argc, char **argv) {
     fprintf(stderr, "ghostty-term: terminal init failed\n");
     return 1;
   }
+  /* Keep this copy synchronized with modules/features/scheme/default.nix and
+   * modules/features/ghostty/default.nix. C cannot read flake values. */
+  GhosttyColorRgb background = {0x1e, 0x18, 0x13};
+  GhosttyColorRgb foreground = {0xec, 0xe0, 0xcd};
+  GhosttyColorRgb cursor = {0xc9, 0x9a, 0x5b};
+  GhosttyColorRgb palette[256];
+  ghostty_color_palette_default(palette);
+  GhosttyColorRgb ansi[16] = {
+      {0x2a, 0x23, 0x1a}, {0xc5, 0x6a, 0x5a}, {0x8f, 0x9a, 0x6a}, {0xd9, 0xb0, 0x6a},
+      {0x8a, 0x9b, 0xb0}, {0xc9, 0xa3, 0xa0}, {0x7d, 0x9a, 0x8e}, {0xc9, 0xb7, 0x9c},
+      {0x5f, 0x4d, 0x3a}, {0xd9, 0x84, 0x70}, {0xa9, 0xb4, 0x7f}, {0xe8, 0xc9, 0x8a},
+      {0xa3, 0xb3, 0xc6}, {0xdc, 0xb9, 0xc0}, {0x96, 0xb0, 0xa5}, {0xf3, 0xe9, 0xd8},
+  };
+  for (size_t i = 0; i < 16; i++) palette[i] = ansi[i];
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &background);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND, &foreground);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_COLOR_CURSOR, &cursor);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, palette);
   size_t max_scrollback = 10000;
   if (ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_SCROLLBACK_MAX_LINES,
                            &max_scrollback) != GHOSTTY_SUCCESS) {
     fprintf(stderr, "ghostty-term: scrollback limit rejected\n");
   }
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_USERDATA, &t);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_WRITE_PTY, write_pty_callback);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_DEVICE_ATTRIBUTES, device_attributes_callback);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_CLIPBOARD_WRITE, clipboard_callback);
   t.cols = cols;
   t.rows = rows;
 
