@@ -33,7 +33,6 @@
           {
             imports = with self.homeManagerModules; [
               nvf
-              omp
               agent-browser
               herdr-web
               programming
