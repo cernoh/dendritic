@@ -1,6 +1,6 @@
 ---
 name: asahi-overnight-remote-build
-description: "Run an unattended multi-hour ASAHI (aarch64 Mac) NixOS build with NIXPC as remote builder and watch it from a phone: durable systemd client, USER=root eval flavour, libgit2 safe.directory, the two-client restart trap, endgame metrics (MODPOST/.mod.o/.ko), report sentinel plus two watchers, and a tailnet status page."
+description: "Run a multi-hour ASAHI (aarch64 Mac) NixOS build with NIXPC as remote builder and watch it from a phone: the USER=root evaluation flavour gate and its measured derivation table, the durable systemd client, libgit2 safe.directory, the two-client restart trap, endgame metrics (MODPOST/.mod.o/.ko), report sentinel plus two watchers, and a tailnet status page."
 ---
 
 # Unattended ASAHI build on the NIXPC remote builder
@@ -35,15 +35,66 @@ systemd-run --unit=ASAHI-rebuild \
 - `--print-build-logs` gives a real log to grep; without it the client prints one
   line per derivation and there is no per-file progress at all.
 
+## The flavour gate: `USER=root`, and `--impure` is not the same thing
+
+`modules/hosts/ASAHI/asahiConfiguration.nix` decides the peripheral firmware from
+the environment, so the system depends on who evaluates it:
+
+```nix
+onMacAsRoot = evalSystem == "aarch64-linux" && builtins.getEnv "USER" == "root";
+vendorfw = if onMacAsRoot then /boot/vendorfw else null;
+hardware.asahi.peripheralFirmwareDirectory = vendorfw;
+hardware.asahi.extractPeripheralFirmware = onMacAsRoot;
+```
+
+Two separate conditions gate it. A pure evaluation reads `getEnv` as empty, and a
+run as `da` reads as not root. **A `--impure` rerun as `da` does not change the
+flavour** — measured 2026-09-22: it rebuilt the same neutral toplevel with
+`peripheralFirmwareDirectory = null`.
+
+Measured on revision 44a9189, one evaluation each way:
+
+| item | `USER=da` (neutral) | `USER=root` (what the switch evaluates) |
+| --- | --- | --- |
+| toplevel drv | `7bk0a4wl…` | `5mw77z528gwn6baqmm9q33qzc65q76ba…` |
+| toplevel output | `65bb08gq6qrchbs6bn5a8x367npzcbws…` | `b6xs9pbhnz0626lv8cc5g2b1nknvk5nn…` |
+| initrd drv | `if800nnq7k7x3pymsw9di799i1675cd7…` | `jdw0byv54p0rmjbild1qq2hl16rcdiyj…` |
+| kernel drv | `6syybn825075ybpbknlh80c2mh381pyb-linux-asahi-7.1.13` | identical |
+| peripheralFirmwareDirectory | `null` | `/boot/vendorfw` |
+| extractPeripheralFirmware | `false` | `true` |
+
+- Interactive build, root flavour, no sudo for the evaluation:
+  `env USER=root nh os switch . -H ASAHI --impure`. `nh` 4.4.2 takes `--impure`
+  as a first-class flag and forwards it to its `nix build` child.
+- Documented route: `sudo nixos-rebuild switch --impure --flake
+  ~/.config/dendritic#ASAHI`, the fish `asahi-rebuild` alias. `sudo` sets
+  `USER=root` itself, and it activates in the same process, so no sudo password
+  is needed hours later.
+- The root-flavour evaluation needs no root rights: `env USER=root nix eval
+  --impure` run by `da` resolved the root toplevel and copied `/boot/vendorfw`
+  into the store as `/nix/store/2y2a3qxzh7rxckrkjgrhjd1sr01011bk-vendorfw`
+  (`firmware.cpio` 32.5 MB, `firmware.tar`, `manifest.txt`, `u-boot/`).
+- **The kernel derivation is identical in both flavours**, so the emulated kernel
+  compile is shared. A flavour correction *while* the kernel still compiles
+  throws away that partial compile and restarts it. After the kernel has built,
+  the correction reuses it (the output is already in the store), and only the
+  initrd and the toplevel differ. Correct the flavour early, but a late
+  correction is not a reason to keep the neutral system.
+- Compare the flavours before committing to a long build:
+  `env USER=da nix eval --impure --raw '.#nixosConfigurations.ASAHI.config.system.build.toplevel.drvPath'`
+  against the same line with `USER=root`. Different paths mean the flavour
+  matters for that revision.
+- Prove the outcome, never infer it. A moved profile path does not prove that the
+  generation holds the firmware, and `switch-to-configuration` moves the profile
+  before it writes the ESP:
+  `nix-store -q -R /nix/var/nix/profiles/system | awk '/vendorfw/'`.
+  An empty result means the switch landed on a system without the payload.
+
 ## Two traps that cost hours
 
-1. **`USER=root` decides the evaluation flavour.** ASAHI's config reads
-   `getEnv "USER" == "root"` to decide whether to include the peripheral
-   firmware. As `da` the toplevel drv is `0jrl0sb98p3…`; as root it is
-   `pw00rpsw7a8j…`. A prebuild in the wrong flavour is wasted work, because
-   `sudo nixos-rebuild switch` evaluates the root flavour. The unit runs as root
-   *and* sets `USER=root`; a user-level `nix run … nom build …` needs
-   `env USER=root`.
+1. **`USER=root` decides the evaluation flavour** — see the section above. A
+   prebuild in the wrong flavour is wasted work, because the switch evaluates the
+   root flavour.
 2. **libgit2 refuses a checkout owned by another user.** A root systemd unit
    evaluating `/home/da/.config/dendritic` dies with
    `repository path … is not owned by current user (libgit2 error code = 7)`.
@@ -128,5 +179,9 @@ thousands of compiler lines.
   `HandleLidSwitch=suspend-then-hibernate`, so an idle Mac or a closed lid
   freezes the client. Either keep the lid open or
   `systemd-inhibit --what=idle:sleep:handle-lid-switch --mode=block sleep infinity`;
+  measured 2026-09-22: noctalia's Caffeine toggle holds two `block` idle
+  inhibitors, which stops idle suspend but **not** a closed lid, and the mac
+  battery drains through the build (45 % at hour two, charging again at 65 %
+  once the cable went back in);
 - a `--no-link` build leaves the copied closure unrooted until the switch, so run
   the switch before the next GC timer (`systemctl list-timers nix-gc.timer`).
