@@ -1,0 +1,17 @@
+{
+  "packages": [
+    "npm:pi-freeflow",
+    "npm:pi-open-tui",
+    "npm:pi-tool-discipline",
+    "npm:@ff-labs/pi-fff",
+    "npm:pi-web-access",
+    "npm:pi-mcp-client",
+    "npm:pi-background-tasks",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:bigpowers",
+    "npm:@dietrichgebert/ponytail",
+    "npm:pi-memory"
+  ],
+  "lastChangelogVersion": "0.86.0",
+  "theme": "dark"
+}

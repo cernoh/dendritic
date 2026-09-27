@@ -58,8 +58,13 @@
             src = pkgs.fishPlugins.fzf-fish.src;
           }
           {
-            name = "hydro";
-            src = pkgs.fishPlugins.hydro.src;
+            name = "hydrojjen";
+            src = pkgs.fetchFromGitHub {
+              owner = "cernoh";
+              repo = "hydrojjen";
+              rev = "09fb84d04254a6c61d219e29e9a5984232faa508";
+              sha256 = "5XR47bMfFfgKZfKOplRzbCD9ZlGGn7aJp9BNBOF+P3U=";
+            };
           }
           {
             name = "done";
@@ -99,6 +104,7 @@
         bat
         fzf
         zoxide
+        lazyjj
         lazygit
         # nom-switch renders a rebuild as a build tree (functions/).
         nix-output-monitor
