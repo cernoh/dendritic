@@ -74,7 +74,7 @@ modules/
 # 4. Host preset → nixosConfigurations
 {self, inputs, ...}: {
   flake.nixosConfigurations.HACKSTATION = inputs.nixpkgs.lib.nixosSystem {
-    modules = with self.nixosModules; [desktop gaming davinci ...];
+    modules = with self.nixosModules; [desktop gaming nixpcDesktop ...];
   };
 }
 ```

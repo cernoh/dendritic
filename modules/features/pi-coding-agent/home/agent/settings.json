@@ -10,8 +10,12 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:bigpowers",
     "npm:@dietrichgebert/ponytail",
-    "npm:pi-memory"
+    "npm:pi-memory",
+    "npm:pi-subagents"
   ],
   "lastChangelogVersion": "0.86.0",
-  "theme": "dark"
+  "theme": "dark",
+  "terminal": {
+    "showTerminalProgress": true
+  }
 }

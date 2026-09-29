@@ -1,0 +1,28 @@
+{
+  "id": "bd4d6b075",
+  "name": "re-verify both hosts eval",
+  "command": "cd /home/davr/.config/dendritic && echo \"--- ASAHI max-jobs/cores ---\" && nix eval --impure --json .#nixosConfigurations.ASAHI.config.nix.settings --apply 's: { inherit (s) max-jobs cores; }' 2>&1 | grep -v 'saved setting' | tail -3 && echo \"--- ASAHI toplevel drv ---\" && nix eval --impure .#nixosConfigurations.ASAHI.config.system.build.toplevel.drvPath 2>&1 | grep -v 'saved setting' | tail -3 && echo \"--- NIXPC toplevel drv ---\" && nix eval --impure .#nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath 2>&1 | grep -v 'saved setting' | tail -2",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a0edc1-d5a0-767d-a870-5fdab81cc70d-29120/bd4d6b075.output",
+  "cwd": "/home/davr/.config/dendritic",
+  "startTime": 1790696290383,
+  "endTime": 1790696368791,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 35919,
+  "bytesWritten": 876,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/run/current-system/sw/bin/fish",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "user-non-posix"
+  }
+}

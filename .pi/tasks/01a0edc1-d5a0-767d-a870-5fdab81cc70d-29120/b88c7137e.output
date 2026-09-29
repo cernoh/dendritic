@@ -1,0 +1,32 @@
+=== greeter option resolves ===
+warning: Git tree '/home/davr/.config/dendritic' is dirty
+"--session Mango"
+=== any rename warnings left? ===
+no rename warnings
+"/nix/store/9wlxk5020qlrgd5fcqvddfsh2d38md7c-nixos-system-ASAHI-26.11.20260920.44a9189.drv"
+=== verify gate ===
+warning: Git tree '/home/davr/.config/dendritic' is dirty
+Using saved setting for 'substituters = https://cache.nixos.org https://nix-community.cachix.org https://noctalia.cachix.org https://nixos-apple-silicon.cachix.org https://devenv.cachix.org https://numtide.cachix.org https://herdr.cachix.org' from ~/.local/share/nix/trusted-settings.json.
+Using saved setting for 'trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4= nixos-apple-silicon.cachix.org-1:8psDu5SA5dAD7qA0zMy5UT292TxeEPzIz8VVEr2Js20= devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw= numtide.cachix.org-1:2ps1kLBUWjxIneOy1Ik6cQjb41X0iXVXeHigGmycPPE= herdr.cachix.org-1:3nH7IStRsS0ASfdonA0DCRR2ZrSCeWitZ7Kwew0cR4I=' from ~/.local/share/nix/trusted-settings.json.
+this derivation will be built:
+  /nix/store/d3yjz1cyxczyziibdafn6kw2d439y2r6-verify.drv
+building '/nix/store/d3yjz1cyxczyziibdafn6kw2d439y2r6-verify.drv'...
+verify: flake=/nix/store/v97m2z01h2z1szalqvqmm4kg4rkjniqb-source currentSystem=x86_64-linux
+
+── Gate 1: parse ──
+PASS parse
+
+── Gate 2: pure eval ──
+PASS eval:pure:NIXPC
+SKIP ASAHI (filtered)
+PASS warnings:pure:NIXPC
+SKIP ASAHI (filtered)
+
+── Gate 3: hardware (impure) ──
+PASS hardware:impure:NIXPC (w empty but /etc/nixos/hardware-configuration.nix exists, fs=__ERR__ plat=__ERR__)
+SKIP ASAHI (filtered)
+
+── Gate 4: fmt ──
+PASS fmt
+
+VERIFY PASSED

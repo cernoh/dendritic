@@ -1,0 +1,12 @@
+         1181|       value = addErrorContext "while evaluating the option `${showOption loc}':" (
+             |       ^
+         1182|         # Apply the 'apply' function to the merged value. This allows options to
+
+       … while evaluating the option `nix.settings.max-jobs':
+
+       (stack trace truncated; use '--show-trace' to show the full, detailed trace)
+
+       error: The option `nix.settings.max-jobs' has conflicting definition values:
+       - In `/nix/store/cn3wg659csvx3pwr792r69n5rs520qp9-source/modules/hosts/ASAHI/asahiConfiguration.nix, via option flake.nixosModules.asahiConfiguration': 1
+       - In `/nix/store/cn3wg659csvx3pwr792r69n5rs520qp9-source/modules/system/core/nix-settings.nix, via option flake.nixosModules.nixSettings': 4
+       Use `lib.mkForce value` or `lib.mkDefault value` to change the priority on any of these definitions.

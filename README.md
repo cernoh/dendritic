@@ -46,7 +46,6 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 |---|---|
 | `act` | GitHub Actions local runner via [nektos/act](https://github.com/nektos/act); composes `docker`, ships a default runner image in `~/.actrc`. Enabled by the `desktop` bundle |
 | `computer-use` | Wayland desktop-control toolchain: `grim`, `slurp`, `wtype`, `wlrctl`, `wlr-randr`, `wayland-utils`. Enabled by the `desktop` bundle |
-| `davinci` | DaVinci Resolve (from the `davinci` input) |
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
 | `gaming-tools` | Lutris, MangoHud, Wine, Vulkan tooling and friends — beyond Steam |
@@ -71,7 +70,6 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `scheme` | The flake-wide sepia palette: roles, base16, ANSI, the Noctalia palette document, the greeter palette, the omp theme, and the host wallpaper. Every themed feature reads this |
 | `sober` | Roblox via Sober ([flatpak `org.vinegarhq.Sober`](https://flathub.org/apps/org.vinegarhq.Sober)); composes `flatpak` + `portals`, installs the app on the first switch (needs flathub) |
 | `steam` | `programs.steam` + protontricks + compat packages |
-| `stremio-kai` | Stremio-Kai mpv configuration copied writable into `~/.config/mpv` |
 | `stylix` | GTK and Qt theming from the sepia palette through [stylix](https://nix-community.github.io/stylix/): GTK CSS + `adw-gtk3`, and a Kvantum theme. Only the `gtk` and `qt` targets are on. Enabled by the `desktop` bundle |
 | `usb-automount` | udev-triggered USB mounting under `/run/media/<user>` with mount/unmount notifications |
 | `wayland-base` | Qt Wayland platforms, Chromium/Electron ozone flags, Firefox Wayland, fuzzel |
