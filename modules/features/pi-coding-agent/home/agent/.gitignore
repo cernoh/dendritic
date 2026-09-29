@@ -4,6 +4,7 @@ models-store.json
 sessions/
 fff/
 memory/
+web-search-cache/
 *.log
 pi-freeflow-upstream-health.json
 # npm runtime
