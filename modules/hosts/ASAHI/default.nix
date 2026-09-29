@@ -39,7 +39,7 @@
       flatpak
       obs
       portals
-      ({ programs.noctalia-greeter.greeter-args = "--session Mango"; })
+      ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
     ];
   };
 }

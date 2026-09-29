@@ -77,7 +77,7 @@ short. `./`-paths in backticks are stripped only inside fenced code blocks.
   `feat/<N>-<name>` in `.worktrees/` (see omp-worktree skill), `Closes #N` in
   PR body, PR title ends `(#<prnum>)` (edit after create).
 - Pre-existing failure to distinguish from yours: `nix flake check` fmt gate
-  flags EVERY unformatted .nix file in the repo (`davinci`, `omp` were red at
+  flags EVERY unformatted .nix file in the repo (`omp` was red at
   main HEAD). If your files pass `nixfmt --check` and both host eval jobs are
   green, the fmt failure is not your regression — report, do not reformat
   unrelated files.

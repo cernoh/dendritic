@@ -17,7 +17,6 @@
 #   - swaybg + waybar configs -> dropped outright (#28)
 #   - gaming tools (lutris/mangohud/gamescope/protonup-qt/wine/winetricks/
 #     vulkan tools/nvidia-vaapi-driver) -> gaming-tools feature (#26)
-#   - stremio-kai data package + mpv wrapper -> its own feature (#27)
 #
 # Session variables are NVIDIA/Wayland host-scoped and only make sense on
 # this machine — that is why they live here rather than waylandBase.

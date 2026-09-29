@@ -1,0 +1,10 @@
+--- ASAHI max-jobs/cores ---
+warning: Git tree '/home/davr/.config/dendritic' is dirty
+{"cores":1,"max-jobs":1}
+--- ASAHI toplevel drv ---
+evaluation warning: The option `programs.noctalia-greeter' defined in `/nix/store/i1bniiscqk7w1nip5aycpg2mkaq2wn3c-source/modules/features/noctalia-greeter/default.nix, via option flake.nixosModules.noctaliaGreeter' and `/nix/store/mkp6xi3vnvrllpmc17337m6sci9chm5l-source/flake.nix' has been renamed to `services.displayManager.noctalia-greeter'.
+evaluation warning: hardwareFromMachine aarch64-linux: /etc/nixos/hardware-configuration.nix not consumed — placeholder root filesystem (cross-machine evaluation mode).
+"/nix/store/sx9cib4zvdm773q627knqwb8k6vmagkp-nixos-system-ASAHI-26.11.20260920.44a9189.drv"
+--- NIXPC toplevel drv ---
+             |                                                                     ^
+           29|

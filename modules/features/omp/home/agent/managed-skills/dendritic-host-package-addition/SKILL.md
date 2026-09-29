@@ -39,8 +39,8 @@ nix eval --impure --raw .#nixosConfigurations.NIXPC.config.system.build.toplevel
 ```
 
 The NIXPC toplevel eval is fast here (~30 s warm) despite the full nixpkgs +
-home-manager tree; run it in the foreground. `evaluation warning: The option
-'programs.noctalia-greeter' … has been renamed` is pre-existing noise.
+home-manager tree; run it in the foreground. Any `has been renamed` warning
+from the eval is pre-existing noise.
 
 ## Behavioral proof (the part that actually shows the package landed)
 

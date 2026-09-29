@@ -89,27 +89,6 @@
         "type": "github"
       }
     },
-    "davinci": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "nixpkgs-pinned": "nixpkgs-pinned"
-      },
-      "locked": {
-        "lastModified": 1782405315,
-        "narHash": "sha256-pZKG7KOr1NPtWwzfEnRZvAi7Uvndd4LiC0OVHjf5IPE=",
-        "ref": "refs/heads/main",
-        "rev": "c9859df9bd3781c63d838a1a90d22129885a910b",
-        "revCount": 5,
-        "type": "git",
-        "url": "https://git.voidarc.co.uk/voidarc/nixos.davinci"
-      },
-      "original": {
-        "type": "git",
-        "url": "https://git.voidarc.co.uk/voidarc/nixos.davinci"
-      }
-    },
     "dojjo": {
       "flake": false,
       "locked": {
@@ -441,22 +420,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-pinned": {
-      "locked": {
-        "lastModified": 1772567409,
-        "narHash": "sha256-qspxGige37s/66q9sptyG5VA/l2IOmMMZVJ4Xhta2wU=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "e4ec59bc1152b09a4843702e4a49381194f065a2",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "e4ec59bc1152b09a4843702e4a49381194f065a2",
-        "type": "github"
-      }
-    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1789785513,
@@ -620,7 +583,6 @@
     "root": {
       "inputs": {
         "asahi": "asahi",
-        "davinci": "davinci",
         "dojjo": "dojjo",
         "flake-parts": "flake-parts",
         "home-manager": "home-manager",
@@ -633,7 +595,6 @@
         "nvf": "nvf",
         "qmd": "qmd",
         "retrosmart-cursor": "retrosmart-cursor",
-        "stremio-kai": "stremio-kai",
         "stylix": "stylix",
         "wrappers": "wrappers"
       }
@@ -658,23 +619,6 @@
       "original": {
         "owner": "wlrfx",
         "repo": "scenefx",
-        "type": "github"
-      }
-    },
-    "stremio-kai": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1784387373,
-        "narHash": "sha256-3VL35j6NnMh9xs6M1blYJ6l33jZv3j6U5OKVGqKlI00=",
-        "owner": "allecsc",
-        "repo": "Stremio-Kai",
-        "rev": "37e6273a7d18ff0a3745c59265aebd99bb2509a6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "allecsc",
-        "repo": "Stremio-Kai",
-        "rev": "37e6273a7d18ff0a3745c59265aebd99bb2509a6",
         "type": "github"
       }
     },
