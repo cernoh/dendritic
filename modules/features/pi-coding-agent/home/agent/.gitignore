@@ -5,6 +5,8 @@ sessions/
 fff/
 memory/
 web-search-cache/
+# Written on every switch by home.activation.piTheme from features/scheme.
+themes/
 *.log
 pi-freeflow-upstream-health.json
 # npm runtime

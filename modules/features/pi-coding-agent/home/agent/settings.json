@@ -14,7 +14,7 @@
     "npm:pi-subagents"
   ],
   "lastChangelogVersion": "0.86.0",
-  "theme": "dark",
+  "theme": "sepia",
   "terminal": {
     "showTerminalProgress": true
   }
