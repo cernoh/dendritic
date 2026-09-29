@@ -11,6 +11,7 @@
 #   self.scheme.noctalia         # Noctalia palette document
 #   self.scheme.greeter          # greeter.toml [appearance.palette]
 #   self.scheme.omp              # omp theme token map
+#   self.scheme.pi               # pi TUI theme: { colors, export }
 #   self.scheme.html             # render_html palette document (CSS roles)
 #   self.scheme.wallpaper        # host wallpaper path
 #
@@ -257,6 +258,85 @@ let
     statusLineSubagents = hex.secondary;
   };
 
+  # pi TUI theme (pi-coding-agent). Pi requires all 53 color tokens, and a
+  # missing one falls back to the built-in `dark` theme, so the map below is
+  # complete by contract: every key of the built-in dark.json plus the three
+  # optional ones (`thinkingMax`, `searchMatchBg`, `searchMatchText`). Written
+  # to ~/.pi/agent/themes/<name>.json by `home.activation.piTheme` in
+  # features/pi-coding-agent. `export` colors the /export HTML pages.
+  pi = {
+    colors = {
+      accent = hex.primary;
+      border = hex.border;
+      borderAccent = hex.primary;
+      borderMuted = hex.outline;
+      success = hex.success;
+      error = hex.error;
+      warning = hex.warning;
+      muted = hex.textMuted;
+      dim = hex.textDim;
+      text = hex.text;
+      thinkingText = hex.textDim;
+
+      selectedBg = hex.selection;
+      scrollbarTrack = hex.surface;
+      scrollbarThumb = hex.outline;
+      searchMatchBg = hex.selection;
+      searchMatchText = hex.onSelection;
+      userMessageBg = hex.surface;
+      userMessageText = hex.text;
+      customMessageBg = hex.surfaceVariant;
+      customMessageText = hex.text;
+      customMessageLabel = hex.primary;
+      toolPendingBg = hex.surface;
+      toolSuccessBg = hex.surfaceVariant;
+      toolErrorBg = hex.surfaceHighlight;
+      toolTitle = hex.primary;
+      toolOutput = hex.textMuted;
+
+      mdHeading = hex.primary;
+      mdLink = hex.info;
+      mdLinkUrl = hex.textDim;
+      mdCode = hex.onPrimaryContainer;
+      mdCodeBlock = hex.onPrimaryContainer;
+      mdCodeBlockBorder = hex.outline;
+      mdQuote = hex.textMuted;
+      mdQuoteBorder = hex.outline;
+      mdHr = hex.outline;
+      mdListBullet = hex.primary;
+
+      toolDiffAdded = hex.success;
+      toolDiffRemoved = hex.error;
+      toolDiffContext = hex.textDim;
+
+      syntaxComment = hex.textDim;
+      syntaxKeyword = hex.secondary;
+      syntaxFunction = hex.primary;
+      syntaxVariable = hex.text;
+      syntaxString = hex.success;
+      syntaxNumber = hex.warning;
+      syntaxType = hex.tertiary;
+      syntaxOperator = hex.info;
+      syntaxPunctuation = hex.textMuted;
+
+      thinkingOff = hex.outline;
+      thinkingMinimal = hex.textDim;
+      thinkingLow = hex.info;
+      thinkingMedium = hex.tertiary;
+      thinkingHigh = hex.primary;
+      thinkingXhigh = hex.error;
+      thinkingMax = hex.secondary;
+
+      bashMode = hex.info;
+    };
+
+    export = {
+      pageBg = hex.base;
+      cardBg = hex.surface;
+      infoBg = hex.surfaceVariant;
+    };
+  };
+
   # HTML report palette. Each key becomes a CSS custom property of the same
   # name, lowercased with a dash before a capital: `codeBackground` becomes
   # `--code-background`. The `render_html` extension reads the document from
@@ -302,6 +382,7 @@ in
       ansiBright
       noctalia
       omp
+      pi
       html
       ;
     rgb = lib.mapAttrs (_: toRgb) palette;
