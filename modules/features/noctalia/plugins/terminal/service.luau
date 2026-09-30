@@ -15,6 +15,8 @@
 --    "dfg":"#rrggbb","dbg":"#rrggbb",
 --    "L":[[{"t":"text","f":"#rrggbb","b":true}, ...], ...]}
 
+local palette = require("./palette.luau")
+
 local COLS = 100
 local ROWS = 28
 
@@ -34,10 +36,45 @@ local function setStatus(status, message)
   noctalia.state.set("status_message", message or "")
 end
 
+-- The terminal colors come from the palette file the shell itself renders
+-- from, so the flake-wide scheme is the one color source and a palette change
+-- moves the terminal with the rest of the shell. A shell on any other palette
+-- source (wallpaper, builtin, community) has no file to read here, and the
+-- helper keeps libghostty's built-in colors.
+local function themeTerminal()
+  if noctalia.getSetting("theme.source") ~= "custom" then
+    return nil
+  end
+
+  local name = noctalia.getSetting("theme.custom_palette")
+  if type(name) ~= "string" or name == "" then
+    return nil
+  end
+
+  local raw = noctalia.readFile(noctalia.expandPath("~/.config/noctalia/palettes/" .. name .. ".json"))
+  local decoded = raw ~= nil and noctalia.json.decode(raw) or nil
+  if decoded == nil then
+    return nil
+  end
+
+  local variant = decoded.dark
+  if not noctalia.isDarkMode() and decoded.light ~= nil then
+    variant = decoded.light
+  end
+  return variant ~= nil and variant.terminal or nil
+end
+
 local function blankFrame()
-  -- Sepia colors, copied from modules/features/scheme/default.nix. The Luau
-  -- sandbox cannot read the palette, so a palette change needs this edit.
-  return { t = "f", s = 0, c = COLS, r = ROWS, dfg = "#ece0cd", dbg = "#1e1813", L = {} }
+  local colors = themeTerminal()
+  return {
+    t = "f",
+    s = 0,
+    c = COLS,
+    r = ROWS,
+    dfg = colors and colors.foreground or nil,
+    dbg = colors and colors.background or nil,
+    L = {},
+  }
 end
 
 -- Write one command line to the helper. The helper reads commands from the FIFO
@@ -59,6 +96,25 @@ local function send(command)
     noctalia.notifyError("Terminal", "Could not reach the terminal backend.")
   end
   return accepted
+end
+
+-- Hand the theme's terminal colors to the helper, then make it redraw, so the
+-- next frame already carries the themed default foreground and background and
+-- the themed ANSI palette.
+local function applyTheme()
+  if not ready then
+    return
+  end
+
+  local colors = themeTerminal()
+  if colors == nil then
+    return
+  end
+
+  local entries, foreground, background = palette.build(colors)
+  local line = "p" .. table.concat({ foreground, background }, ",") .. "," .. table.concat(entries, ",")
+  send(line)
+  send("f")
 end
 
 -- Escape text for the helper's `i` command. The backslash goes first, so the
@@ -137,6 +193,7 @@ local function startHelper()
     ready = true
     lastSequence = -1
     setStatus("ready", "")
+    applyTheme()
   else
     setStatus("unavailable", "The terminal backend did not start.")
   end
@@ -152,8 +209,8 @@ local function handleRequest(request)
   local kind = request.kind
   local payload = request.payload
 
-  if kind == "run" then
-    send("i" .. escapeText(tostring(payload or "")) .. "\\n")
+  if kind == "type" then
+    send("i" .. escapeText(tostring(payload or "")))
   elseif kind == "key" then
     send("k" .. tostring(payload or ""))
   elseif kind == "scroll" then
@@ -163,6 +220,8 @@ local function handleRequest(request)
   elseif kind == "restart" then
     ready = false
     startHelper()
+  elseif kind == "theme" then
+    applyTheme()
   end
 end
 
