@@ -37,5 +37,6 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 - `nix flake check --impure` covers all features through host `imports`.
 
 ## Child DOX Index
+- `computer-use/` — wlroots capture/injection tools plus the patched `cua-driver` runtime for the pi-computer-use extension → `modules/features/computer-use/AGENTS.md`
 - `noctalia/` — Noctalia shell feature, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper and its frame protocol, `mirai` Miracast CLI → `modules/features/noctalia/AGENTS.md`
 - `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent definitions, agent config, plugins → `modules/features/omp/AGENTS.md`
