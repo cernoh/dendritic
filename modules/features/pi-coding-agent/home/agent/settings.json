@@ -11,7 +11,9 @@
     "npm:bigpowers",
     "npm:@dietrichgebert/ponytail",
     "npm:pi-memory",
-    "npm:pi-subagents"
+    "npm:pi-subagents",
+    "npm:pi-agent-browser-native",
+    "npm:@andrewjacop/pi-herdr"
   ],
   "lastChangelogVersion": "0.86.0",
   "theme": "sepia",
