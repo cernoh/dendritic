@@ -11,6 +11,8 @@
  * Commands
  *   i<escaped text>   write text to the shell (escapes: \n \r \t \e \\)
  *   k<key name>       send an encoded key (up, ctrl+c, tab, backspace, ...)
+ *   p<fg>,<bg>,<256 colors>
+ *                     set the default colors and the 256-color palette
  *   s<n>              scroll the viewport by n rows (negative scrolls up)
  *   z<COLS>x<ROWS>    resize the terminal and the pseudo-terminal
  *   f                 emit a frame now
@@ -381,6 +383,7 @@ static const struct {
     {"insert", GHOSTTY_KEY_INSERT, 0, NULL},
     {"space", GHOSTTY_KEY_SPACE, 0, " "},
     {"ctrl+c", GHOSTTY_KEY_C, GHOSTTY_MODS_CTRL, "c"},
+    {"ctrl+r", GHOSTTY_KEY_R, GHOSTTY_MODS_CTRL, "r"},
     {"ctrl+d", GHOSTTY_KEY_D, GHOSTTY_MODS_CTRL, "d"},
     {"ctrl+l", GHOSTTY_KEY_L, GHOSTTY_MODS_CTRL, "l"},
     {"ctrl+u", GHOSTTY_KEY_U, GHOSTTY_MODS_CTRL, "u"},
@@ -418,6 +421,54 @@ static void send_key(Term *t, const char *name) {
     return;
   }
   fprintf(stderr, "ghostty-term: unknown key '%s'\n", name);
+}
+
+/* The theme arrives as one comma separated line: the default foreground, the
+ * default background, then all 256 palette entries. The plugin owns the
+ * palette (it is the shell's own palette file), so the helper only parses. */
+static bool parse_hex_color(const char *token, GhosttyColorRgb *out) {
+  if (token[0] == '#') token++;
+  if (strlen(token) < 6) return false;
+  unsigned value = 0;
+  for (int i = 0; i < 6; i++) {
+    char c = token[i];
+    unsigned digit;
+    if (c >= '0' && c <= '9') digit = (unsigned)(c - '0');
+    else if (c >= 'a' && c <= 'f') digit = (unsigned)(c - 'a') + 10;
+    else if (c >= 'A' && c <= 'F') digit = (unsigned)(c - 'A') + 10;
+    else return false;
+    value = value * 16 + digit;
+  }
+  out->r = (uint8_t)((value >> 16) & 0xFF);
+  out->g = (uint8_t)((value >> 8) & 0xFF);
+  out->b = (uint8_t)(value & 0xFF);
+  return true;
+}
+
+static void set_palette(Term *t, char *line) {
+  GhosttyColorRgb colors[258];
+  unsigned count = 0;
+  char *save = NULL;
+  for (char *token = strtok_r(line, ",", &save); token != NULL && count < 258;
+       token = strtok_r(NULL, ",", &save)) {
+    if (!parse_hex_color(token, &colors[count])) {
+      fprintf(stderr, "ghostty-term: bad color '%s' in palette\n", token);
+      return;
+    }
+    count++;
+  }
+  if (count != 258) {
+    fprintf(stderr, "ghostty-term: palette needs 258 colors, got %u\n", count);
+    return;
+  }
+
+  GhosttyColorRgb foreground = colors[0];
+  GhosttyColorRgb background = colors[1];
+  if (ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND, &foreground) != GHOSTTY_SUCCESS ||
+      ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &background) != GHOSTTY_SUCCESS ||
+      ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, colors + 2) != GHOSTTY_SUCCESS) {
+    fprintf(stderr, "ghostty-term: the terminal rejected the palette\n");
+  }
 }
 
 static void resize_term(Term *t, uint16_t cols, uint16_t rows) {
@@ -458,6 +509,10 @@ static int run_command(Term *t, char *line, bool *force) {
     }
     case 'k':
       send_key(t, line + 1);
+      break;
+    case 'p':
+      set_palette(t, line + 1);
+      *force = true;
       break;
     case 'f':
       *force = true;

@@ -11,11 +11,26 @@
     "npm:bigpowers",
     "npm:@dietrichgebert/ponytail",
     "npm:pi-memory",
-    "npm:pi-subagents"
+    "npm:pi-subagents",
+    "npm:pi-agent-browser-native",
+    "npm:@andrewjacop/pi-herdr",
+    "npm:pi-sessions",
+    "npm:@amaster.ai/pi-computer-use"
   ],
   "lastChangelogVersion": "0.86.0",
+  "herdrTitleSync": {
+    "agent": "title-generator"
+  },
+  "sessions": {
+    "autoTitle": {
+      "enable": false,
+      "tokenBudget": 512
+    }
+  },
   "theme": "sepia",
   "terminal": {
     "showTerminalProgress": true
-  }
+  },
+  "defaultProvider": "freeflow",
+  "defaultModel": "space-bunny-free"
 }

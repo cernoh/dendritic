@@ -1,7 +1,7 @@
 id = "cernoh/terminal"
 name = "Terminal"
-version = "2.0.0"
-plugin_api = 21
+version = "3.0.0"
+plugin_api = 26
 author = "cernoh"
 license = "MIT"
 tags = ["terminal", "shell", "productivity"]
@@ -25,22 +25,21 @@ id = "panel"
 entry = "panel.luau"
 width = 900
 height = 560
+# Attached, so the panel hangs off the top bar's edge like a drop-down window.
+# `position` only applies to a floating panel.
 placement = "attached"
 keyboard_focus = "exclusive"
-dismiss_on_outside_click = false
+dismiss_on_outside_click = true
 
 # Chords the panel forwards to the shell. Every name here is one the helper's
-# key table knows, and one Noctalia documents as a valid chord. Escape is left
-# out on purpose: Noctalia keeps it as the panel-close action, so it can never
-# be captured.
+# key table knows, or one panel.luau maps to a character. Escape is left out on
+# purpose: Noctalia keeps it as the panel-close action, so it can never be
+# captured, and super chords belong to the compositor.
+#
+# The printable set is listed one keysym per entry, with a "shift+" twin for
+# every shifted character: a shifted key reaches the panel as either its own
+# keysym ("exclam") or the plain one with Shift still set ("shift+exclam"),
+# and only a declared chord arrives at all.
 capture_keys = [
-  "up",
-  "down",
-  "left",
-  "right",
-  "tab",
-  "shift+tab",
-  "del",
-  "ctrl+c",
-  "ctrl+s",
-]
+
+  "a",  "b",  "c",  "d",  "e",  "f",  "g",  "h",  "i",  "j",  "k",  "l",  "m",  "n",  "o",  "p",  "q",  "r",  "s",  "t",  "u",  "v",  "w",  "x",  "y",  "z",  "A",  "B",  "C",  "D",  "E",  "F",  "G",  "H",  "I",  "J",  "K",  "L",  "M",  "N",  "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",  "minus",  "equal",  "bracketleft",  "bracketright",  "backslash",  "semicolon",  "apostrophe",  "grave",  "comma",  "period",  "slash",  "space",  "exclam",  "quotedbl",  "numbersign",  "dollar",  "percent",  "ampersand",  "parenleft",  "parenright",  "asterisk",  "plus",  "colon",  "less",  "greater",  "question",  "at",  "asciicircum",  "underscore",  "braceleft",  "bar",  "braceright",  "asciitilde",  "shift+exclam",  "shift+quotedbl",  "shift+numbersign",  "shift+dollar",  "shift+percent",  "shift+ampersand",  "shift+parenleft",  "shift+parenright",  "shift+asterisk",  "shift+plus",  "shift+colon",  "shift+less",  "shift+greater",  "shift+question",  "shift+at",  "shift+asciicircum",  "shift+underscore",  "shift+braceleft",  "shift+bar",  "shift+braceright",  "shift+asciitilde",  "enter",  "return",  "tab",  "shift+tab",  "backspace",  "delete",  "up",  "down",  "left",  "right",  "home",  "end",  "insert",  "page_up",  "page_down",  "ctrl+a",  "ctrl+c",  "ctrl+d",  "ctrl+e",  "ctrl+k",  "ctrl+l",  "ctrl+r",  "ctrl+u",  "ctrl+w",  "ctrl+z"]

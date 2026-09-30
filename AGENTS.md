@@ -104,6 +104,8 @@ Default section order:
 
 ## User Preferences
 
+- **Browser tool priority (global):** `agent-browser` (and `pi-web-access` browser) is the first port of call for any web/browser automation. `computer-use` (`@amaster.ai/pi-computer-use` / Cua Driver) is fallback only and must be used sparingly — when `agent-browser` cannot do the job (native desktop apps, OS-level interaction, or explicit user request). Prefer `agent-browser` for all web tasks.
+
 When the user requests a durable behavior change, record it here or in the
 relevant child AGENTS.md
 
