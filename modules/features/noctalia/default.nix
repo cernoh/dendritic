@@ -83,8 +83,22 @@
       ...
     }:
     {
-      imports = [ inputs.noctalia.homeModules.default ];
-
+      # Deliberately does NOT import `inputs.noctalia.homeModules.default`.
+      # That module is a fork of Home Manager's own `programs/noctalia`, and
+      # it suppresses HM's copy with `disabledModules = [ "programs/noctalia.nix" ]`
+      # — a feature Home Manager no longer implements (nothing in HM's module
+      # set consumes `disabledModules` any more). So both copies declare
+      # `programs.noctalia.checkConfig` and evaluation dies with
+      #   error: The option `...programs.noctalia.checkConfig' ... is already declared
+      # Home Manager's own module is the canonical one (it is the same code plus
+      # the `accounts.calendar` integration and a Linux platform assertion), it is
+      # already in `homeModules.default`, and it is what upstream will keep
+      # fixing. The NixOS side still comes from `inputs.noctalia.nixosModules.default`
+      # in `flake.nixosModules.noctalia` above -- HM ships no NixOS-side noctalia
+      # module, so only the Home Manager side was duplicated.
+      # If this ever needs reverting, the alternative is keeping noctalia's fork
+      # and dropping HM's module from the import set by hand, which is not
+      # possible while HM has no `disabledModules` support.
       programs.noctalia = {
         enable = true;
         systemd.enable = true;
