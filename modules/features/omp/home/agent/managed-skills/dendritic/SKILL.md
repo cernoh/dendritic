@@ -36,12 +36,32 @@ A feature may contribute to several configuration classes simultaneously.
 
 For example, a niri feature might contain:
 
-{ ... }: { nixos.modules.desktop = { programs.niri.enable = true; };
+{ ... }: { flake.nixosModules.niri = { programs.niri.enable = true; };
 
-homeManager.modules.desktop = { programs.niri.enable = true; }; }
+flake.homeManagerModules.niri = { programs.niri.enable = true; }; }
 
 The exact option names and schema are project-specific; the important principle
 is that the feature owns all of its relevant configuration.
+
+G This repository The generic `nixos.modules.*` spelling used in the examples
+below is a teaching shorthand. In THIS flake the corresponding names are
+`flake.nixosModules.<name>` and `flake.homeManagerModules.<name>`, both assigned
+directly as option values (no `config.` prefix, no separate `options` block),
+because flake-parts predeclares `flake.nixosModules`/`darwinModules` and
+`modules/parts.nix` declares `flake.homeManagerModules` itself as
+`lib.types.lazyAttrsOf lib.types.raw`. Consequences worth internalizing: a value
+assigned there must be a MODULE FUNCTION (`{ pkgs, lib, config, ... }: { ... }`),
+not an attribute set, because `raw` does no merging; two files assigning the same
+name do not merge and will conflict; a feature contributes to the list by being
+imported by name (`modules = with self.nixosModules; [ niri ]`). Do not switch
+this flake to the `flake.modules.<class>.<aspect>` + `flake-parts.flakeModules.modules`
+extra + `configurations.<class>` wiring-module layout: it is a different, valid
+variant that this repo does not use, and adopting it would rewrite every host
+module. One further trap: inside a `flake.*Modules.<name>` assignment the
+`config` in scope is the LOWER-LEVEL one (NixOS/Home Manager), not the
+flake-parts config, because that is the function you are assigning. A feature
+that needs the flake-parts config must close over `self` or read it outside the
+function.
 
 Required knowledge A user working with this pattern should understand:
 
@@ -263,7 +283,7 @@ and:
 
 { config, ... }:
 
-{ nixos.modules.workstation = { environment.systemPackages = [
+{ flake.nixosModules.workstation = { environment.systemPackages = [
 config.my.scripts.foo ]; }; }
 
 The top-level configuration becomes the shared dependency context.
@@ -300,8 +320,8 @@ How is every feature implemented?
 
 For example:
 
-{ nixos.modules.laptop = { imports = [ config.nixos.modules.base
-config.nixos.modules.desktop config.nixos.modules.development ]; }; }
+{ flake.nixosModules.laptop = { imports = with self.nixosModules; [
+base desktop development ]; }; }
 
 The exact structure is project-dependent, but the principle is stable:
 
@@ -336,11 +356,11 @@ affect several module classes.
 
 For example, a feature might contain:
 
-{ nixos.modules.desktop = { services.displayManager.enable = true; };
+{ flake.nixosModules.desktop = { services.displayManager.enable = true; };
 
-homeManager.modules.desktop = { programs.waybar.enable = true; };
+flake.homeManagerModules.desktop = { programs.waybar.enable = true; };
 
-darwin.modules.desktop = { # Darwin-specific implementation }; }
+flake.darwinModules.desktop = { # Darwin-specific implementation }; }
 
 The feature remains conceptually unified even though its implementation crosses
 evaluators.
@@ -442,7 +462,7 @@ activation mechanism.
 
 For example:
 
-config.nixos.modules.desktop = {
+flake.nixosModules.desktop = {
 
 # desktop feature is active here
 
@@ -450,7 +470,7 @@ config.nixos.modules.desktop = {
 
 does not necessarily need:
 
-config.nixos.modules.desktop = { my.desktop.enable = true; };
+flake.nixosModules.desktop = { my.desktop.enable = true; };
 
 unless there is a real reason to distinguish:
 
@@ -626,8 +646,8 @@ Prefer splitting it by feature.
 
 Overly granular lower-level modules Hundreds of names such as:
 
-nixos.modules.audio nixos.modules.bluetooth nixos.modules.fonts
-nixos.modules.graphics ...
+flake.nixosModules.audio flake.nixosModules.bluetooth
+flake.nixosModules.fonts flake.nixosModules.graphics ...
 
 when they are always consumed together.
 
