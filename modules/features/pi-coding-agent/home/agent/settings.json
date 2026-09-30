@@ -17,7 +17,11 @@
     "npm:pi-sessions",
     "npm:@amaster.ai/pi-computer-use"
   ],
-  "lastChangelogVersion": "0.86.0",
+  "lastChangelogVersion": "0.87.1",
+  "pi-computer-use": {
+    "mode": "path",
+    "binaryPath": "${HOME}/.local/share/cua-driver/cua-driver"
+  },
   "herdrTitleSync": {
     "agent": "title-generator"
   },
