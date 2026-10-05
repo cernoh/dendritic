@@ -22,6 +22,10 @@
       # by default, niri stays installed as the second session. The feature
       # reads this host's facts from hosts/ASAHI/_mango-settings.nix.
       mango
+      # Wayland + XWayland toolkit and the polkit/keyring pair. Replaces the
+      # direct `portals` import below: the wayland module owns the portal
+      # stack for both hosts, so importing it here as well was redundant.
+      wayland
       noctalia
       ghostty
       programming
@@ -38,7 +42,6 @@
       distributedBuilds
       flatpak
       obs
-      portals
       ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
     ];
   };

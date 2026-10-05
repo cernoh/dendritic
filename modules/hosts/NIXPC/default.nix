@@ -18,6 +18,9 @@
       gaming
       programming
       mango
+      # Wayland + XWayland toolkit, portals, and the polkit/keyring pair that
+      # keeps sudo and GUI auth prompts rare. Both hosts run MangoWM.
+      wayland
       noctalia
       ghostty
       noctaliaGreeter
