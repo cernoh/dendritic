@@ -40,7 +40,7 @@
       # One-time setup: the private key at /root/.ssh/remotebuild, see
       # modules/system/distributed-builds/_link.nix.
       distributedBuilds
-      flatpak
+      flatpakAsahi
       obs
       ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
     ];

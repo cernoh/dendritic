@@ -19,6 +19,27 @@
 #   - zellij copy_command hardcoded to wl-copy: v3 branched on a `distro`
 #     specialArg (forbidden here); both dendritic hosts are Wayland.
 { self, ... }: {
+  # Marathon (Bungie) type stack, free stand-ins for the game's commercial
+  # faces, published as `self.fonts.marathon` so any feature can name the same
+  # list (the features/scheme precedent: values, not derivations). The real
+  # four are paid retail — Shapiro, Fraktion Mono, KH Interference — so these
+  # are the closest libre equivalents (all OFL), picked for the same roles the
+  # game uses them in. IvyPresto Display (the game's quaternary face) IS free
+  # from Adobe but is not in nixpkgs; vendor it if the real thing matters.
+  #   game main        -> oswald        condensed grotesque: HUD labels
+  #   game secondary   -> jetbrains-mono technical mono: numbers, paths, code
+  #   game tertiary    -> orbitron      squarish tech display: big numerals
+  #   game quaternary  -> source-serif  high-contrast serif for prose blocks
+  # Names, not derivations: this attr is read from per-system closures, so it
+  # must not capture one system's pkgs. (`jetbrains` is the IDE scope in
+  # nixpkgs, not the font.)
+  flake.fonts.marathon = [
+    "oswald"
+    "jetbrains-mono"
+    "orbitron"
+    "source-serif"
+  ];
+
   flake.homeManagerModules.programming =
     {
       pkgs,
@@ -27,6 +48,12 @@
     }:
     let
       scheme = self.scheme;
+
+      # Home Manager has no `fonts.packages` option; fontconfig discovers
+      # fonts reached through `home.packages`. `fonts.fontconfig.enable` is
+      # what makes that discovery happen for HM-as-NixOS-submodule
+      # (system/home-manager sets useUserPackages = true).
+      marathonFonts = map (name: pkgs.${name}) self.fonts.marathon;
 
       # Zellij themes are KDL with decimal RGB triples, and the HM module
       # writes a string value verbatim. The theme is modelled as data here so
@@ -149,25 +176,33 @@
       );
     in
     {
-      home.packages = with pkgs; [
-        # Dev infrastructure & workflows. NOT language runtimes: direnv
-        # provides those per project; NOT editor tooling: nvf bundles it.
-        cachix
-        devbox
-        devenv
-        worktrunk
-        jujutsu
-        gh # backs programs.git credential.helper below
+      # Dev type stack, reachable as `self.fonts.marathon` for any other
+      # feature that needs to name the same families (stylix, ghostty, an
+      # HTML artifact theme).
+      fonts.fontconfig.enable = true;
 
-        # Editor fallback & docs
-        vim
-        pandoc
-        texliveFull
-        inotify-tools
+      home.packages =
+        with pkgs;
+        [
+          # Dev infrastructure & workflows. NOT language runtimes: direnv
+          # provides those per project; NOT editor tooling: nvf bundles it.
+          cachix
+          devbox
+          devenv
+          worktrunk
+          jujutsu
+          gh # backs programs.git credential.helper below
 
-        # Shell used by zellij (see settings.default_shell)
-        fish
-      ];
+          # Editor fallback & docs
+          vim
+          pandoc
+          texliveFull
+          inotify-tools
+
+          # Shell used by zellij (see settings.default_shell)
+          fish
+        ]
+        ++ marathonFonts;
 
       programs.direnv = {
         enable = true;

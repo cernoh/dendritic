@@ -4,5 +4,8 @@
   "status.ready": "Shell running",
   "status.exited": "The shell exited.",
   "status.unavailable": "The terminal backend is unavailable.",
-  "button.restart": "Restart shell"
+  "button.restart": "Restart shell",
+  "copy.title": "Terminal",
+  "copy.body": "Copied line %{line}%",
+  "copy.failed": "Could not write to the clipboard."
 }

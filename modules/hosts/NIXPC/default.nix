@@ -16,6 +16,7 @@
       nixpcDesktop
       nvidiaDrivers
       gaming
+      flatpakNixpc
       programming
       mango
       # Wayland + XWayland toolkit, portals, and the polkit/keyring pair that

@@ -72,6 +72,7 @@
             nixpcDesktop
             brave
             gamingTools
+            prismlauncher
           ];
           # Easy access to the SATA data disks mounted above: home-dir
           # symlinks for shell/yazi, plus GTK bookmarks so Thunar and GTK

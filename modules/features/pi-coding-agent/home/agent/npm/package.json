@@ -4,19 +4,20 @@
   "dependencies": {
     "@amaster.ai/pi-computer-use": "^0.1.22",
     "@andrewjacop/pi-herdr": "^0.6.0",
-    "@dietrichgebert/ponytail": "^4.10.0",
+    "@dietrichgebert/ponytail": "^4.10.1",
     "@ff-labs/pi-fff": "^0.11.0",
     "@juicesharp/rpiv-todo": "^2.12.0",
     "bigpowers": "^2.88.9",
-    "pi-agent-browser-native": "0.6.17",
+    "pi-agent-browser-native": "^0.9.1",
     "pi-background-tasks": "^2.6.9",
-    "pi-freeflow": "^1.28.1",
-    "pi-mcp-client": "0.10.0",
+    "pi-commandcode-provider": "^0.7.3",
+    "pi-freeflow": "^1.29.0",
+    "pi-mcp-client": "^0.11.0",
     "pi-memory": "^0.4.2",
-    "pi-open-tui": "^0.3.10",
+    "pi-open-tui": "^0.3.11",
     "pi-sessions": "^0.14.0",
     "pi-subagents": "^0.74.0",
     "pi-tool-discipline": "^0.2.0",
-    "pi-web-access": "^0.34.0"
+    "pi-web-access": "^0.35.0"
   }
 }

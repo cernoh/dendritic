@@ -5,14 +5,14 @@
 #
 # The LeetCode runner composes from features/leetcode: this module imports
 # `self.homeManagerModules.leetcode`, so enabling nvf also enables LeetCode.
-# Data siblings (_languages.nix, _keymaps.nix, _nixd.nix) are prefixed
+# Data siblings (_languages.nix, _keymaps.nix) are prefixed
 # with `_` because import-tree ignores paths containing `/_`; they hold
 # plain attrsets, not modules, and are imported explicitly below.
 { self, inputs, ... }:
 let
   languagesConfig = import ./_languages.nix;
   keymapsConfig = import ./_keymaps.nix;
-  nixdConfig = import ./_nixd.nix;
+
 in
 {
   # Home-manager feature module. Import IS enabling.
@@ -146,33 +146,25 @@ in
             lightbulb = {
               enable = true;
             };
-            presets.nixd.enable = true;
-            # nixd LSP server configuration — nixpkgs instance,
-            # option sets, and root markers live in ./_nixd.nix.
-            #
-            # The option sets come from this flake's evaluated
-            # hosts, and the HM module cannot see the flake
-            # attribute name of the host it runs on. Pick it by
-            # platform — the same one-host-per-platform split the
-            # flutter-tools gate below relies on.
-            servers.nixd =
-              nixdConfig {
-                hostName = if pkgs.stdenv.hostPlatform.isAarch64 then "ASAHI" else "NIXPC";
-                userName = config.home.username;
-              }
-              // {
-                # nixd sends semantic tokens (attrname/select
-                # colouring) only with `--semantic-tokens=true`. The nvf
-                # preset starts a bare `nixd`, and `cmd` is a `uniq` list
-                # that rejects a second definition, so force the command.
-                # Neovim needs no enable call: 0.12 enables semantic
-                # tokens for every client that advertises them
-                # (vim/lsp/semantic_tokens.lua: `M.enable(true)`).
-                cmd = lib.mkForce [
-                  "${pkgs.nixd}/bin/nixd"
-                  "--semantic-tokens=true"
-                ];
-              };
+            # nil is the Rust rewrite of nixd: same LSP, much faster eval
+            # (and no C++ core dumps — nixd OOM'd this box, see the
+            # git-push-large-file-history-rewrite skill).
+            presets.nil.enable = true;
+            servers.nil = {
+              # The nvf preset ships [".git"]; also anchor on flake.nix so
+              # a bare flake outside a git tree still gets a root.
+              root_markers = [
+                "flake.nix"
+                ".git"
+              ];
+              # nil evaluates the workspace flake itself, so NixOS/Home Manager
+              # option completion needs no providers here (nixd needed the
+              # hand-built `options.expr` table that used to live in _nixd.nix).
+              # Formatting stays with conform-nvim (languages.nix nixfmt
+              # preset); nil only formats through its own code action, which
+              # has no absolute nixfmt path without this line.
+              settings.nil.formatting.command = [ "${pkgs.nixfmt}/bin/nixfmt" ];
+            };
           };
           diagnostics = {
             enable = true;

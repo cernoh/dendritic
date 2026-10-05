@@ -15,7 +15,9 @@
     "npm:pi-agent-browser-native",
     "npm:@andrewjacop/pi-herdr",
     "npm:pi-sessions",
-    "npm:@amaster.ai/pi-computer-use"
+    "npm:@amaster.ai/pi-computer-use",
+    "npm:pi-commandcode-provider",
+    "../../.funes/agents/pi"
   ],
   "lastChangelogVersion": "0.87.1",
   "pi-computer-use": {

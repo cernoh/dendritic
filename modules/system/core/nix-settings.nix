@@ -73,13 +73,13 @@ in
           max-substitution-jobs = 32;
           # Same non-default caches, so untrusted users may use them too.
           trusted-substituters = cachixSubstituters;
+          nix-path = [ "nixpkgs=${inputs.nixpkgs}" ];
           trusted-public-keys = [
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
           ]
           ++ cachixKeys;
         };
         registry.nixpkgs.flake = inputs.nixpkgs;
-        nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
         optimise.automatic = true;
         # GC runs via `nh clean` (programs.nh below): nix.gc.automatic
         # stays off — nixpkgs warns when both collectors are enabled.
