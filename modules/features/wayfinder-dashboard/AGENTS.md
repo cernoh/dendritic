@@ -1,7 +1,7 @@
 # wayfinder-dashboard — Wayfinder Relay
 
 ## Purpose
-Mobile-first queue for Wayfinder maps, with a live terminal per running ticket so an answer can be typed from the phone. Each configured project owns a Herdr workspace; starting a frontier ticket claims it on GitHub, creates a tab, starts Pi, and submits a one-ticket Wayfinder brief.
+Mobile-first queue for Wayfinder maps, with a live terminal per running ticket so an answer can be typed from the phone, and pi slash commands one tap away. Each configured project owns a Herdr workspace; starting a frontier ticket claims it on GitHub, creates a tab, starts Pi, and submits a one-ticket Wayfinder brief.
 
 ## Ownership
 - `default.nix` — Deno package, Home Manager user service, and NixOS tailnet publishing.
@@ -13,6 +13,10 @@ Mobile-first queue for Wayfinder maps, with a live terminal per running ticket s
 - The frontier is the map's open child issues with a `wayfinder:<type>` label, no assignee, and zero open blockers.
 - Claim precedes work: `gh issue edit --add-assignee @me` runs before Herdr creates the ticket tab.
 - One project maps to one Herdr workspace. One launch creates one tab and one Pi agent in the project's checkout.
+- **The viewport meta must carry `interactive-widget=resizes-content`.** Android and Brave do not shrink the layout viewport for the soft keyboard by default, so the `100dvh` terminal view keeps its full height and the dock ends up behind the keyboard, taking Send with it. With that flag the viewport shrinks, the flex layout reflows, and the dock rides above the keyboard.
+- **The terminal view drops the shell padding, so the dock owns the safe-area inset.** Add `padding-bottom: env(safe-area-inset-bottom)` to `.dock`, or the Android gesture bar sits over the command row.
+- **The terminal view is one screen, and the page must not scroll.** `body.in-term` makes the shell `100dvh` and flex, hides the brand header, and gives the remaining space to the output, which scrolls inside. The controls dock at the bottom. Measured on a Pixel 9 at 412 by 915: `pageScroll === innerHeight`, Send on screen, zero horizontal overflow, 536px of output. With a keyboard open (412 by 575) the page still does not scroll, Send sits at 459, and the output keeps 196px. Assert those numbers in browser QA; a scrolling page here hides the Send button below the fold.
+- **The ticket title needs room.** The terminal bar carries back, title, status, and Close. Keep the status to a short word (`idle`, `working`, `answer me`) and put the long label in the title attribute: a long status squeezed the title down to a single letter.
 - **A launch records a session** (`ticket`, `tabId`, `paneId`, `agent`) in the project, and that record is the only thing that makes a pane reachable. Every pane route resolves through it, so no other pane on the machine can be read or typed into through the app.
 - **Slash commands come from the installed pi, not from a list here.** `GET /api/pi/commands` parses `docs/slash-commands.md` from the pi package root, which is two levels above the resolved `bin/pi` (one level lands on `bin/`). The wrapper must therefore carry `pi-coding-agent` in `runtimeInputs`, or `pi` is absent from its PATH and the parse silently falls back to the six-command list. A phone user cannot remember command names; the chips and the sheet come from that route.
 - **A chip fills the box and never runs a command by itself.** One tap inserts the text, and Send submits it. A tap that executed `/quit` or `/new` on a mis-tap would lose a session.
@@ -42,7 +46,8 @@ Mobile-first queue for Wayfinder maps, with a live terminal per running ticket s
 - `nix-instantiate --parse modules/features/wayfinder-dashboard/default.nix`
 - `cd modules/features/wayfinder-dashboard/app && deno fmt --check && deno task check && deno task test`
 - `nix eval .#nixosConfigurations.NIXPC.config.home-manager.users.davr.systemd.user.services.wayfinder-dashboard.Service.ExecStart --impure`
-- Browser QA at 390 × 844 verifies project switching, the queue, the add-project form, and the terminal view. Assert `document.documentElement.scrollWidth === innerWidth`: a clipped card at phone width is the failure this catches.
+- Browser QA at 390 × 844 verifies project switching, the queue, the add-project form, and the terminal view. Assert `document.documentElement.scrollWidth === innerWidth`: a clipped card at phone width is the failure this catches. In the terminal view also assert `scrollHeight === innerHeight`, that the Send button's bottom sits within the viewport, and that the title text is more than a few characters long.
+- Re-run the terminal checks at **412 × 915** (Pixel 9) and once more at **412 × 575**, which stands in for an open soft keyboard. No interactive control may measure under 42px tall.
 - Slash commands: `curl -s localhost:8787/api/pi/commands | jq length` must return about 25, not 6. Six means the docs parse fell back, which means `pi` is off the server PATH.
 - Bridge QA against a scratch pane: create one workspace, register a session by hand in `projects.json`, then check that read returns its output, `{"text":"…\n"}` submits one line, `{"keys":["enter"]}` submits, a foreign `paneId` is refused, a bad key is refused, and `DELETE …/sessions/<n>` closes the tab. Point the scratch session at a **nonexistent issue number** before using restart, so the Pi session it starts cannot wander into real tracker work. Close the scratch workspace afterwards.
 - Same-space guard: register a session whose `paneId` carries another workspace's prefix and confirm the route answers `Pane is not in this project's Herdr space`.
