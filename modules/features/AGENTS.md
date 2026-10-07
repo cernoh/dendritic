@@ -49,4 +49,4 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 - `funes/` — pinned prebuilt `funes` binary plus its mandatory `hf` and `trufflehog` companions, no auto `funes add` → `modules/features/funes/AGENTS.md`
 - `noctalia/` — Noctalia shell feature, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper and its frame protocol, `mirai` Miracast CLI → `modules/features/noctalia/AGENTS.md`
 - `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent definitions, agent config, plugins → `modules/features/omp/AGENTS.md`
-- `wayfinder-dashboard/` — mobile Wayfinder frontier queue, project workspaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`
+- `wayfinder-dashboard/` — mobile Wayfinder frontier queue, project workspaces, Herdr/Pi launches, per-ticket terminal, pi slash commands → `modules/features/wayfinder-dashboard/AGENTS.md`

@@ -502,6 +502,9 @@ details summary{cursor:pointer;min-height:44px;display:flex;align-items:center;f
 .term{margin:0;padding:12px;height:min(52vh,440px);overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--text);-webkit-overflow-scrolling:touch}
 .keys{display:flex;gap:6px;flex-wrap:wrap;padding:0 11px 11px}.key{min-width:44px;min-height:40px;padding:6px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--text);font:600 13px ui-monospace,monospace}
 .composer{display:grid;gap:8px;padding:0 11px 11px}.composer textarea{min-height:74px;max-height:34vh;resize:vertical;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--text);padding:11px;font:16px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.cmds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:0 11px 9px}.cmds::-webkit-scrollbar{display:none}
+.cmd{flex:0 0 auto;min-height:40px;padding:6px 12px;border:1px solid var(--primary);border-radius:999px;background:transparent;color:var(--primary);font:600 13px ui-monospace,monospace}
+.sheet{padding:0 11px 11px}.sheet summary{min-height:44px;font-size:14px}.sheet table{width:100%;border-collapse:collapse;font-size:13px}.sheet td{padding:7px 8px;border-top:1px solid var(--line);vertical-align:top}.sheet td:first-child{white-space:nowrap;width:1%}.sheet tr[data-cmd]{cursor:pointer}.sheet tr[data-cmd]:hover{background:var(--surface-2)}
 @media(min-width:700px){.fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.fields label:last-child{grid-column:1/-1}.queue{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.shell{padding-left:24px;padding-right:24px}header{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style></head><body><div class="shell">
@@ -523,9 +526,13 @@ async function frontierOf(number){if(!(number in state.frontiers))state.frontier
 async function loadFrontier(){state.sessions=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/sessions');const chosen=Number(localStorage.getItem('wayfinder-map-'+state.project.id));if(state.maps.some(m=>m.number===chosen)){state.map=state.maps.find(m=>m.number===chosen)}else{const open=state.maps.filter(m=>m.state==='open');const counts=await Promise.all(open.map(async m=>[m,(await frontierOf(m.number)).length]));const best=counts.sort((a,b)=>b[1]-a[1]||a[0].number-b[0].number)[0];state.map=best?best[0]:state.maps[0];localStorage.setItem('wayfinder-map-'+state.project.id,String(state.map.number))}state.tickets=await frontierOf(state.map.number);renderDashboard()}
 const STATUS_LABEL={working:'working',idle:'idle — ready for input',blocked:'blocked — needs your answer',gone:'session gone',unknown:'unknown'};
 function liveCard(s){const gone=s.agentStatus==='gone';return '<article class="ticket"><div class="row between"><span class="badge">'+esc(s.type)+'</span><span class="ticket-meta">#'+s.ticket+' · '+esc(s.tabId)+'</span></div><div><h3>'+esc(s.title)+'</h3><p class="question"><span class="dot '+esc(s.agentStatus)+'"></span> '+esc(STATUS_LABEL[s.agentStatus]||s.agentStatus)+'</p></div><div class="row">'+(gone?'<button class="button grow" data-restart="'+s.ticket+'">Restart tab in space</button>':'<button class="button grow" data-open="'+s.paneId+'">Open terminal</button>')+'<button class="button secondary danger" data-stop="'+s.ticket+'">Close</button></div></article>'}
-function renderTerminal(){const s=state.session;$("main").innerHTML='<section class="card"><div class="row between"><button class="button secondary" id="back">← Queue</button><span class="ticket-meta"><span class="dot '+esc(s.agentStatus)+'"></span> '+esc(STATUS_LABEL[s.agentStatus]||s.agentStatus)+'</span></div><h2 style="margin-top:12px">'+esc(s.title)+'</h2><p class="question">#'+s.ticket+' · '+esc(s.type)+' · '+esc(s.paneId)+'</p></section><section class="card live"><div class="bar"><span class="dot '+esc(s.agentStatus)+'" id="liveDot"></span><span class="muted" id="liveState">'+esc(STATUS_LABEL[s.agentStatus]||s.agentStatus)+'</span><button class="button secondary" id="closeTab" style="margin-left:auto">Close tab</button></div><pre class="term" id="term" aria-live="polite" aria-label="Ticket terminal"></pre><div class="keys" id="keys"></div><form class="composer" id="composer"><textarea id="input" placeholder="Type an answer, then Send" aria-label="Terminal input"></textarea><button class="button wide" type="submit">Send</button></form></section><p class="muted" style="padding:0 4px">Send appends a newline, so it submits. Send without one for a half-typed line, then press Enter.</p>';
+function renderTerminal(){const s=state.session;$("main").innerHTML='<section class="card"><div class="row between"><button class="button secondary" id="back">← Queue</button><span class="ticket-meta"><span class="dot '+esc(s.agentStatus)+'"></span> '+esc(STATUS_LABEL[s.agentStatus]||s.agentStatus)+'</span></div><h2 style="margin-top:12px">'+esc(s.title)+'</h2><p class="question">#'+s.ticket+' · '+esc(s.type)+' · '+esc(s.paneId)+'</p></section><section class="card live"><div class="bar"><span class="dot '+esc(s.agentStatus)+'" id="liveDot"></span><span class="muted" id="liveState">'+esc(STATUS_LABEL[s.agentStatus]||s.agentStatus)+'</span><button class="button secondary" id="closeTab" style="margin-left:auto">Close tab</button></div><pre class="term" id="term" aria-live="polite" aria-label="Ticket terminal"></pre><div class="keys" id="keys"></div><form class="composer" id="composer"><textarea id="input" placeholder="Type an answer, or a /command" aria-label="Terminal input" enterkeyhint="send" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false"></textarea><button class="button wide" type="submit">Send</button></form><div class="cmds" id="cmds" aria-label="Slash commands"></div><details class="sheet" id="allCmds"><summary>All slash commands</summary><table><tbody id="cmdTable"></tbody></table></details></section><p class="muted" style="padding:0 4px">A command chip fills the box; tap Send to run it. Type / in the box and Pi shows its own menu. Up and Down drive that menu.</p>';
  const term=$("term");let last=null;async function poll(){try{const data=await api('/api/projects/'+encodeURIComponent(state.project.id)+'/panes/'+encodeURIComponent(s.paneId)+'?lines=140');if(data.text!==last){last=data.text;const stuck=term.scrollTop+term.clientHeight>=term.scrollHeight-40;term.textContent=data.text||'(no output yet)';if(stuck||data.text!==last)term.scrollTop=term.scrollHeight}if(data.agentStatus!==s.agentStatus){s.agentStatus=data.agentStatus;$("liveDot").className="dot "+data.agentStatus;$("liveState").textContent=STATUS_LABEL[data.agentStatus]||data.agentStatus}}catch(error){last=null;term.textContent=error.message}}poll();state.poll=setInterval(poll,1500);
  const keys=[["Esc","esc"],["Tab","tab"],["↑","up"],["↓","down"],["Ctrl+C","ctrl+c"],["Ctrl+D","ctrl+d"],["Ctrl+L","ctrl+l"]];$("keys").innerHTML=keys.map(k=>'<button class="key" data-key="'+k[1]+'">'+k[0]+'</button>').join('');$("keys").querySelectorAll('[data-key]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api('/api/projects/'+encodeURIComponent(state.project.id)+'/panes/'+encodeURIComponent(s.paneId),{method:'POST',body:JSON.stringify({keys:[b.dataset.key]})})}catch(error){toast(error.message,true)}b.disabled=false});
+ const QUICK=["/model","/thinking","/compact","/session","/skill:","/new","/tree","/reload"];
+ const input=$("input");
+ function insert(text){const at=input.value.length;input.value=input.value.slice(0,at)+text;input.focus();input.setSelectionRange(at+text.length,at+text.length)}
+ api('/api/pi/commands').then(list=>{const quick=QUICK.map(n=>list.find(c=>c.name===n)||{name:n,description:""}).filter(c=>list.some(x=>x.name===c.name)||QUICK.includes(c.name));const bar=$("cmds");bar.innerHTML=quick.map(c=>'<button class="cmd" data-cmd="'+esc(c.name)+'">'+esc(c.name)+'</button>').join("")+'<button class="cmd" data-insert="/">/</button>';bar.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>insert(b.dataset.cmd));bar.querySelector('[data-insert]').onclick=()=>insert("/");$("cmdTable").innerHTML=list.map(c=>'<tr data-cmd="'+esc(c.name)+'"><td><code>'+esc(c.name)+'</code></td><td>'+esc(c.description)+'</td></tr>').join("");$("cmdTable").querySelectorAll('[data-cmd]').forEach(row=>row.onclick=()=>{insert(row.dataset.cmd);$("allCmds").open=false})}).catch(()=>{toast("No command list from pi")});
  $("composer").onsubmit=async event=>{event.preventDefault();const input=$("input");const text=input.value;if(!text.trim())return;input.value="";input.disabled=true;try{await api('/api/projects/'+encodeURIComponent(state.project.id)+'/panes/'+encodeURIComponent(s.paneId),{method:'POST',body:JSON.stringify({text})})}catch(error){toast(error.message,true)}input.disabled=false;input.focus();poll()};
  $("back").onclick=()=>{clearInterval(state.poll);state.poll=0;renderDashboard()};
  $("closeTab").onclick=async()=>{if(!confirm('Close this ticket tab in Herdr? The ticket stays claimed on GitHub.'))return;try{await api('/api/projects/'+encodeURIComponent(state.project.id)+'/sessions/'+s.ticket,{method:'DELETE'});clearInterval(state.poll);state.poll=0;toast('Tab closed');await loadFrontier()}catch(error){toast(error.message,true)}}}
@@ -535,6 +542,64 @@ async function removeProject(){if(!confirm('Remove this project from Relay? Its 
 function renderError(error){$("main").innerHTML='<section class="card empty"><strong>Could not load this project</strong><span class="muted">'+esc(error.message)+'</span><p style="margin-top:16px"><button class="button secondary" id="retry">Retry</button></p></section>';$("retry").onclick=()=>selectProject(state.project.id);toast(error.message,true)}
 loadProjects();
 </script></body></html>`;
+}
+
+/**
+ * The slash commands of the installed pi, parsed from its own docs.
+ *
+ * The page needs command names on a phone, where nobody remembers them, but a
+ * hardcoded list rots with every pi release. pi ships the table in
+ * docs/slash-commands.md next to its binary, so read that instead. Fall back to
+ * a short list when the file is absent.
+ */
+interface PiCommand {
+  name: string;
+  description: string;
+}
+
+const FALLBACK_COMMANDS: PiCommand[] = [
+  { name: "/model", description: "Select a model" },
+  { name: "/thinking", description: "Set the thinking level" },
+  { name: "/compact", description: "Compact the current context" },
+  { name: "/session", description: "Show session information" },
+  { name: "/new", description: "Start a new session" },
+  { name: "/reload", description: "Reload extensions, skills, and templates" },
+];
+
+let piCommands: PiCommand[] | undefined;
+
+/** The pi binary this service would launch, found without spawning anything. */
+function piBinary(): string | undefined {
+  for (const dir of (Deno.env.get("PATH") ?? "").split(":")) {
+    if (!dir) continue;
+    const candidate = `${dir}/pi`;
+    try {
+      if (Deno.statSync(candidate).isFile) return Deno.realPathSync(candidate);
+    } catch {
+      // Not on this PATH entry; keep looking.
+    }
+  }
+  return undefined;
+}
+
+async function slashCommands(): Promise<PiCommand[]> {
+  if (piCommands) return piCommands;
+  const found: PiCommand[] = [];
+  const binary = piBinary();
+  if (binary) {
+    // binary is .../bin/pi, so the package root is two levels up.
+    const docs = `${binary}/../../lib/node_modules/pi-monorepo/docs/slash-commands.md`;
+    try {
+      for (const line of (await Deno.readTextFile(docs)).split("\n")) {
+        const row = line.match(/^\|\s*`(\/[^`]+)`\s*\|\s*(.+?)\s*\|$/);
+        if (row) found.push({ name: row[1], description: row[2] });
+      }
+    } catch {
+      // A repacked pi without the docs: the short list still beats nothing.
+    }
+  }
+  piCommands = found.length > 0 ? found : FALLBACK_COMMANDS;
+  return piCommands;
 }
 
 async function requestBody<T>(request: Request, limit = 1_000_000): Promise<T> {
@@ -586,6 +651,7 @@ async function handler(request: Request): Promise<Response> {
     }
 
     if (path === "/api/health" && request.method === "GET") return json({ ok: true });
+    if (path === "/api/pi/commands" && request.method === "GET") return json(await slashCommands());
 
     if (path === "/api/projects" && request.method === "GET") {
       const all = await projects();
