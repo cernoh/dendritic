@@ -471,7 +471,7 @@ async function paneText(session: Session, lines: number): Promise<{ text: string
 function page(): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="${theme.base}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -524,6 +524,9 @@ body.in-term .live .bar,.dock .keys,.dock .cmds,.dock .composer,.dock .sheet{fle
 body.in-term .keys{flex-wrap:nowrap;overflow-x:auto}
 body.in-term .composer textarea{min-height:48px}
 body.in-term .composer .button{min-height:46px}
+/* The shell drops its padding in this view, so the dock has to honour the
+   gesture bar itself. */
+body.in-term .dock{padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(min-width:700px){.fields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.fields label:last-child{grid-column:1/-1}.queue{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.shell{padding-left:24px;padding-right:24px}header{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 </style></head><body><div class="shell">
