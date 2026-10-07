@@ -20,9 +20,13 @@
     {
       packages.wayfinder-dashboard = pkgs.writeShellApplication {
         name = "wayfinder-dashboard";
+        # pi is here so the server can find `docs/slash-commands.md` next to the
+        # binary and offer the real command list. It does not decide which pi
+        # runs in a pane: herdr launches that from the user's own PATH.
         runtimeInputs = [
           pkgs.deno
           pkgs.coreutils
+          pkgs.pi-coding-agent
         ];
         text = ''
           data_root="''${DATA_ROOT:-''${XDG_STATE_HOME:-$HOME/.local/state}/wayfinder-dashboard}"

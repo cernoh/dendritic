@@ -77,7 +77,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `usb-automount` | udev-triggered USB mounting under `/run/media/<user>` with mount/unmount notifications |
 | `wayland-base` | Qt Wayland platforms, Chromium/Electron ozone flags, Firefox Wayland, fuzzel |
 | `widevine` | Widevine DRM-enabled Firefox (aarch64 — without it Netflix-class playback breaks on Asahi) |
-| `wayfinder-dashboard` | Wayfinder Relay: a mobile-first queue of open, unblocked tickets across project spaces, with a live terminal per running ticket. Starting a ticket claims it on GitHub, creates a tab in that project's Herdr workspace, starts Pi, and submits the one-ticket Wayfinder brief; the ticket terminal reads the pane and sends keystrokes back, so answers can be typed from the phone. A Deno systemd user service runs on loopback; NIXPC publishes it with `tailscale serve` |
+| `wayfinder-dashboard` | Wayfinder Relay: a mobile-first queue of open, unblocked tickets across project spaces, with a live terminal per running ticket and a slash-command bar read from the installed pi. Starting a ticket claims it on GitHub, creates a tab in that project's Herdr workspace, starts Pi, and submits the one-ticket Wayfinder brief; the ticket terminal reads the pane, sends keystrokes back, and offers pi's own `/commands` so answers and commands can be typed from the phone. A Deno systemd user service runs on loopback; NIXPC publishes it with `tailscale serve` |
 
 ## Layout
 
