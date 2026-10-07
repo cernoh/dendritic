@@ -1,164 +1,182 @@
-# wayfinder-dashboard feature: grill history + map switcher for omp grilling
-# sessions, served by a Deno container on NIXPC only.
+# Wayfinder Relay — a mobile-first queue for open Wayfinder tickets.
 #
-# Files in this directory:
-#   compose.yaml              source of truth for the container stack
-#   _wayfinder-dashboard.nix  compose2nix output (the `_` prefix keeps
-#                             import-tree away from it, so this module imports
-#                             it explicitly)
-#   dashboard-image/          Deno server: server.ts + deno.json + Dockerfile
+# The app runs as the desktop user's systemd service because it must use that
+# user's authenticated `gh`, the live Herdr socket, and Pi executable. It binds
+# loopback; the NixOS half publishes it over tailnet HTTPS. A project registered
+# in the app owns one Herdr workspace. Starting a frontier ticket claims it on
+# GitHub, opens a tab in that workspace, starts Pi, and submits a one-ticket
+# Wayfinder brief.
 #
-# Import flake.nixosModules.wayfinder-dashboard from hosts/NIXPC/default.nix
-# only. ASAHI stays without it: that host is full on storage. The docker
-# daemon itself comes from attrs/desktop -> act -> docker, so this module only
-# declares the container backend.
-#
-# This module adds the wiring compose2nix cannot express:
-#   - build the dashboard image when the tag is absent or older than the
-#     server source
-#   - create the data dir on the 2TB ext4 disk before the first start
-#   - publish the dashboard on the tailnet with `tailscale serve`
-#
-# Omp feeds it from the session: `wayfinder_view` ensures the current map,
-# `grill_form` records each round it serves and each submit it stores (see
-# `home/agent/extensions/lib/dashboard.ts`). The dashboard embeds the live
-# grill_form page, so the submit still injects into the session.
+# app/server.ts has no framework or dependency tree: Deno serves one responsive
+# page and the JSON API. State lives in ~/.local/state/wayfinder-dashboard.
 {
   self,
+  moduleWithSystem,
   ...
 }:
 {
-  flake.nixosModules.wayfinder-dashboard =
+  perSystem =
+    { pkgs, ... }:
     {
-      pkgs,
+      packages.wayfinder-dashboard = pkgs.writeShellApplication {
+        name = "wayfinder-dashboard";
+        runtimeInputs = [
+          pkgs.deno
+          pkgs.coreutils
+        ];
+        text = ''
+          data_root="''${DATA_ROOT:-''${XDG_STATE_HOME:-$HOME/.local/state}/wayfinder-dashboard}"
+          mkdir -p "$data_root"
+          export DATA_ROOT="$data_root"
+          # Deno rejects allow-listed subprocesses when a loader override is
+          # inherited (for example from `nix shell`); the service needs none.
+          unset LD_LIBRARY_PATH LD_PRELOAD
+          exec deno run \
+            --allow-net \
+            --allow-read \
+            --allow-write="$data_root" \
+            --allow-run=gh,herdr \
+            --allow-env \
+            ${./app/server.ts} "$@"
+        '';
+      };
+    };
+
+  flake.homeManagerModules.wayfinder-dashboard = moduleWithSystem (
+    { self', ... }:
+    {
       config,
       lib,
+      pkgs,
       ...
     }:
     let
-      inherit (config.dendritic) userName;
-      user = config.users.users.${userName};
-
-      # Grill history and map registry. Same disk as paseo state, same mount
-      # that modules/hosts/NIXPC/nixpcConfiguration.nix declares.
-      dataDir = "/mnt/2tb-ext4/wayfinder-dashboard";
-
-      imageTag = "wayfinder-dashboard";
-      imageContext = ./dashboard-image;
-
-      # Host port from compose.yaml. The container binds loopback only.
-      webPort = 8787;
-      # Tailnet HTTPS port. Must differ from webPort: tailscaled listens here
-      # while Docker binds webPort, so sharing one port collides.
-      tailnetPort = 18787;
-
-      imageBuild = pkgs.writeShellApplication {
-        name = "wayfinder-dashboard-image-build";
-        runtimeInputs = [ pkgs.docker ];
-        text = ''
-          context=${imageContext}
-          current="$(docker image inspect \
-            --format '{{ index .Config.Labels "wayfinder-dashboard.context" }}' \
-            ${imageTag} 2>/dev/null || true)"
-          if [ "$current" = "$context" ]; then
-            echo "${imageTag} already built from $context"
-            exit 0
-          fi
-          echo "building ${imageTag} from $context"
-          docker build --label "wayfinder-dashboard.context=$context" -t ${imageTag} "$context"
-        '';
-      };
-
-      dataProvision = pkgs.writeShellApplication {
-        name = "wayfinder-dashboard-data-dir";
-        runtimeInputs = [ pkgs.coreutils ];
-        text = ''
-          dir=${dataDir}
-          if [ ! -d "$dir/default" ]; then
-            install -d -m 0755 -o ${userName} -g ${user.group} "$dir/default"
-            echo "created $dir/default" >&2
-          fi
-        '';
-      };
-
-      tailnetServe = pkgs.writeShellApplication {
-        name = "wayfinder-dashboard-tailnet-serve";
-        runtimeInputs = [
-          config.services.tailscale.package
-          pkgs.jq
-        ];
-        text = ''
-          target=http://127.0.0.1:${toString webPort}
-          if tailscale serve status --json 2>/dev/null \
-            | jq -e --arg t "$target" '[.. | objects | .Proxy? // empty] | index($t)' >/dev/null
-          then
-            echo "serve already maps $target"
-            exit 0
-          fi
-          tailscale serve --bg --yes --https=${toString tailnetPort} "$target"
-          tailscale serve status
-        '';
-      };
+      cfg = config.services.wayfinder-dashboard;
     in
     {
-      imports = [ ./_wayfinder-dashboard.nix ];
+      options.services.wayfinder-dashboard = {
+        package = lib.mkOption {
+          type = lib.types.package;
+          default = self'.packages.wayfinder-dashboard;
+          defaultText = lib.literalExpression "self'.packages.wayfinder-dashboard";
+          description = "The Wayfinder Relay server to run.";
+        };
 
-      virtualisation.oci-containers.backend = lib.mkDefault "docker";
+        port = lib.mkOption {
+          type = lib.types.port;
+          default = 8787;
+          description = "Loopback port for Wayfinder Relay.";
+        };
 
-      # Sepia M3 tokens for the dashboard page, from the one color source.
-      virtualisation.oci-containers.containers.wayfinder-dashboard.environment = {
-        M3_PRIMARY = self.scheme.hex.primary;
-        M3_ON_PRIMARY = self.scheme.hex.onPrimary;
-        M3_PRIMARY_CONTAINER = self.scheme.hex.primaryContainer;
-        M3_SURFACE = self.scheme.hex.surface;
-        M3_SURFACE_VARIANT = self.scheme.hex.surfaceVariant;
-        M3_BASE = self.scheme.hex.base;
-        M3_TEXT = self.scheme.hex.text;
-        M3_TEXT_DIM = self.scheme.hex.textDim;
-        M3_OUTLINE = self.scheme.hex.outline;
-        M3_ERROR = self.scheme.hex.error;
-        M3_SUCCESS = self.scheme.hex.success;
+        bind = lib.mkOption {
+          type = lib.types.str;
+          default = "127.0.0.1";
+          description = "Listen address. Keep this on loopback; starting a ticket controls GitHub, Herdr, and Pi.";
+        };
       };
 
-      systemd.services = {
-        wayfinder-dashboard-image = {
-          description = "Build the ${imageTag} image when missing or stale";
-          after = [ "docker.service" ];
-          requires = [ "docker.service" ];
-          before = [ "docker-wayfinder-dashboard.service" ];
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-            ExecStart = "${imageBuild}/bin/wayfinder-dashboard-image-build";
+      config = {
+        home.packages = [ cfg.package ];
+
+        systemd.user.services.wayfinder-dashboard = {
+          Unit = {
+            Description = "Wayfinder Relay: mobile ticket queue for Herdr and Pi";
+            After = [ "herdr-web.service" ];
           };
+          Service = {
+            ExecStart = lib.getExe cfg.package;
+            Environment = [
+              "PORT=${toString cfg.port}"
+              "BIND=${cfg.bind}"
+              "M3_PRIMARY=${self.scheme.hex.primary}"
+              "M3_ON_PRIMARY=${self.scheme.hex.onPrimary}"
+              "M3_PRIMARY_CONTAINER=${self.scheme.hex.primaryContainer}"
+              "M3_SURFACE=${self.scheme.hex.surface}"
+              "M3_SURFACE_VARIANT=${self.scheme.hex.surfaceVariant}"
+              "M3_BASE=${self.scheme.hex.base}"
+              "M3_TEXT=${self.scheme.hex.text}"
+              "M3_TEXT_DIM=${self.scheme.hex.textDim}"
+              "M3_OUTLINE=${self.scheme.hex.outline}"
+              "M3_ERROR=${self.scheme.hex.error}"
+              "M3_SUCCESS=${self.scheme.hex.success}"
+              "PATH=${
+                lib.makeBinPath (
+                  with pkgs;
+                  [
+                    gh
+                    herdr
+                    pi-coding-agent
+                    git
+                    openssh
+                    coreutils
+                  ]
+                )
+              }"
+            ];
+            Restart = "on-failure";
+            RestartSec = 5;
+          };
+          Install.WantedBy = [ "default.target" ];
+        };
+      };
+    }
+  );
+
+  flake.nixosModules.wayfinder-dashboard =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.services.wayfinder-dashboard.tailscaleServe;
+      userName = config.dendritic.userName;
+      hmServices = config.home-manager.users.${userName}.services;
+      relay =
+        if hmServices ? wayfinder-dashboard then
+          hmServices.wayfinder-dashboard
+        else
+          throw ''
+            services.wayfinder-dashboard.tailscaleServe needs homeManagerModules.wayfinder-dashboard for ${userName}.
+          '';
+    in
+    {
+      options.services.wayfinder-dashboard.tailscaleServe = {
+        enable = lib.mkEnableOption "publishing Wayfinder Relay on the tailnet";
+
+        httpsPort = lib.mkOption {
+          type = lib.types.port;
+          default = 18787;
+          description = "Tailnet HTTPS port that reaches Wayfinder Relay.";
+        };
+      };
+
+      config = {
+        # Importing this NixOS aspect is the enable switch for both halves. The
+        # user service is not part of the all-host Home Manager feature set.
+        home-manager.sharedModules = [ self.homeManagerModules.wayfinder-dashboard ];
+
+        assertions = lib.optional cfg.enable {
+          assertion = config.services.tailscale.enable;
+          message = "services.wayfinder-dashboard.tailscaleServe needs services.tailscale.";
         };
 
-        docker-wayfinder-dashboard = {
-          after = [ "wayfinder-dashboard-image.service" ];
-          requires = [ "wayfinder-dashboard-image.service" ];
-          # The container bind-mounts the data dir, so systemd must mount the
-          # data disk first. A missing disk stops the container instead of
-          # letting it write history onto the root filesystem.
-          unitConfig.RequiresMountsFor = [ dataDir ];
-          # Runs as root before `docker run`, so the data dir exists with the
-          # right owner when the container first writes history.
-          serviceConfig.ExecStartPre = [ "${dataProvision}/bin/wayfinder-dashboard-data-dir" ];
-        };
-
-        # tailscaled owns the tailnet listener; the container stays on
-        # loopback. Skipped on a host without the tailscale module.
-        wayfinder-dashboard-tailnet-serve = lib.mkIf config.services.tailscale.enable {
-          description = "Publish the wayfinder dashboard on the tailnet";
-          after = [
-            "tailscaled.service"
-            "docker-wayfinder-dashboard.service"
-          ];
-          wants = [ "tailscaled.service" ];
+        systemd.services.wayfinder-dashboard-tailscale-serve = lib.mkIf cfg.enable {
+          description = "Publish Wayfinder Relay on the tailnet";
           wantedBy = [ "multi-user.target" ];
+          wants = [ "tailscaled.service" ];
+          after = [ "tailscaled.service" ];
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
-            ExecStart = "${tailnetServe}/bin/wayfinder-dashboard-tailnet-serve";
+            ExecStart = "${lib.getExe pkgs.tailscale} serve --bg --yes --https=${toString cfg.httpsPort} http://${relay.bind}:${toString relay.port}";
+            ExecStop = "${lib.getExe pkgs.tailscale} serve --https=${toString cfg.httpsPort} off";
+            TimeoutStartSec = "45s";
+            TimeoutStopSec = "10s";
+            KillSignal = "SIGKILL";
+            Restart = "on-failure";
+            RestartSec = 60;
           };
         };
       };

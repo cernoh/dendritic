@@ -1,0 +1,28 @@
+{
+  "id": "bd1c87e5a",
+  "name": "font attr host eval",
+  "command": "cd /home/davr/.config/dendritic && echo \"--- self.fonts.marathon ---\" && nix eval --impure --json --expr 'let f = builtins.getFlake \"git+file:///home/davr/.config/dendritic\"; in builtins.map (p: p.name) f.fonts.marathon' 2>&1 | tail -2 && echo \"--- NIXPC HM home.packages fonts ---\" && nix eval --impure --json --expr 'let f = builtins.getFlake \"git+file:///home/davr/.config/dendritic\"; c = f.nixosConfigurations.NIXPC.config; u = builtins.head (builtins.attrNames c.home-manager.users); ps = builtins.map (p: p.name) c.home-manager.users.${u}.home.packages; in builtins.filter (n: builtins.match \".*(oswald|jetbrains-mono|orbitron|source-serif).*\" n != null) ps' 2>&1 | tail -2 && echo \"--- fontconfig enable ---\" && nix eval --impure --json --expr 'let f = builtins.getFlake \"git+file:///home/davr/.config/dendritic\"; c = f.nixosConfigurations.NIXPC.config; u = builtins.head (builtins.attrNames c.home-manager.users); in c.home-manager.users.${u}.fonts.fontconfig.enable' 2>&1 | tail -1",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a0fd84-9487-75ef-8650-f21781e330b1-10383/bd1c87e5a.output",
+  "cwd": "/home/davr/.config/dendritic/modules/features/pi-coding-agent/home",
+  "startTime": 1790976685872,
+  "endTime": 1790976688810,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 57440,
+  "bytesWritten": 458,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/run/current-system/sw/bin/fish",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "user-non-posix"
+  }
+}

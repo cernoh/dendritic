@@ -1,0 +1,28 @@
+{
+  "id": "b1ac9551c",
+  "name": "programming font host eval",
+  "command": "cd /home/davr/.config/dendritic && echo \"=== NIXPC HM home.packages (fonts only) ===\" && nix eval --impure --json --apply 'c: builtins.filter (n: builtins.match \".*(oswald|jetbrains-mono|orbitron|source-serif).*\" n != null) (builtins.map (p: p.name) (builtins.head (builtins.attrValues c.home-manager.users)).home.packages)' .#nixosConfigurations.NIXPC.config 2>&1 | grep -v \"^Using saved\\|^warning:\" | tail -2 && echo \"=== fontconfig.enable ===\" && nix eval --impure --json --apply 'c: (builtins.head (builtins.attrValues c.home-manager.users)).fonts.fontconfig.enable' .#nixosConfigurations.NIXPC.config 2>&1 | grep -v \"^Using saved\\|^warning:\" | tail -1 && echo \"=== ASAHI ===\" && nix eval --impure --json --apply 'c: builtins.filter (n: builtins.match \".*(oswald|jetbrains-mono|orbitron|source-serif).*\" n != null) (builtins.map (p: p.name) (builtins.head (builtins.attrValues c.home-manager.users)).home.packages)' .#nixosConfigurations.ASAHI.config 2>&1 | grep -v \"^Using saved\\|^warning:\" | tail -2",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a0fd84-9487-75ef-8650-f21781e330b1-10383/b1ac9551c.output",
+  "cwd": "/home/davr/.config/dendritic/modules/features/pi-coding-agent/home",
+  "startTime": 1790976891206,
+  "endTime": 1790976900865,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 58567,
+  "bytesWritten": 255,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/run/current-system/sw/bin/fish",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "user-non-posix"
+  }
+}

@@ -1,0 +1,6 @@
+=== NIXPC HM home.packages (fonts only) ===
+["oswald-4.103","jetbrains-mono-2.304","orbitron-2011-05-25","source-serif-4.005"]
+=== fontconfig.enable ===
+true
+=== ASAHI ===
+["oswald-4.103","jetbrains-mono-2.304","orbitron-2011-05-25","source-serif-4.005"]

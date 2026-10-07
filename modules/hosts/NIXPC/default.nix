@@ -16,6 +16,7 @@
       nixpcDesktop
       nvidiaDrivers
       gaming
+      flatpakNixpc
       programming
       mango
       # Wayland + XWayland toolkit, portals, and the polkit/keyring pair that
@@ -38,6 +39,13 @@
       # ASAHI does not import it: no agent runs there.
       herdr-web
       ({ services.herdr-web.tailscaleServe.enable = true; })
+      # The second herdr client UI (chat view, file viewer, remote PCs, push
+      # alerts) runs beside the bridge above on its own port. Same split: the
+      # home-manager module runs the server on loopback, this publishes it on
+      # the tailnet. Both try the tailnet and neither starts the herdr daemon,
+      # so the order they come up in does not matter.
+      herdr-web-ui
+      ({ services.herdr-web-ui.tailscaleServe.enable = true; })
       # The Docker daemon comes in through attrs/desktop -> act -> docker;
       # importing `docker` here as well would define the module twice and
       # duplicate the docker extraGroup entry (mcpContainers and paseo below
@@ -45,9 +53,11 @@
       mcpContainers
       # Paseo daemon + bundled web UI in a container, on the tailnet.
       paseo
-      # Wayfinder grill history + map switcher (Deno container, tailnet).
-      # NIXPC only: ASAHI storage stays without it.
-      #wayfinder-dashboard
+      # Mobile Wayfinder ticket queue. The user service controls GitHub,
+      # Herdr, and Pi; this NixOS half publishes it over tailnet HTTPS.
+      # NIXPC only: ASAHI does not run agents.
+      wayfinder-dashboard
+      ({ services.wayfinder-dashboard.tailscaleServe.enable = true; })
     ];
   };
 }

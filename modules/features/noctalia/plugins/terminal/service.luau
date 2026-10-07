@@ -199,6 +199,33 @@ local function startHelper()
   end
 end
 
+-- The panel names a line with a click, because Noctalia's plugin UI has no
+-- pointer press or drag callback and so cannot select a range of cells. The
+-- service owns the clipboard, so the join happens here.
+local function copyLine(index)
+  local frame = noctalia.state.get("frame")
+  local row = frame ~= nil and frame.L ~= nil and frame.L[index] or nil
+  if row == nil then
+    return
+  end
+
+  local text = ""
+  for _, run in row do
+    text = text .. tostring(run.t or "")
+  end
+  text = text:gsub("%s+$", "")
+
+  if text == "" then
+    return
+  end
+
+  if noctalia.copyToClipboard(text, "text/plain") then
+    noctalia.notify(noctalia.tr("copy.title"), noctalia.tr("copy.body", { line = text:sub(1, 80) }))
+  else
+    noctalia.notifyError("Terminal", noctalia.tr("copy.failed"))
+  end
+end
+
 -- The panel posts work here. Each request carries a kind and an optional
 -- payload, so adding a command needs no new state key.
 local function handleRequest(request)
@@ -211,6 +238,8 @@ local function handleRequest(request)
 
   if kind == "type" then
     send("i" .. escapeText(tostring(payload or "")))
+  elseif kind == "copyline" then
+    copyLine(tonumber(payload) or 0)
   elseif kind == "key" then
     send("k" .. tostring(payload or ""))
   elseif kind == "scroll" then

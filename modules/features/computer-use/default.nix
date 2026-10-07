@@ -97,30 +97,32 @@
           ];
         in
         {
+          # Plain shell: Home Manager writes activation entries verbatim, so
+          # `then`/`else`/`fi` must sit on their own lines (a `run ` prefix per
+          # line would break the `bash -n` syntax check).
           home.activation.cuaDriver = hmDag.entryAfter [ "writeBoundary" ] ''
-            run src='${src}'
-            run dst='${dst}'
+            src='${src}'
+            dst='${dst}'
             # npm has no aarch64 driver package; hosts without it skip quietly
             # instead of failing activation.
-            run if [ ! -x "$src/cua-driver" ]; then
-            run   echo "computer-use: no npm cua-driver under $src, skipping" >&2
-            run else
+            if [ ! -x "$src/cua-driver" ]; then
+              echo "computer-use: no npm cua-driver under $src, skipping" >&2
             # Re-patch when the copy is missing or its INTERP is the stock
             # /lib64/ld-linux-x86-64.so.2 (fresh npm install, or
             # `cua-driver update --apply` replacing the patched copy).
-            run   if [ ! -x "$dst/cua-driver" ] || \
-            run      [ "$(${patchelf} --print-interpreter "$dst/cua-driver" 2>/dev/null)" != '${interp}' ]; then
-            run     rm -rf "$dst"
-            run     mkdir -p "$dst"
-            run     cp -r "$src/." "$dst/"
-            run     chmod -R u+w "$dst"
-            run     for f in "$dst"/*; do
-            run       [ -f "$f" ] || continue
-            run       ${patchelf} --set-interpreter '${interp}' \
-            run         --force-rpath --set-rpath '${rpath}' "$f" 2>/dev/null || true
-            run     done
-            run   fi
-            run fi
+            elif [ ! -x "$dst/cua-driver" ] ||
+              [ "$(${patchelf} --print-interpreter "$dst/cua-driver" 2>/dev/null)" != '${interp}' ]
+            then
+              rm -rf "$dst"
+              mkdir -p "$dst"
+              cp -r "$src/." "$dst/"
+              chmod -R u+w "$dst"
+              for f in "$dst"/*; do
+                [ -f "$f" ] || continue
+                ${patchelf} --set-interpreter '${interp}' \
+                  --force-rpath --set-rpath '${rpath}' "$f" 2>/dev/null || true
+              done
+            fi
           '';
         };
     };

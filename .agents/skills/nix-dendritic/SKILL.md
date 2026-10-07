@@ -43,7 +43,9 @@ structure Nix configs around features (cross-cutting concerns) rather than hosts
 
 6. **No manual imports.** `import-tree` auto-loads every `.nix` file under `modules/`. Files or directories with `/_` in their path are ignored -- prefix with `_` to temporarily disable features during development.
 
-7. **Feature closures.** Everything needed for a feature to work lives in one place -- system config, user config, packages, secrets. If you need to debug SSH, look in `ssh.nix`. If a feature's code grows large, split it into multiple files within a feature directory -- all files contribute to the same feature through module merging.
+7. **Feature closures, and duplication between them is fine.** Everything needed for a feature to work lives in one place -- system config, user config, packages, secrets. If you need to debug SSH, look in `ssh.nix`. If a feature's code grows large, split it into multiple files within a feature directory -- all files contribute to the same feature through module merging.
+
+   Every feature must be **self-contained**: it declares every package, service, and setting it needs, even when another feature already declares the same one. Two features that both install `foot` both list `foot` -- do not make one depend on the other to get it, and do not "deduplicate" by removing the package from one. Nix deduplicates at the store level anyway, so a repeated package costs nothing, while a hidden cross-feature dependency means disabling one unrelated feature silently breaks another. The same applies to *services and configuration*: if feature A's tools only work because feature B happens to enable X, either A enables X itself or A is not self-contained. Prefer a duplicated package list over a feature that cannot be removed independently.
 
 8. **Incremental features.** Add capability by adding files. Remove capability by deleting or prefixing with `_`. No other files need to change.
 
@@ -201,6 +203,8 @@ all SSH config for all platforms in one place.
 Similarly, `tui.nix`, `ai.nix`, or `macos-like-bindings.nix` describe the experience, not the
 implementation. Simple features like `ssh.nix` or `printing.nix` are fine when the capability
 and tool are effectively synonymous.
+
+**Do not deduplicate packages or settings between features.** Every feature lists everything it needs, even if another feature lists it too. The store already dedupes the build; the cost you are avoiding (a repeated package in a list) is far smaller than the cost of a cross-feature dependency that makes each feature unremovable on its own. A feature must not rely on an unrelated feature for a package, a service, or a config option it depends on.
 
 **Use imports as the enable toggle, not `enable = true` flags.** In dendritic, you activate a
 feature by adding its aspect to a host's `imports` list. Custom `enable` options add indirection

@@ -17,6 +17,10 @@
         dojjo
         agent-browser
         pi-coding-agent
+        # funes indexes past agent sessions into one memory the agents on
+        # this host share. Ships the binary only — `funes add pi` is a
+        # one-time interactive step, see features/funes/AGENTS.md.
+        funes
       ];
     in
     {

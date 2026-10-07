@@ -142,6 +142,13 @@ local function background()
   return "surface_container_lowest"
 end
 
+-- Post work to the service. The revision counter makes two identical requests
+-- in a row both run, which a bare value comparison would swallow.
+local function request(kind, payload)
+  noctalia.state.set("request", { kind = kind, payload = payload })
+  noctalia.state.set("request_rev", (tonumber(noctalia.state.get("request_rev")) or 0) + 1)
+end
+
 local function renderRun(run, index)
   local label = {
     key = "run-" .. tostring(index),
@@ -156,10 +163,21 @@ local function renderRun(run, index)
   return ui.label(label)
 end
 
+-- A click on a line copies it. Noctalia's plugin UI has no pointer press or
+-- drag callback, so a free selection across cells cannot be drawn; the line is
+-- the finest thing one click can name, and the service owns the clipboard.
 local function renderRow(row, index)
+  local props = {
+    key = "row-" .. tostring(index),
+    gap = 0,
+    onClick = function()
+      request("copyline", index)
+    end,
+  }
+
   if row == nil or #row == 0 then
     -- A blank terminal line still occupies a line, so give it one.
-    return ui.row({ key = "row-" .. tostring(index), gap = 0 }, {
+    return ui.row(props, {
       ui.label({ text = " ", fontFamily = "monospace", fontSize = FONT_SIZE }),
     })
   end
@@ -168,7 +186,7 @@ local function renderRow(row, index)
   for runIndex = 1, math.min(#row, MAX_RUNS) do
     table.insert(children, renderRun(row[runIndex], runIndex))
   end
-  return ui.row({ key = "row-" .. tostring(index), gap = 0 }, children)
+  return ui.row(props, children)
 end
 
 local function renderScreen()
@@ -227,13 +245,6 @@ local function render()
       onScroll = "onScroll",
     }, status == "ready" and renderScreen() or renderNotice()),
   }))
-end
-
--- Post work to the service. The revision counter makes two identical requests
--- in a row both run, which a bare value comparison would swallow.
-local function request(kind, payload)
-  noctalia.state.set("request", { kind = kind, payload = payload })
-  noctalia.state.set("request_rev", (tonumber(noctalia.state.get("request_rev")) or 0) + 1)
 end
 
 noctalia.state.watch("frame", function(value)

@@ -103,6 +103,11 @@
       url = "github:tobi/qmd";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # Declarative Flatpaks (modules/features/flatpak). `latest` tracks the
+    # newest stable nix-flatpak release; applications remain host-owned data.
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak/latest";
+    };
   };
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }

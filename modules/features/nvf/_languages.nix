@@ -7,11 +7,10 @@
 
     nix = {
       enable = true;
-      lsp.servers = [ "nixd" ];
+      lsp.servers = [ "nil" ];
       # Formatter for conform-nvim (formatOnSave). nvf's nixfmt preset
       # bundles the binary via an absolute store path, so formatting works
-      # with nothing on $PATH — previously this silently defaulted to
-      # alejandra while _nixd.nix pointed at a PATH-installed nixfmt.
+      # with nothing on $PATH.
       format.type = [ "nixfmt" ];
     };
     qml.enable = true;
