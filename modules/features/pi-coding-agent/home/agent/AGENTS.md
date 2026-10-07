@@ -81,6 +81,32 @@ packages unversioned, so a bare `pi install npm:<pkg>` silently un-pins — bump
 `npm/package.json` and reinstall instead (`npm install --legacy-peer-deps`;
 peer ranges name pi 0.99 stubs, the real runtime comes from nix).
 
+## pi-lazy-loader and pi-lazy-skill-tool
+
+`@valdo766hi/pi-lazy-skill-tool` (skills lazy-loading) declares a peer range of
+pi `>=0.85.1 <0.86.0 || >=1.0.0 <1.1.0`, which excludes our 0.87.1 — installed
+anyway via `--legacy-peer-deps` and verified working on 0.87.1 (2026-10-06:
+`skill` + `skill_search` tools register, exact-name load returns the real
+skill body, `typebox` resolves from pi's own node_modules). It must stay
+eager: it hooks `session_start`/`context`/`before_provider_request`. Default
+adaptive routing, no `lazy-skill.json` — defaults are the config.
+
+`pi-lazy-loader` (extensions lazy-loading) defers **nothing**. Whole-package audit
+
+`pi-lazy-loader` is installed but defers **nothing**. Whole-package audit
+2026-10-06: every installed package registers LLM-callable tools
+(`pi-fff`, `pi-web-access`, `pi-mcp-client`, `pi-background-tasks`, `pi-subagents`,
+`pi-agent-browser-native`, `pi-herdr`, `pi-sessions`, `pi-computer-use`,
+`rpiv-todo`, `pi-memory`, `bigpowers`, `pi-lazy-skill-tool`), providers (`pi-freeflow`,
+`pi-commandcode-provider`, `pi-background-tasks`), `before_agent_start` prompt
+hooks (`pi-tool-discipline`, `ponytail`), or session-start TUI panels
+(`pi-open-tui`) — all disqualified by the loader's own caveats (tools invisible
+to the LLM until activation, missed startup events). The loose extensions in
+`extensions/` are likewise hook-driven (`html-artifacts-channel` =
+`before_agent_start`, `herdr-*` = `session_start`), so `lazy.json` has no
+targets either. Do not add `lazy: true` to a package without re-running this
+audit against its whole `node_modules` tree, not just its entry file.
+
 ## Herdr background agents
 
 When `HERDR_ENV=1` and I ask for background subagents (research, prototype,

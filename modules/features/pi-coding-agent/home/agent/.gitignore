@@ -7,7 +7,10 @@ memory/
 web-search-cache/
 # Written on every switch by home.activation.piTheme from features/scheme.
 themes/
-*.log
+# `*.log*`, not `*.log`: a rotated log is `….log.1`, which `*.log` never matched,
+# so a 67k-line log was tracked. Same reason broker.pid is listed here.
+*.log*
+*.pid
 pi-freeflow-upstream-health.json
 # npm runtime
 npm/node_modules/

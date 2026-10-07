@@ -17,6 +17,8 @@
     "npm:pi-sessions",
     "npm:@amaster.ai/pi-computer-use",
     "npm:pi-commandcode-provider",
+    "npm:pi-lazy-loader",
+    "npm:@valdo766hi/pi-lazy-skill-tool",
     "../../.funes/agents/pi"
   ],
   "lastChangelogVersion": "0.87.1",
@@ -38,5 +40,5 @@
     "showTerminalProgress": true
   },
   "defaultProvider": "freeflow",
-  "defaultModel": "space-bunny-free"
+  "defaultModel": "fledge-alpha-free"
 }

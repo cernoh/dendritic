@@ -1,18 +1,15 @@
 {
   "enabled": true,
-  "inlineFooter": false,
+  "inlineFooter": true,
   "settingsLanguage": "en",
   "cursorStyle": "block",
-  "fullscreen": {
-    "wheelScrollLines": 4
-  },
   "icons": {
-    "mode": "auto"
+    "mode": "nerd"
   },
   "footerSegments": {
     "cwd": true,
-    "hostname": false,
-    "sessionName": false,
+    "hostname": true,
+    "sessionName": true,
     "gitBranch": true,
     "gitStatus": true,
     "gitCommit": false,
@@ -34,5 +31,8 @@
   },
   "thinkingPeek": {
     "lines": 1
+  },
+  "fullscreen": {
+    "wheelScrollLines": 4
   }
 }

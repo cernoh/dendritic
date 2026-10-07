@@ -35,6 +35,7 @@
               nvf
               agent-browser
               herdr-web
+              herdr-web-ui
               programming
               fish
               nushell
