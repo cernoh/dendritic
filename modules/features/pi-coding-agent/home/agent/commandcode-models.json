@@ -74,6 +74,14 @@
       "maxTokens": 65536
     },
     {
+      "id": "claude-haiku-5-5",
+      "name": "Claude Haiku 5.5 (CC)",
+      "api": "anthropic-messages",
+      "reasoning": false,
+      "contextWindow": 1000000,
+      "maxTokens": 65536
+    },
+    {
       "id": "claude-haiku-4-5-20251001",
       "name": "Claude Haiku 4.5 (CC)",
       "api": "anthropic-messages",
@@ -583,6 +591,14 @@
       "api": "openai-responses",
       "reasoning": true,
       "contextWindow": 1000000,
+      "maxTokens": 65536
+    },
+    {
+      "id": "stealth/glyph-cluster:free",
+      "name": "Glyph Cluster (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 256000,
       "maxTokens": 65536
     },
     {

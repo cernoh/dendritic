@@ -40,5 +40,5 @@
     "showTerminalProgress": true
   },
   "defaultProvider": "freeflow",
-  "defaultModel": "fledge-alpha-free"
+  "defaultModel": "space-bunny-free"
 }

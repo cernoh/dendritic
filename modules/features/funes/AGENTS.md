@@ -9,7 +9,8 @@ binary. Exposes `overlays.funes` (`pkgs.funes`), `packages.funes`, `apps.funes`,
 mandatory companions, `hf` and `trufflehog`.
 
 ## Ownership
-- `default.nix` — overlay, NixOS module, per-system package/app
+- `default.nix` — overlay, NixOS module (incl. the `trufflehog-funes` scanner shim), per-system
+  package/app
 - `_funes.pkg.nix` — prebuilt binary, strictly pinned (`fetchurl` + per-system SRI hash), install
   check asserting the reported version
 
@@ -91,6 +92,30 @@ mandatory companions, `hf` and `trufflehog`.
   There is no in-binary fallback and no flag to skip it. Ship `pkgs.trufflehog` in the same
   `systemPackages` list as `hf`; if the attribute ever disappears from nixpkgs, vendor it the way
   `_funes.pkg.nix` vendors funes rather than dropping the gate.
+- **`$FUNES_TRUFFLEHOG` must point at the shim, not at `pkgs.trufflehog`.** Two halves each pass
+  `--no-update` and trufflehog's kingpin parser rejects the repeat. funes hard-codes its scanner argv
+  in `src/scan.rs` (identical in v1.6.0, v1.7.0 and v1.8.0):
+  `filesystem <dir> --json --no-verification --no-update --fail --fail-on-scan-errors
+  --results=verified,unknown,unverified`. nixpkgs' `trufflehog` is a wrapper script that exists to
+  inject its own `--no-update` (`exec -a "$0" .../.trufflehog-wrapped --no-update "$@"`, so the Go
+  binary does not phone home). Result:
+  `trufflehog: error: flag 'no-update' cannot be repeated, try --help`, which funes reports as
+  `trufflehog exited abnormally (Some(1)); refusing to treat the text as clean`. That kills EVERY
+  scan-gated operation — `funes index` as much as `funes push` — and it is a Nix packaging collision,
+  never a secret in the sessions. The `trufflehog-funes` shim in `default.nix` makes the injected flag
+  idempotent: it drops `--no-update` / `--no-no-update` from funes' argv and execs the real wrapper
+  through `runtimeInputs`, which then injects exactly one.
+  - Why a shim in `$FUNES_TRUFFLEHOG` and not a patched `pkgs.trufflehog`: funes resolves
+    `$FUNES_TRUFFLEHOG` *before* `$PATH`, so it is the seam funes' own resolution order was built for.
+    It needs no `overrideAttrs`, so there is no rebuilt Go derivation and no forked nixpkgs package,
+    and a human typing `trufflehog` still gets the untouched wrapper. Do not "fix" this by patching
+    the flag out of the scanner's argv instead — that silently re-enables the network version check
+    on every scan.
+  - The shim is set in `environment.variables`, not a home profile: the funes MCP server is spawned
+    by whichever agent is running, which may be a system-level one.
+  - **Upstream bug, not ours.** It breaks every NixOS and Guix user of `pkgs.trufflehog` who also
+    passes `--no-update`, not only funes users. Drop the shim once funes stops passing the flag; until
+    then, the shim is load-bearing and removing it re-breaks indexing.
 - **The one-time step is the user's:** `hf auth login`, then `funes add pi`, by hand, in a real
   terminal. `funes status` then reports whether recall reads the local memory yet, and how much this
   host has yet to push. A `funes push` before both are done is expected to fail - first on the
@@ -140,12 +165,25 @@ mandatory companions, `hf` and `trufflehog`.
   for the `hf` entry point. Note `builtins.getFlake "<path>"` fails on this repo: the pi
   `broker.sock` in the working tree is an unsupported flake-source file type — use `git+file://`,
   which copies only tracked files.
+- Scanner-flag proof, the check that would have caught this: run funes' *own* argv through the
+  evaluated shim path and require exit 0.
+  `FUNES_TRUFFLEHOG=$(nix eval --impure --raw
+  .#nixosConfigurations.NIXPC.config.environment.variables.FUNES_TRUFFLEHOG) funes index` — this
+  realises the shim and runs the whole gate (trufflehog, then the index write). It must get past
+  `scanning N chunk(s) for secrets` and finish. The failure it replaces is the exact pair of lines
+  `trufflehog exited abnormally (Some(1))` + `flag 'no-update' cannot be repeated`.
+  The single-flag regression is faster and needs no session data:
+  `trufflehog filesystem <dir> --json --no-verification --no-update --fail --fail-on-scan-errors
+  --results=verified,unknown,unverified` must exit 0 through the shim and exit 1 without it.
 - Scanner proof: `nix eval --impure --raw --expr 'let f = builtins.getFlake
   "git+file:///home/davr/.config/dendritic";
   in f.inputs.nixpkgs.legacyPackages.x86_64-linux.trufflehog.meta.mainProgram'` must print
   `trufflehog` for both `x86_64-linux` and `aarch64-linux`, and `command -v trufflehog` must resolve
-  after a system switch. A real end-to-end proof is the `funes push` itself: it now gets past
-  "scanning N chunk(s) for secrets" instead of erroring on the missing binary.
+  after a system switch. `$FUNES_TRUFFLEHOG` must resolve to the shim, not to `pkgs.trufflehog`:
+  `nix eval --impure --raw .#nixosConfigurations.NIXPC.config.environment.variables.FUNES_TRUFFLEHOG`
+  must end in `-trufflehog-funes/bin/trufflehog-funes`. A real end-to-end proof is the
+  `funes push` itself: it now gets past "scanning N chunk(s) for secrets" instead of erroring on the
+  missing binary.
 
 ## Child DOX Index
 - none — this feature is two files and no subtree
