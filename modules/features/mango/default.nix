@@ -89,10 +89,13 @@
                                 # GB layout: Shift+2 gives quote. Matches system xkb layout gb.
                                 xkb_rules_layout = "gb";
 
-                                tap_to_click = 0;
-                                trackpad_natural_scrolling = 1;
                                 trackpad_accel_profile = 1;
                                 trackpad_accel_speed = 0.2;
+                                tap_to_click = 0;
+                                tap_and_drag = 1;
+                                trackpad_click_method = 2;
+                                trackpad_natural_scrolling = 1;
+                                trackpad_disable_while_typing = 1;
 
                                 mouse_natural_scrolling = 0;
 
@@ -153,7 +156,14 @@
 
                                 mousebind = [
                                         "SUPER,btn_left,moveresize,curmove"
-                                        "SUPER,btn_right,moveresize,curresize"
+                                ];
+
+                                gesturebind = [
+                                        "none,up,4,toggleoverview"
+                                        "none,down,4,toggleoverview"
+                                        "none,left,3,focusdir,left"
+                                        "none,right,3,focusdir,right"
+
                                 ];
 
                                 axisbind = [

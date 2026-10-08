@@ -16,10 +16,4 @@
         gaps = 16;
         borderWidth = 4;
 
-        tap_to_click = 0;
-        tap_and_drag = 1;
-        trackpad_click_method = 2;
-        trackpad_natural_scrolling = 1;
-        trackpad_disable_while_typing = 1;
-
 }
