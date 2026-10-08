@@ -1,0 +1,14 @@
+{
+	"v": 1,
+	"lastConsolidatedAt": 1788818498050,
+	"lastResult": {
+		"at": 1788811001277,
+		"sessions": 1,
+		"deltas": 2,
+		"model": "muse-spark-1.3-contributor"
+	},
+	"lastError": {
+		"at": 1790111167099,
+		"message": "402 Upstream request failed: Insufficient account funds\nUpstream request failed: Insufficient account funds (type=server_error)"
+	}
+}

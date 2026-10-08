@@ -46,10 +46,12 @@
       # 1×2 still OOM-kills `pi-natives` rustc (4695 MiB VmRSS, 2026-09-06
       # 15:24:05 earlyoom SIGTERM with LTO=fat, codegen-units=1). Cap to
       # 1 job × 1 core; cargo -j1 keeps peak <5 GiB (single rustc).
-      # NIXPC untouched (host-scoped).
+      # NIXPC untouched (host-scoped) — but the NIXPC-shaped defaults in
+      # system/core/nix-settings.nix are a plain definition, so these must
+      # outrank them or both hosts conflict on the option.
       nix.settings = {
-        max-jobs = 1;
-        cores = 1;
+        max-jobs = lib.mkForce 1;
+        cores = lib.mkForce 1;
       };
 
       # OOM guard tuning: default -m10 -s10 (10% mem+swap) is too aggressive

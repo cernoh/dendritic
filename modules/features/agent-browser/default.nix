@@ -35,15 +35,25 @@
 
   flake.homeManagerModules.agent-browser = moduleWithSystem (
     { self', ... }:
+    { pkgs, ... }:
     {
-      home.packages = [ self'.packages.agent-browser ];
+      home.packages = [
+        self'.packages.agent-browser
+        pkgs.chromium
+      ];
+      home.sessionVariables.AGENT_BROWSER_EXECUTABLE_PATH = "${pkgs.chromium}/bin/chromium";
     }
   );
 
   flake.nixosModules.agent-browser = moduleWithSystem (
     { self', ... }:
+    { pkgs, ... }:
     {
-      environment.systemPackages = [ self'.packages.agent-browser ];
+      environment.systemPackages = [
+        self'.packages.agent-browser
+        pkgs.chromium
+      ];
+      environment.sessionVariables.AGENT_BROWSER_EXECUTABLE_PATH = "${pkgs.chromium}/bin/chromium";
     }
   );
 }

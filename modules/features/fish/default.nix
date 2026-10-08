@@ -99,6 +99,7 @@
         bat
         fzf
         zoxide
+        lazyjj
         lazygit
         # nom-switch renders a rebuild as a build tree (functions/).
         nix-output-monitor

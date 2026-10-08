@@ -1,0 +1,44 @@
+{
+  "packages": [
+    "npm:pi-freeflow",
+    "npm:pi-open-tui",
+    "npm:pi-tool-discipline",
+    "npm:@ff-labs/pi-fff",
+    "npm:pi-web-access",
+    "npm:pi-mcp-client",
+    "npm:pi-background-tasks",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:bigpowers",
+    "npm:@dietrichgebert/ponytail",
+    "npm:pi-memory",
+    "npm:pi-subagents",
+    "npm:pi-agent-browser-native",
+    "npm:@andrewjacop/pi-herdr",
+    "npm:pi-sessions",
+    "npm:@amaster.ai/pi-computer-use",
+    "npm:pi-commandcode-provider",
+    "npm:pi-lazy-loader",
+    "npm:@valdo766hi/pi-lazy-skill-tool",
+    "../../.funes/agents/pi"
+  ],
+  "lastChangelogVersion": "0.87.1",
+  "pi-computer-use": {
+    "mode": "path",
+    "binaryPath": "${HOME}/.local/share/cua-driver/cua-driver"
+  },
+  "herdrTitleSync": {
+    "agent": "title-generator"
+  },
+  "sessions": {
+    "autoTitle": {
+      "enable": false,
+      "tokenBudget": 512
+    }
+  },
+  "theme": "sepia",
+  "terminal": {
+    "showTerminalProgress": true
+  },
+  "defaultProvider": "freeflow",
+  "defaultModel": "space-bunny-free"
+}

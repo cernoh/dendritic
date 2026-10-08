@@ -11,6 +11,8 @@
  * Commands
  *   i<escaped text>   write text to the shell (escapes: \n \r \t \e \\)
  *   k<key name>       send an encoded key (up, ctrl+c, tab, backspace, ...)
+ *   p<fg>,<bg>,<256 colors>
+ *                     set the default colors and the 256-color palette
  *   s<n>              scroll the viewport by n rows (negative scrolls up)
  *   z<COLS>x<ROWS>    resize the terminal and the pseudo-terminal
  *   f                 emit a frame now
@@ -118,11 +120,24 @@ static long now_ms(void) {
 typedef struct {
   GhosttyTerminal term;
   GhosttyKeyEncoder enc;
+  GhosttyMouseEncoder mouse;
+  /* A second encoder answers "is the app listening for the mouse?" without
+   * disturbing the real one's motion-dedup state. */
+  GhosttyMouseEncoder probe;
   uint16_t cols;
   uint16_t rows;
   int master;
+  /* Cell size in surface pixels, sent by the panel as "g<w>x<h>". The mouse
+   * encoder takes pixels, and the plugin is the only side that knows how wide
+   * it drew a cell. */
+  double cell_w;
+  double cell_h;
   unsigned long seq;
 } Term;
+
+/* Forward declarations: emit_frame reports whether the app wants the mouse, and
+ * the mouse helpers sit below it next to send_key. */
+static bool mouse_reporting(Term *t);
 
 typedef struct {
   char text[MAX_RUN_BYTES];
@@ -189,10 +204,11 @@ static void emit_frame(Term *t, GhosttyRenderState st, bool force) {
   }
 
   Buf out = {0};
-  char head[192];
+  char head[224];
   snprintf(head, sizeof(head),
-           "{\"t\":\"f\",\"s\":%lu,\"c\":%u,\"r\":%u,\"dfg\":\"%s\",\"dbg\":\"%s\",\"L\":[",
-           ++t->seq, (unsigned)cols, (unsigned)rows, default_fg, default_bg);
+           "{\"t\":\"f\",\"s\":%lu,\"c\":%u,\"r\":%u,\"dfg\":\"%s\",\"dbg\":\"%s\",\"mouse\":%s,\"L\":[",
+           ++t->seq, (unsigned)cols, (unsigned)rows, default_fg, default_bg,
+           mouse_reporting(t) ? "true" : "false");
   buf_puts(&out, head);
 
   Run run;
@@ -354,9 +370,174 @@ static void write_all(int fd, const char *p, size_t n) {
   }
 }
 
+/* libghostty-vt parses a terminal's queries but does not answer them: an
+ * embedder must. Without these two callbacks a program that waits for a reply
+ * blocks: fish waits ten seconds on its startup Primary DA query and then warns
+ * that it "could not read response to Primary Device Attribute query". The
+ * device attributes callback fills the response data, and the library writes
+ * the finished escape sequence back through the write_pty callback. */
+static void on_write_pty(GhosttyTerminal term, void *userdata, const uint8_t *data, size_t len) {
+  (void)term;
+  write_all(*(int *)userdata, (const char *)data, len);
+}
+
+static bool on_device_attributes(GhosttyTerminal term, void *userdata, GhosttyDeviceAttributes *out) {
+  (void)term;
+  (void)userdata;
+  memset(out, 0, sizeof(*out));
+
+  /* VT220 with selective erase, national replacement, technical characters,
+   * ANSI color and the ANSI text locator. 132-column mode is not claimed: this
+   * terminal never acts on DECCOLM. */
+  static const uint16_t features[] = {
+      GHOSTTY_DA_FEATURE_SELECTIVE_ERASE,
+      GHOSTTY_DA_FEATURE_NATIONAL_REPLACEMENT,
+      GHOSTTY_DA_FEATURE_TECHNICAL_CHARACTERS,
+      GHOSTTY_DA_FEATURE_ANSI_COLOR,
+      GHOSTTY_DA_FEATURE_ANSI_TEXT_LOCATOR,
+  };
+  out->primary.conformance_level = GHOSTTY_DA_CONFORMANCE_VT220;
+  memcpy(out->primary.features, features, sizeof(features));
+  out->primary.num_features = sizeof(features) / sizeof(features[0]);
+
+  out->secondary.device_type = GHOSTTY_DA_DEVICE_TYPE_VT220;
+  out->secondary.firmware_version = 1;
+  out->secondary.rom_cartridge = 0;
+  out->tertiary.unit_id = 0;
+  return true;
+}
+
+/* Mouse events are encoded by the library, which already knows the app's
+ * tracking mode and output format, so the helper never writes SGR bytes by
+ * hand. Coordinates arrive as cells and are scaled into the surface space the
+ * encoder expects. */
+static void set_mouse_geometry(Term *t) {
+  if (t->cell_w <= 0 || t->cell_h <= 0) return;
+  GhosttyMouseEncoderSize size = GHOSTTY_INIT_SIZED(GhosttyMouseEncoderSize);
+  size.cell_width = (uint32_t)(t->cell_w + 0.5);
+  size.cell_height = (uint32_t)(t->cell_h + 0.5);
+  size.screen_width = (uint32_t)(t->cols * t->cell_w + 0.5);
+  size.screen_height = (uint32_t)(t->rows * t->cell_h + 0.5);
+  ghostty_mouse_encoder_setopt(t->mouse, GHOSTTY_MOUSE_ENCODER_OPT_SIZE, &size);
+  ghostty_mouse_encoder_setopt(t->probe, GHOSTTY_MOUSE_ENCODER_OPT_SIZE, &size);
+}
+
+static void send_mouse(Term *t, int button, int action, int col, int row) {
+  if (t->cell_w <= 0 || t->cell_h <= 0) return;
+
+  GhosttyMouseEvent ev = NULL;
+  if (ghostty_mouse_event_new(NULL, &ev) != GHOSTTY_SUCCESS) return;
+  ghostty_mouse_event_set_action(
+      ev, action == 0 ? GHOSTTY_MOUSE_ACTION_PRESS : GHOSTTY_MOUSE_ACTION_RELEASE);
+  ghostty_mouse_event_set_button(ev, (GhosttyMouseButton)button);
+
+  /* The middle of the cell: a hit test can only name a cell, so the exact
+   * point inside it is arbitrary as long as it lands in the right one. */
+  GhosttyMousePosition pos = {
+      .x = (float)(col * t->cell_w + t->cell_w / 2),
+      .y = (float)(row * t->cell_h + t->cell_h / 2),
+  };
+  ghostty_mouse_event_set_position(ev, pos);
+
+  ghostty_mouse_encoder_setopt_from_terminal(t->mouse, t->term);
+  char buf[64];
+  size_t len = 0;
+  if (ghostty_mouse_encoder_encode(t->mouse, ev, buf, sizeof(buf), &len) == GHOSTTY_SUCCESS &&
+      len > 0) {
+    write_all(t->master, buf, len);
+  }
+  ghostty_mouse_event_free(ev);
+}
+
+/* The encoder produces nothing at all when the app has not enabled mouse
+ * reporting, which makes an empty encoding the mode test. */
+static bool mouse_reporting(Term *t) {
+  GhosttyMouseEvent ev = NULL;
+  if (ghostty_mouse_event_new(NULL, &ev) != GHOSTTY_SUCCESS) return false;
+  ghostty_mouse_event_set_action(ev, GHOSTTY_MOUSE_ACTION_PRESS);
+  ghostty_mouse_event_set_button(ev, GHOSTTY_MOUSE_BUTTON_LEFT);
+  GhosttyMousePosition pos = {.x = 0, .y = 0};
+  ghostty_mouse_event_set_position(ev, pos);
+
+  ghostty_mouse_encoder_setopt_from_terminal(t->probe, t->term);
+  char buf[8];
+  size_t len = 0;
+  ghostty_mouse_encoder_encode(t->probe, ev, buf, sizeof(buf), &len);
+  ghostty_mouse_event_free(ev);
+  return len > 0;
+}
+
 /* Keys the panel can capture are forwarded as encoded key events. libghostty
  * converts them to the right escape sequence for the mode the running program
- * selected, which hand-written byte strings cannot do. */
+ * selected, which hand-written byte strings cannot do.
+ *
+ * The table is the whole modifier and function-key set, not a sample: a panel
+ * chord that reaches the shell and is missing here is silently lost, and which
+ * chords a TUI needs (ctrl+b for herdr, f5 for btop, ctrl+space for a prompt)
+ * is not something this file can predict. Printable characters do not appear
+ * here at all, because the panel types those as text. */
+#define CTRL_LETTERS(mods, prefix, letters)                                     \
+  {prefix "a", GHOSTTY_KEY_A, mods, letters "a"},                              \
+      {prefix "b", GHOSTTY_KEY_B, mods, letters "b"},                          \
+      {prefix "c", GHOSTTY_KEY_C, mods, letters "c"},                          \
+      {prefix "d", GHOSTTY_KEY_D, mods, letters "d"},                          \
+      {prefix "e", GHOSTTY_KEY_E, mods, letters "e"},                          \
+      {prefix "f", GHOSTTY_KEY_F, mods, letters "f"},                          \
+      {prefix "g", GHOSTTY_KEY_G, mods, letters "g"},                          \
+      {prefix "h", GHOSTTY_KEY_H, mods, letters "h"},                          \
+      {prefix "i", GHOSTTY_KEY_I, mods, letters "i"},                          \
+      {prefix "j", GHOSTTY_KEY_J, mods, letters "j"},                          \
+      {prefix "k", GHOSTTY_KEY_K, mods, letters "k"},                          \
+      {prefix "l", GHOSTTY_KEY_L, mods, letters "l"},                          \
+      {prefix "m", GHOSTTY_KEY_M, mods, letters "m"},                          \
+      {prefix "n", GHOSTTY_KEY_N, mods, letters "n"},                          \
+      {prefix "o", GHOSTTY_KEY_O, mods, letters "o"},                          \
+      {prefix "p", GHOSTTY_KEY_P, mods, letters "p"},                          \
+      {prefix "q", GHOSTTY_KEY_Q, mods, letters "q"},                          \
+      {prefix "r", GHOSTTY_KEY_R, mods, letters "r"},                          \
+      {prefix "s", GHOSTTY_KEY_S, mods, letters "s"},                          \
+      {prefix "t", GHOSTTY_KEY_T, mods, letters "t"},                          \
+      {prefix "u", GHOSTTY_KEY_U, mods, letters "u"},                          \
+      {prefix "v", GHOSTTY_KEY_V, mods, letters "v"},                          \
+      {prefix "w", GHOSTTY_KEY_W, mods, letters "w"},                          \
+      {prefix "x", GHOSTTY_KEY_X, mods, letters "x"},                          \
+      {prefix "y", GHOSTTY_KEY_Y, mods, letters "y"},                          \
+      {prefix "z", GHOSTTY_KEY_Z, mods, letters "z"},
+
+#define CTRL_PUNCT(mods, prefix)                                                \
+  {prefix "minus", GHOSTTY_KEY_MINUS, mods, "-"},                              \
+      {prefix "equal", GHOSTTY_KEY_EQUAL, mods, "="},                          \
+      {prefix "bracketleft", GHOSTTY_KEY_BRACKET_LEFT, mods, "["},             \
+      {prefix "bracketright", GHOSTTY_KEY_BRACKET_RIGHT, mods, "]"},           \
+      {prefix "backslash", GHOSTTY_KEY_BACKSLASH, mods, "\\"},                 \
+      {prefix "semicolon", GHOSTTY_KEY_SEMICOLON, mods, ";"},                  \
+      {prefix "apostrophe", GHOSTTY_KEY_QUOTE, mods, "'"},                    \
+      {prefix "grave", GHOSTTY_KEY_BACKQUOTE, mods, "`"},                      \
+      {prefix "comma", GHOSTTY_KEY_COMMA, mods, ","},                          \
+      {prefix "period", GHOSTTY_KEY_PERIOD, mods, "."},                        \
+      {prefix "slash", GHOSTTY_KEY_SLASH, mods, "/"},                          \
+      {prefix "space", GHOSTTY_KEY_SPACE, mods, " "},
+
+#define ALT_KEYS(mods, prefix)                                                  \
+  {prefix "left", GHOSTTY_KEY_ARROW_LEFT, mods, NULL},                         \
+      {prefix "right", GHOSTTY_KEY_ARROW_RIGHT, mods, NULL},                   \
+      {prefix "up", GHOSTTY_KEY_ARROW_UP, mods, NULL},                         \
+      {prefix "down", GHOSTTY_KEY_ARROW_DOWN, mods, NULL},
+
+#define FN_KEYS(prefix)                                                         \
+  {prefix "f1", GHOSTTY_KEY_F1, 0, NULL},                                      \
+      {prefix "f2", GHOSTTY_KEY_F2, 0, NULL},                                  \
+      {prefix "f3", GHOSTTY_KEY_F3, 0, NULL},                                  \
+      {prefix "f4", GHOSTTY_KEY_F4, 0, NULL},                                  \
+      {prefix "f5", GHOSTTY_KEY_F5, 0, NULL},                                  \
+      {prefix "f6", GHOSTTY_KEY_F6, 0, NULL},                                  \
+      {prefix "f7", GHOSTTY_KEY_F7, 0, NULL},                                  \
+      {prefix "f8", GHOSTTY_KEY_F8, 0, NULL},                                  \
+      {prefix "f9", GHOSTTY_KEY_F9, 0, NULL},                                  \
+      {prefix "f10", GHOSTTY_KEY_F10, 0, NULL},                                \
+      {prefix "f11", GHOSTTY_KEY_F11, 0, NULL},                                \
+      {prefix "f12", GHOSTTY_KEY_F12, 0, NULL},
+
 static const struct {
   const char *name;
   GhosttyKey key;
@@ -377,18 +558,18 @@ static const struct {
     {"home", GHOSTTY_KEY_HOME, 0, NULL},
     {"end", GHOSTTY_KEY_END, 0, NULL},
     {"pageup", GHOSTTY_KEY_PAGE_UP, 0, NULL},
-    {"pagedown", GHOSTTY_KEY_PAGE_DOWN, 0, NULL},
+    {"page_down", GHOSTTY_KEY_PAGE_DOWN, 0, NULL},
+    {"page_up", GHOSTTY_KEY_PAGE_UP, 0, NULL},
     {"insert", GHOSTTY_KEY_INSERT, 0, NULL},
     {"space", GHOSTTY_KEY_SPACE, 0, " "},
-    {"ctrl+c", GHOSTTY_KEY_C, GHOSTTY_MODS_CTRL, "c"},
-    {"ctrl+d", GHOSTTY_KEY_D, GHOSTTY_MODS_CTRL, "d"},
-    {"ctrl+l", GHOSTTY_KEY_L, GHOSTTY_MODS_CTRL, "l"},
-    {"ctrl+u", GHOSTTY_KEY_U, GHOSTTY_MODS_CTRL, "u"},
-    {"ctrl+a", GHOSTTY_KEY_A, GHOSTTY_MODS_CTRL, "a"},
-    {"ctrl+e", GHOSTTY_KEY_E, GHOSTTY_MODS_CTRL, "e"},
-    {"ctrl+k", GHOSTTY_KEY_K, GHOSTTY_MODS_CTRL, "k"},
-    {"ctrl+w", GHOSTTY_KEY_W, GHOSTTY_MODS_CTRL, "w"},
-    {"ctrl+z", GHOSTTY_KEY_Z, GHOSTTY_MODS_CTRL, "z"},
+    {"ctrl+tab", GHOSTTY_KEY_TAB, GHOSTTY_MODS_CTRL, NULL},
+    {"ctrl+shift+tab", GHOSTTY_KEY_TAB, GHOSTTY_MODS_CTRL | GHOSTTY_MODS_SHIFT, NULL},
+    CTRL_LETTERS(GHOSTTY_MODS_CTRL, "ctrl+", "a")
+    CTRL_LETTERS(GHOSTTY_MODS_CTRL | GHOSTTY_MODS_SHIFT, "ctrl+shift+", "A")
+    CTRL_PUNCT(GHOSTTY_MODS_CTRL, "ctrl+")
+    ALT_KEYS(GHOSTTY_MODS_ALT, "alt+")
+    ALT_KEYS(GHOSTTY_MODS_SHIFT | GHOSTTY_MODS_ALT, "shift+alt+")
+    FN_KEYS("")
     {NULL, GHOSTTY_KEY_UNIDENTIFIED, 0, NULL},
 };
 
@@ -418,6 +599,54 @@ static void send_key(Term *t, const char *name) {
     return;
   }
   fprintf(stderr, "ghostty-term: unknown key '%s'\n", name);
+}
+
+/* The theme arrives as one comma separated line: the default foreground, the
+ * default background, then all 256 palette entries. The plugin owns the
+ * palette (it is the shell's own palette file), so the helper only parses. */
+static bool parse_hex_color(const char *token, GhosttyColorRgb *out) {
+  if (token[0] == '#') token++;
+  if (strlen(token) < 6) return false;
+  unsigned value = 0;
+  for (int i = 0; i < 6; i++) {
+    char c = token[i];
+    unsigned digit;
+    if (c >= '0' && c <= '9') digit = (unsigned)(c - '0');
+    else if (c >= 'a' && c <= 'f') digit = (unsigned)(c - 'a') + 10;
+    else if (c >= 'A' && c <= 'F') digit = (unsigned)(c - 'A') + 10;
+    else return false;
+    value = value * 16 + digit;
+  }
+  out->r = (uint8_t)((value >> 16) & 0xFF);
+  out->g = (uint8_t)((value >> 8) & 0xFF);
+  out->b = (uint8_t)(value & 0xFF);
+  return true;
+}
+
+static void set_palette(Term *t, char *line) {
+  GhosttyColorRgb colors[258];
+  unsigned count = 0;
+  char *save = NULL;
+  for (char *token = strtok_r(line, ",", &save); token != NULL && count < 258;
+       token = strtok_r(NULL, ",", &save)) {
+    if (!parse_hex_color(token, &colors[count])) {
+      fprintf(stderr, "ghostty-term: bad color '%s' in palette\n", token);
+      return;
+    }
+    count++;
+  }
+  if (count != 258) {
+    fprintf(stderr, "ghostty-term: palette needs 258 colors, got %u\n", count);
+    return;
+  }
+
+  GhosttyColorRgb foreground = colors[0];
+  GhosttyColorRgb background = colors[1];
+  if (ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_FOREGROUND, &foreground) != GHOSTTY_SUCCESS ||
+      ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_BACKGROUND, &background) != GHOSTTY_SUCCESS ||
+      ghostty_terminal_set(t->term, GHOSTTY_TERMINAL_OPT_COLOR_PALETTE, colors + 2) != GHOSTTY_SUCCESS) {
+    fprintf(stderr, "ghostty-term: the terminal rejected the palette\n");
+  }
 }
 
 static void resize_term(Term *t, uint16_t cols, uint16_t rows) {
@@ -458,6 +687,29 @@ static int run_command(Term *t, char *line, bool *force) {
     }
     case 'k':
       send_key(t, line + 1);
+      break;
+    case 'm': {
+      /* m<button>,<action>,<col>,<row>: action 0 is press, 1 is release. */
+      int button = 0, action = 0, col = 0, row = 0;
+      if (sscanf(line + 1, "%d,%d,%d,%d", &button, &action, &col, &row) == 4 && button >= 1 &&
+          button <= 3 && col >= 0 && row >= 0) {
+        send_mouse(t, button, action, col, row);
+      }
+      break;
+    }
+    case 'g': {
+      /* g<cell width>x<cell height>, in surface pixels. */
+      double w = 0, h = 0;
+      if (sscanf(line + 1, "%lfx%lf", &w, &h) == 2 && w > 0 && h > 0) {
+        t->cell_w = w;
+        t->cell_h = h;
+        set_mouse_geometry(t);
+      }
+      break;
+    }
+    case 'p':
+      set_palette(t, line + 1);
+      *force = true;
       break;
     case 'f':
       *force = true;
@@ -515,6 +767,12 @@ int main(int argc, char **argv) {
   t.cols = cols;
   t.rows = rows;
 
+  /* The callbacks are registered before the shell exists; the userdata is the
+   * address of t.master, which forkpty fills in below. */
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_USERDATA, &t.master);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_WRITE_PTY, on_write_pty);
+  ghostty_terminal_set(t.term, GHOSTTY_TERMINAL_OPT_DEVICE_ATTRIBUTES, on_device_attributes);
+
   struct winsize ws = {0};
   ws.ws_col = cols;
   ws.ws_row = rows;
@@ -547,6 +805,11 @@ int main(int argc, char **argv) {
   }
   if (ghostty_key_encoder_new(NULL, &t.enc) != GHOSTTY_SUCCESS) {
     fprintf(stderr, "ghostty-term: key encoder init failed\n");
+    return 1;
+  }
+  if (ghostty_mouse_encoder_new(NULL, &t.mouse) != GHOSTTY_SUCCESS ||
+      ghostty_mouse_encoder_new(NULL, &t.probe) != GHOSTTY_SUCCESS) {
+    fprintf(stderr, "ghostty-term: mouse encoder init failed\n");
     return 1;
   }
 
@@ -645,6 +908,8 @@ int main(int argc, char **argv) {
   close(fifo);
   unlink(fifo_path);
   ghostty_key_encoder_free(t.enc);
+  ghostty_mouse_encoder_free(t.mouse);
+  ghostty_mouse_encoder_free(t.probe);
   ghostty_render_state_free(st);
   ghostty_terminal_free(t.term);
   return 0;

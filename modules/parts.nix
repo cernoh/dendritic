@@ -21,6 +21,19 @@
     type = lib.types.lazyAttrsOf lib.types.raw;
   };
 
+  # Same reason, for plain flake values features publish so other features can
+  # read them (`flake.scheme`, `flake.fonts.marathon`, `flake.flatpakPackages`).
+  # Without a declaration, each output attr is unique and non-mergeable.
+  options.flake.fonts = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+  };
+
+  options.flake.flatpakPackages = lib.mkOption {
+    type = lib.types.lazyAttrsOf (lib.types.listOf lib.types.str);
+    default = { };
+  };
+
   config.perSystem =
     { pkgs, ... }:
     {

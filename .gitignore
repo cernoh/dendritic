@@ -2,3 +2,11 @@ __pycache__/
 .planning/
 /.worktrees/
 *.core
+node_modules/
+# Pi harness runtime at the repo root: background-task logs and captured
+# output. Agent config that is worth carrying between machines lives in
+# modules/features/<agent>/home/agent/ instead (settings.json, open-tui.json,
+# npm/package.json, skills/, managed-skills/).
+/.pi/
+# pi-coding-agent runtime (tracked config is modules/features/pi-coding-agent/home/agent/)
+# declarative files there are settings.json, open-tui.json, npm/package.json, skills/ symlinks

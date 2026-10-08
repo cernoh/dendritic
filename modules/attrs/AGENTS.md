@@ -14,6 +14,7 @@ Composable NixOS module bundles that group system modules + feature sets by mach
 - **`docker` comes through `act`:** `desktop → act → docker` provides the daemon. Hosts needing `mcpContainers` must not re-import `docker` (would duplicate `extraGroups`).
 - **Runtimes/LSPs are not in `desktop`:** language runtimes (`jdk`, `python3`, `nodejs`, `deno`, `bun`) are per-project via `direnv` (`features/programming`); LSPs are inside `nvf`. Keeps `desktop` lean.
 - **Naming:** `flake.nixosModules.<bundleName>` — `desktop`, `gaming`, `programming`.
+- **`desktop` owns the nixpkgs overlay list:** `flake.overlays.herdr` (defined in `desktop/default.nix`) is applied via `nixpkgs.overlays` there, so every desktop host gets the herdr link fix without host edits. It forces lld for the herdr Rust link step because binutils 2.46 fails on the overlapping FDEs in the zig-built `libghostty-vt`; the flag goes in `env.NIX_RUSTFLAGS` (the nixpkgs rustc wrapper appends only `NIX_RUSTFLAGS`; `RUSTFLAGS` never reaches the rustc invocation for the binary). Delete the overlay once nixpkgs herdr links without it.
 
 ## Work Guidance
 - New bundle: create `attrs/<name>/default.nix` exporting `flake.nixosModules.<name>`; compose from `self.nixosModules` entries.

@@ -57,15 +57,29 @@ in
           # config overrides substituters silently lose the official cache
           # entirely (see managed skill nix-substitution-silently-broken).
           substituters = [ "https://cache.nixos.org" ] ++ cachixSubstituters;
+          # Build parallelism (nix.dev "Tuning Cores and Jobs": the process
+          # ceiling is max-jobs * NIX_BUILD_CORES, and NIX_BUILD_CORES is
+          # `cores`, or every core when `cores` is 0). The NixOS default,
+          # max-jobs = auto with cores = 0, is the table's worst row — on a
+          # 16-thread box it oversells 256 processes and the box spends its
+          # time context-switching. 4 jobs is the manual's balanced shape, and
+          # `cores = 0` still hands a single heavy derivation the whole box
+          # (load-bearing here: NIXPC is ASAHI's remote builder and the asahi
+          # kernel is the one build that must go wide).
+          max-jobs = 4;
+          cores = 0;
+          # Substitution is network-bound, not CPU-bound: more parallel
+          # downloads than cores shortens the fetch phase of a rebuild.
+          max-substitution-jobs = 32;
           # Same non-default caches, so untrusted users may use them too.
           trusted-substituters = cachixSubstituters;
+          nix-path = [ "nixpkgs=${inputs.nixpkgs}" ];
           trusted-public-keys = [
             "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
           ]
           ++ cachixKeys;
         };
         registry.nixpkgs.flake = inputs.nixpkgs;
-        nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
         optimise.automatic = true;
         # GC runs via `nh clean` (programs.nh below): nix.gc.automatic
         # stays off — nixpkgs warns when both collectors are enabled.
@@ -78,7 +92,10 @@ in
       programs.nh = {
         enable = true;
         clean.enable = true;
-        clean.extraArgs = "--keep-since 4d --keep 3";
+        # Retention, not speed, but it buys speed: a nixpkgs bump that goes
+        # bad can only be rolled back to a path still in the store, and
+        # anything collected here is recompiled from source on the way back.
+        clean.extraArgs = "--keep-since 14d --keep 5";
         flake = "/home/${config.dendritic.userName}/.config/dendritic";
       };
 

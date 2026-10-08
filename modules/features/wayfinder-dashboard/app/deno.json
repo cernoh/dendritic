@@ -1,0 +1,11 @@
+{
+  "fmt": {
+    "lineWidth": 110,
+    "indentWidth": 2
+  },
+  "tasks": {
+    "start": "deno run --allow-net --allow-read --allow-write --allow-run=gh,herdr --allow-env server.ts",
+    "check": "deno check server.ts",
+    "test": "deno run --allow-env server.ts --self-test"
+  }
+}

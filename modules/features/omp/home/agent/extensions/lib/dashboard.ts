@@ -1,7 +1,7 @@
 /**
  * wayfinder-dashboard feed — the `wayfinder_dashboard` tool.
  *
- * Purpose: feed the wayfinder-dashboard container (NIXPC, loopback :8787)
+ * Purpose: feed the Wayfinder Relay user service (NIXPC, loopback :8787)
  * from an omp session. Omp checks whether the current map is already listed,
  * and registers it when it is not. Grill rounds and answers reach the
  * dashboard through explicit `record` / `answer` actions, so the dashboard

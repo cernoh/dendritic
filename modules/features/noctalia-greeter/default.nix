@@ -4,8 +4,8 @@
 # attrs/desktop. Hosts import flake.nixosModules.noctaliaGreeter and pick
 # their session inline, because --session expects that host's compositor's
 # desktop-entry Name=:
-#   NIXPC: programs.noctalia-greeter.greeter-args = "--session Mango";
-#   ASAHI: programs.noctalia-greeter.greeter-args = "--session Mango";
+#   NIXPC: services.displayManager.noctalia-greeter.greeter-args = "--session Mango";
+#   ASAHI: services.displayManager.noctalia-greeter.greeter-args = "--session Mango";
 #
 # The upstream module (inputs.noctalia-greeter) enables greetd and
 # accounts-daemon by default, renders the command as
@@ -26,13 +26,13 @@
     {
       imports = [ inputs.noctalia-greeter.nixosModules.default ];
 
-      programs.noctalia-greeter.enable = true;
+      services.displayManager.noctalia-greeter.enable = true;
       services.greetd.settings.default_session.user = config.dendritic.userName;
 
       # Sepia login screen, from features/scheme. A complete
       # [appearance.palette] wins over the shell's Sync data, so the greeter
       # shows the palette even before a user logs in.
-      programs.noctalia-greeter.settings.appearance = {
+      services.displayManager.noctalia-greeter.settings.appearance = {
         scheme = "Synced";
         theme_mode = self.scheme.mode;
         palette = self.scheme.greeter;

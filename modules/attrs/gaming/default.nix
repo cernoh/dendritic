@@ -9,7 +9,6 @@
     let
       modules = with self.nixosModules; [
         steam
-        sober
       ];
     in
     {

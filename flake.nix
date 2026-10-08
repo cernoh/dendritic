@@ -60,21 +60,11 @@
     noctalia-greeter = {
       url = "github:noctalia-dev/noctalia-greeter";
     };
-    davinci = {
-      url = "git+https://git.voidarc.co.uk/voidarc/nixos.davinci";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     # Pinned rev (v0.2.2), flake = false: consumed as source for the Dart AOT
     # fallback in modules/features/dojjo/_dojjo.pkg.nix (unsupported systems) and
     # for pinning the binary release.
     dojjo = {
       url = "github:tjarvstrand/dojjo/v0.2.2";
-      flake = false;
-    };
-    # Pinned rev (v4.8.0), flake = false: consumed as a plain source tree by
-    # the data package in modules/features/stremio-kai/_stremio-kai.pkg.nix.
-    stremio-kai = {
-      url = "github:allecsc/Stremio-Kai/37e6273a7d18ff0a3745c59265aebd99bb2509a6";
       flake = false;
     };
     # Pinned rev, flake = false: consumed as a plain source tree by the Mirai
@@ -109,6 +99,15 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     import-tree.url = "github:vic/import-tree";
     wrappers.url = "github:BirdeeHub/nix-wrapper-modules";
+    qmd = {
+      url = "github:tobi/qmd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    # Declarative Flatpaks (modules/features/flatpak). `latest` tracks the
+    # newest stable nix-flatpak release; applications remain host-owned data.
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak/latest";
+    };
   };
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }

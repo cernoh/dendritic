@@ -1,0 +1,8 @@
+--- self.fonts.marathon ---
+            1| let f = builtins.getFlake "git+file:///home/davr/.config/dendritic"; in builtins.map (p: p.name) f.fonts.marathon
+             |                                                                                                  ^
+--- NIXPC HM home.packages fonts ---
+
+       Did you mean `perSystem.x86_64-linux.apps', `perSystem.x86_64-linux.checks' or `perSystem.x86_64-linux.debug'?
+--- fontconfig enable ---
+true

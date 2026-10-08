@@ -104,6 +104,8 @@ Default section order:
 
 ## User Preferences
 
+- **Browser tool priority (global):** `agent-browser` (and `pi-web-access` browser) is the first port of call for any web/browser automation. `computer-use` (`@amaster.ai/pi-computer-use` / Cua Driver) is fallback only and must be used sparingly — when `agent-browser` cannot do the job (native desktop apps, OS-level interaction, or explicit user request). Prefer `agent-browser` for all web tasks.
+
 When the user requests a durable behavior change, record it here or in the
 relevant child AGENTS.md
 
@@ -114,6 +116,7 @@ relevant child AGENTS.md
   - `modules/features/` — opt-in feature modules (import = enable, HM vs NixOS, out-of-store symlinks) → `modules/features/AGENTS.md`
     - `modules/features/noctalia/` — Noctalia shell, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper, `mirai` CLI → `modules/features/noctalia/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, agent definitions, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
+    - `modules/features/wayfinder-dashboard/` — mobile Wayfinder queue, project spaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`
 - `.github/` — CI, STE prose lint, workflows, templates → `.github/AGENTS.md`

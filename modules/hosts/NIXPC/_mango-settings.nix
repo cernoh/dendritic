@@ -6,8 +6,13 @@
   # EDID-verified 2026-09-07 via wlr-randr: DP-1 = AOC 24G2W1G3-,
   # DP-2 = HUAWEI AD80HW (earlier notes had these reversed). DP-1 is the AOC
   # at the center/left; DP-2 is the HUAWEI immediately to its right.
+  # DP-1: the AOC's 165 Hz mode plus VRR. mango only reads `refresh` when
+  # `width` and `height` are set too (apply_rule_to_state in
+  # src/manage/monitor.c gates the mode lookup on all three), so all three
+  # stay together — `refresh` alone leaves the panel at its 60 Hz preferred
+  # mode.
   monitorRule = [
-    "name:^DP-1$,x:0,y:0,scale:1"
+    "name:^DP-1$,width:1920,height:1080,refresh:165.003006,vrr:1,x:0,y:0,scale:1"
     "name:^DP-2$,x:1920,y:0,scale:1"
   ];
 

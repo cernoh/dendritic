@@ -1,8 +1,8 @@
 # Dojjo package — built from source (no Nix flake upstream).
 #
 # Upstream is a Dart CLI in `cli/` (monorepo root is `cli/`, not repo root).
-# We vendor the source via flake input `dojjo` (flake = false, tag v0.2.2,
-# mirrors stremio-kai pattern) and build with `buildDartApplication`.
+# We vendor the source via flake input `dojjo` (flake = false, tag v0.2.2) and
+# build with `buildDartApplication`.
 # `src = "${src}/cli"` points at the Dart package root; `pubspec.lock`
 # is vendored as JSON (`pubspec.lock.json`) so offline deps work without
 # `autoPubspecLock` network. Generated `*.freezed.dart`/`*.g.dart` for Dart
