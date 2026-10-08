@@ -5,6 +5,10 @@ sessions/
 fff/
 memory/
 web-search-cache/
+# Holds a LIVE relay credential: `relays[].auth` is a 256-bit token the freeflow
+# provider sends to the relay worker. Runtime state like auth.json, so it must
+# never be `git add`ed — see home/agent/AGENTS.md.
+pi-freeflow-relay-state.json
 # Written on every switch by home.activation.piTheme from features/scheme.
 themes/
 # `*.log*`, not `*.log`: a rotated log is `….log.1`, which `*.log` never matched,
