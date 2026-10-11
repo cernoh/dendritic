@@ -43,6 +43,18 @@
       flatpakAsahi
       obs
       ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
+
+      # Keyboard layout: this Mac's keyboard is the US one, so the shared gb
+      # layout from core/locale.nix puts @ and ~ on the keys left of 1/2
+      # instead of where a US typist expects them (Shift+2 / Shift+`). Locales
+      # stay en_GB — only the keymap changes.
+      ({
+        services.xserver.xkb = {
+          layout = "us";
+          variant = "";
+        };
+        console.keyMap = "us";
+      })
     ];
   };
 }
