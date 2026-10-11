@@ -150,7 +150,8 @@ something this host already decided.**
 - **In pi, call the `recall` tool directly** — the funes pi extension
   (`~/.funes/agents/pi`, registered in `settings.json`) already exposes the whole
   surface: `recall`, `get`, `sessions`, `sketch`, `scan`, `status`. It is bound to
-  the remote, so a hit is live for every host and every agent.
+  the remote, so a hit is live for every host and every agent. The skill
+  `funes-recall` documents the workflow: load it by name before recalling.
 - **CLI form**, for shell work and for any agent that is not pi:
   ```sh
   funes recall "what did we decide about …" --memory crenoo/funes-memory
@@ -158,6 +159,13 @@ something this host already decided.**
   Narrow it with `-k <n>`, `--candidates <n>` (4x `-k` or more turns on the
   cross-encoder rerank), `--type text|thinking|tool_use|tool_result`,
   `--harness <id>`, `--since/--until YYYY-MM-DD`.
+- **`funes ask` does not work here** — it only accepts `claude` or `codex`, neither of
+  which is installed, and `pi` is not an accepted value. The equivalent is installed as
+  a command: `~/.pi/agent/bin/funes-ask-pi "<question>"`, or
+  `~/.pi/agent/bin/funes-ask-pi --self-test` to verify the wiring. It recalls, then hands
+  the passages to a fresh single-turn pi on the *same* model. Always resolve the `SOURCE:`
+  line it prints with `get` before repeating the answer — the child has been observed
+  inventing a session id.
 - **A recall hit is a pointer, not the answer.** Each hit prints a
   `→ get <session> --from A --to B --memory …` line; call `get` with that exact
   range to read the surrounding turns before you treat a passage as a decision.
