@@ -26,10 +26,13 @@
           LC_TIME = "en_GB.UTF-8";
         };
       };
+      # mkDefault, not a plain value: `layout` and `keyMap` are single strings,
+      # so a host picking a different keyboard (ASAHI uses a US Apple keyboard)
+      # overrides these by normal priority instead of colliding.
       services.xserver.xkb = {
-        layout = "gb";
-        variant = "";
+        layout = lib.mkDefault "gb";
+        variant = lib.mkDefault "";
       };
-      console.keyMap = "uk";
+      console.keyMap = lib.mkDefault "uk";
     };
 }
