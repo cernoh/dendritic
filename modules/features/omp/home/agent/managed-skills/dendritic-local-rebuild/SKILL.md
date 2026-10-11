@@ -1,50 +1,73 @@
 ---
-name: dendritic-local-rebuild-no-remote-builder
-description: "Rebuild the dendritic ASAHI (or any host) configuration locally instead of offloading to the NIXPC remote builder, and verify the build plan is local"
+name: dendritic-local-rebuild
+description: "Rebuild the dendritic ASAHI (or any host) configuration on the machine itself — the only supported mode, since the NIXPC remote-builder link was retired — and verify the build plan is local"
 ---
 
-# Local rebuild with no remote builder (dendritic, ASAHI/NIXPC)
+# Local rebuild, no remote builder (dendritic, ASAHI/NIXPC)
 
 ## When
-The user asks to rebuild `ASAHI` "locally", "not on the remote builder", or the NIXPC
-builder is down/undesired. ASAHI imports `distributedBuilds`
-(`modules/system/distributed-builds/client.nix`), which sets `nix.distributedBuilds = true`
-and writes the NIXPC `ssh-ng` machine into `/etc/nix/machines`. The daemon's `builders`
-default is `@/etc/nix/machines`, so every aarch64 derivation with `big-parallel` is shipped
-to NIXPC.
+Any rebuild of `ASAHI`. This is no longer an opt-in: `hosts/ASAHI/default.nix` dropped the
+`distributedBuilds` import and `asahiConfiguration.nix` forces `nix.buildMachines = lib.mkForce [ ]`,
+so the Mac builds every derivation it installs and no `ssh-ng` builder can be scheduled.
+NIXPC still imports `remoteBuilder`, but nothing is a client any more.
+
+Two things follow that an agent must not undo:
+- **`--builders ''` is no longer needed** to keep a build local. It is still harmless and is
+  kept below as belt-and-braces for one invocation, but the empty `nix.buildMachines` is the
+  real guarantee — it holds across any future module, overlay, or `nix.extra-platforms`.
+- **`max-jobs = 4` / `cores = 0`** (`modules/hosts/ASAHI/asahiConfiguration.nix`), 8 vCPU /
+  7.3 GiB RAM / ~15 GiB swap. This replaced an `mkForce 1` / `mkForce 1` ceiling that existed
+  only because earlyoom kept SIGTERM'ing the biggest rustc. earlyoom is retired and forced off
+  (`services.earlyoom.enable = lib.mkForce false`), with zram at 100% plus an 8 GiB `/swapfile`
+  as the memory policy.
 
 ## The command (one line)
 ```fish
-nh os switch . --impure -H ASAHI --builders ''
+nh os boot . --impure -H ASAHI --max-jobs 4 --cores 0
 ```
-- `--builders ''` = empty builders list; it replaces the machines-file value for that
-  invocation. Honored because `da` is in `nix.settings.trusted-users`.
 - `-H ASAHI` selects `.#nixosConfigurations.ASAHI` explicitly (no hostname guessing).
-- `--impure` is mandatory: `hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`.
-- Equivalent without nh: `sudo nixos-rebuild switch --impure --flake ~/.config/dendritic#ASAHI --builders ''`
-  (the user's fish alias `asahi-rebuild` does NOT pass `--builders ''`).
+- `--impure` is mandatory: `hardwareFromMachine` reads `/etc/nixos/hardware-configuration.nix`,
+  and `asahiConfiguration.nix` reads `/boot/vendorfw` only under a root eval on this machine.
+- `boot` installs the generation and sets it default without touching the running system, which
+  is what you want on a compositor host: a `switch` rewrites the live `greetd` unit mid-session.
+- Equivalent without nh:
+  `sudo nixos-rebuild boot --impure --flake ~/.config/dendritic#ASAHI --max-jobs 4 --cores 0`
+- **Wrap a long build in `systemd-inhibit`.** This box has suspended mid-session before
+  (`tailscaled: time jump detected (slept 4981h15m52s)`), and a resume lands greetd on a display
+  device the abandoned compositor still holds:
+  ```
+  sudo systemd-inhibit --what=sleep:idle --why="nixos-rebuild boot ASAHI" \
+    nixos-rebuild boot --impure --flake ~/.config/dendritic#ASAHI --max-jobs 4 --cores 0
+  ```
 
 ## Facts that matter
 - Root is needed only for activation. `sudo -n true` fails here (no NOPASSWD, no tty
-  timestamp), so an agent cannot complete the switch: build as the user, then hand the
-  activation command over.
+  timestamp), so an agent cannot complete the switch unattended: build as the user, then hand
+  the activation command over, or run it in a terminal pane the user can type the password into.
 ```bash
-nix build --impure --builders '' --no-link --print-out-paths \
+nix build --impure --no-link --print-out-paths \
   '.#nixosConfigurations.ASAHI.config.system.build.toplevel'
 ```
-  The store paths persist, so the user's `nh os switch` afterwards is substitution + activation.
+  The store paths persist, so the user's activation afterwards is substitution + activation.
 - Verify the plan is local before committing to a long build:
 ```bash
-nix build --dry-run --impure --builders '' --no-link --print-out-paths \
+nix build --dry-run --impure --no-link --print-out-paths \
   '.#nixosConfigurations.ASAHI.config.system.build.toplevel'
 ```
-  A `--builders ''` line never appears in `ps`, so confirm by the absence of any ssh-ng
-  connection to 100.121.170.108, not by argument text.
-- Flake eval for this repo takes ~3-4 min (measured 212 s for one dry-run), long enough that
-  the bash tool background it: use `async: true` with `timeout: 0` for the real build.
-- Host OOM guard: `max-jobs = 1` / `cores = 1` (`modules/hosts/ASAHI/asahiConfiguration.nix`).
-  Local builds are slow on purpose; the Asahi bootchain (`linux-asahi`, `uboot-asahi`, `m1n1`)
-  is uncached in `nixos-apple-silicon.cachix.org`, so a nixpkgs bump means compiling the
-  kernel with one core. Do not raise the values without the user's word.
-- Typical local plan after a nixpkgs bump: 11 derivations, including `linux-asahi-*` and
-  `nixos-system-ASAHI-<version>`.
+  A `--builders ''` line never appears in `ps`, so confirm locality by the absence of any
+  `ssh-ng` connection to NIXPC, not by argument text. `nix.buildMachines` being empty in the
+  evaluated config is the cheap positive check:
+```bash
+nix eval --impure --raw '.#nixosConfigurations.ASAHI.config.nix.buildMachines'
+```
+- Flake eval for this repo takes minutes, long enough that the bash tool needs
+  `async: true` with `timeout: 0` for the real build.
+- `linux-asahi` carries `requiredSystemFeatures = [ "big-parallel" ]`. That resolves against
+  the Mac's own builder through nixpkgs' default `nix.settings.system-features`
+  (`benchmark big-parallel gccarch-armv8-a kvm nixos-test`). If that option is ever overridden,
+  `big-parallel` must stay in it or the kernel becomes unbuildable here.
+- The Asahi bootchain (`linux-asahi`, `uboot-asahi`, `m1n1`) is uncached in
+  `nixos-apple-silicon.cachix.org`, so every `asahi`/`nixpkgs` bump compiles it on this Mac.
+  With `cores = 0` that build now takes the whole 8-core box instead of one core. Plan the
+  reboot: `/run/reboot-required` is surfaced by `asahi-reboot-notify` (issue #72), and
+  `modules/hosts/ASAHI/RESCUE.md` covers rollback.

@@ -1,6 +1,16 @@
 # Stability bundle ported from the Mac's pre-dendritic configuration.nix
-# (issue #63 inventory): compressed swap, an out-of-memory guard, weekly SSD
-# trim.
+# (issue #63 inventory): compressed swap and weekly SSD trim.
+#
+# The out-of-memory guard is GONE. earlyoom kept SIGTERM'ing the biggest
+# rustc in a rebuild (issue #108: 913 MiB `jj-lib`, then 4695 MiB `pi-natives`
+# with LTO=fat) even after the thresholds were relaxed to -m5/-s5 in
+# hosts/ASAHI/asahiConfiguration.nix, because 7.3 GiB of RAM cannot hold one
+# such process plus the nix daemon while 8 GiB of zram compresses. It was
+# killing the rebuild it was meant to protect. OOM pressure is now carried by
+# zramSwap + the /swapfile (both in asahiConfiguration.nix) and, if that is
+# exhausted, the kernel OOM killer — which reclaims rather than aborting.
+# hosts/ASAHI/asahiConfiguration.nix additionally forces
+# `services.earlyoom.enable = false`, so no input bump can revive the daemon.
 #
 # Deliberately NOT ported from that file: tlp + auto-cpufreq. They hard-conflict
 # with power-profiles-daemon, which noctalia's recommendedServices turns on;
@@ -22,8 +32,6 @@
         memoryPercent = 75;
         algorithm = "zstd";
       };
-
-      services.earlyoom.enable = lib.mkDefault true;
 
       services.fstrim.enable = lib.mkDefault true;
     };

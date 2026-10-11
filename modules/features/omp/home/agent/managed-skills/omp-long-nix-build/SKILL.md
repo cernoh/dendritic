@@ -1,6 +1,6 @@
 ---
 name: omp-long-nix-build
-description: "Run a multi-hour Nix build or remote prebuild from an omp session without losing it: the 300 s bash-tool deadline that silently kills a backgrounded build, async + timeout 0, why hub start fails when the omp broker is dead, and the reachability check that a push copy needs. Worked example: prebuilding the ASAHI bootchain on NIXPC."
+description: "Run a multi-hour Nix build from an omp session without losing it: the 300 s bash-tool deadline that silently kills a backgrounded build, async + timeout 0, why hub start fails when the omp broker is dead, and the reachability check a nix copy needs. Worked example: the ASAHI bootchain, which has no upstream cache and builds on the Mac itself."
 ---
 
 # Long Nix builds from an omp session
@@ -55,27 +55,25 @@ nix copy --to ssh-ng://da@<host> /nix/store/<tiny-path>
 ssh da@<host> nix path-info /nix/store/<tiny-path>   # must be valid
 ```
 
-## 3. Worked example: the ASAHI bootchain on NIXPC
+## 3. Worked example: the ASAHI bootchain
 
-The bootchain has no upstream cache, so an `asahi` input bump builds it. Use the
-*drv path* to decide what is transferable: identical drv means identical output,
-different drv means hardware-dependent and must build on the Mac.
+The bootchain has no upstream cache, so an `asahi` input bump builds it on the
+Mac — `nixos-apple-silicon.cachix.org` covers the rest of the flake but not
+`linux-asahi` / `uboot-asahi` / `m1n1`. It is the long pole of an ASAHI
+rebuild: a run reaches `0/537` only once the kernel compile starts.
 
-Verified 2026-09-16 on both hosts (`linux-asahi` 7.1.13):
+That build takes the whole box. `max-jobs = 4` with `cores = 0` in
+`modules/hosts/ASAHI/asahiConfiguration.nix`, so the kernel runs `make -j8`
+natively on 8 vCPU. It was previously pinned to `max-jobs = 1; cores = 1`
+because earlyoom kept SIGTERM'ing a multi-GiB rustc; earlyoom is retired and
+forced off, and zram at 100% plus an 8 GiB `/swapfile` is the memory policy.
+Memory is the limit to respect, not core count — see
+`skill://dendritic-local-rebuild` for the rebuild itself.
 
-- identical → prebuild on NIXPC and copy: `linux-asahi-7.1.13`,
-  `linux-asahi-7.1.13-modules`
-- different → leave to the Mac: `-modules-shrunk`, `initrd-linux-asahi-7.1.13`
-  (the initrd embeds `/boot/vendorfw`, which exists only on the Mac)
-
-Sizes: the ASAHI toplevel wants 802 derivations built on NIXPC's plan, 537 on
-the Mac, and the kernel is the long pole — a run reached `0/537` only when the
-kernel compile started. Emulated on NIXPC the kernel runs `make -j16` under
-qemu-user instead of the Mac's `-j1`.
-
-Do not "speed up" the Mac by raising `cores`: 8 GiB RAM plus earlyoom is why
-`max-jobs = 1; cores = 1` is set there, and an OOM kill after an hour costs more
-than the wait.
-
-Related: `skill://dendritic-asahi-cross-build` (the link itself, host keys,
-trusted-users, and the trust/round-trip proof).
+If anything is ever built on another machine again, decide what is transferable
+by the **drv path**, not the output name: an identical drv path means an
+identical output, a different one means the derivation is hardware-dependent and
+must build on the Mac. Measured on this repo (`linux-asahi` 7.1.13):
+`linux-asahi` and `linux-asahi-modules` matched across hosts, while
+`-modules-shrunk` and `initrd-linux-asahi` did not — the initrd embeds
+`/boot/vendorfw`, which exists only on the Mac.

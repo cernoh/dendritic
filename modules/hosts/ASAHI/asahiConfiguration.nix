@@ -40,37 +40,73 @@
       # (issue #245).
       dendritic.mango = import ./_mango-settings.nix;
 
-      # 8 GiB RAM + 5.5 GiB zram: `max-jobs = auto` (8) OOM-killed the build
-      # (earlyoom SIGTERM, issue #108). 2×4 still OOM-kills `jj-lib` rustc
-      # (913 MiB VmRSS, 2026-09-06 journalctl: earlyoom -m10 -s10 SIGTERM).
-      # 1×2 still OOM-kills `pi-natives` rustc (4695 MiB VmRSS, 2026-09-06
-      # 15:24:05 earlyoom SIGTERM with LTO=fat, codegen-units=1). Cap to
-      # 1 job × 1 core; cargo -j1 keeps peak <5 GiB (single rustc).
+      # Build parallelism: 8 vCPU (Blizzard-M2 + Avalanche-M2, no SMT), 7.3 GiB
+      # RAM, ~15 GiB of swap (zram + /swapfile below). `cores = 0` is the load-
+      # bearing half — it hands a single heavy derivation the whole box, which
+      # is exactly what the Asahi kernel build needs now that the distributed-
+      # builds link is gone and the Mac owns every derivation it installs.
+      # `max-jobs = 4` rides the same shape system/core/nix-settings.nix picks
+      # for every host, and swap is what absorbs the RAM overshoot that a
+      # 4x8 process table implies.
+      #
+      # These used to be `mkForce 1`/`mkForce 1` (issue #108): earlyoom kept
+      # SIGTERM'ing the biggest rustc, so the box was pinned to a single job
+      # with a single core. With earlyoom retired (below) that ceiling only
+      # made the rebuild slow.
+      #
       # NIXPC untouched (host-scoped) — but the NIXPC-shaped defaults in
       # system/core/nix-settings.nix are a plain definition, so these must
       # outrank them or both hosts conflict on the option.
       nix.settings = {
-        max-jobs = lib.mkForce 1;
-        cores = lib.mkForce 1;
+        max-jobs = lib.mkForce 4;
+        cores = lib.mkForce 0;
       };
 
-      # OOM guard tuning: default -m10 -s10 (10% mem+swap) is too aggressive
-      # for a single 4.7 GiB rustc + 2-3 GiB nix daemon on 7.3 GiB RAM.
-      # 5% lets the build use more of zram+disk swap before SIGTERM.
-      services.earlyoom.freeMemThreshold = 5;
-      services.earlyoom.freeSwapThreshold = 5;
+      # This machine builds everything itself and nothing else. Forcing the
+      # list empty is what makes that durable: the link used to arrive through
+      # the `distributedBuilds` module (system/distributed-builds/client.nix),
+      # which set `nix.buildMachines` from _link.nix. hosts/ASAHI/default.nix
+      # no longer imports that module, and this force means no future import,
+      # overlay or `nix.extra-platforms` can quietly hand work to NIXPC again.
+      # The Mac already advertises `big-parallel` (nixpkgs' default
+      # `nix.settings.system-features`), which is the only feature gate that
+      # matters here — linux-asahi/uboot-asahi carry
+      # requiredSystemFeatures = [ "big-parallel" ], and nixos-apple-silicon.
+      # cachix.org caches none of them, so those four derivations are built
+      # locally on every asahi input bump (issue #72/#73). That is deliberate.
+      nix.buildMachines = lib.mkForce [ ];
 
-      # Keep zram at 75% (5.5 GiB) and add 8 GiB disk swap on nvme0n1p5
-      # (24G free, 158G total). Total swap ~13.5 GiB covers LTO peak +
-      # nix daemon without earlyoom. Kernel creates /swapfile at first
-      # activation if missing.
+      # `nix.buildMachines = []` means "write no /etc/nix/machines" (see
+      # nix-remote-build.nix), not "write an empty one", and `builders`
+      # defaults to `@/etc/nix/machines` — so a machines file left behind by an
+      # older generation is still honoured. Pin the `builders` setting itself
+      # to empty so the running daemon ignores that file whether or not it is
+      # there. That is what makes "never builds remotely" true from the first
+      # build after this generation, with no --builders flag needed. There is no
+      # `build-machines` setting; `builders` is the name, and an empty value is
+      # accepted (`nix --option builders "" config show builders`).
+      nix.settings.builders = lib.mkForce "";
+
+      # earlyoom retired (issue #108 follow-up). It aborted the rebuild it was
+      # meant to protect: even at -m5/-s5 it SIGTERM'd a 4.7 GiB `pi-natives`
+      # rustc on a 7.3 GiB box. zramSwap at 100% plus the 8 GiB /swapfile below
+      # is the memory policy now; past that the kernel reclaims. Forced, not
+      # defaulted, so an input bump cannot quietly turn the daemon back on.
+      services.earlyoom.enable = lib.mkForce false;
+
+      # Swap is the memory policy now that earlyoom is gone (issue #108): zram
+      # at 100% (7.3 GiB) plus an 8 GiB /swapfile on nvme0n1p5 (24G free, 158G
+      # total) gives ~15 GiB, enough for an LTO-fat rustc plus the nix daemon at
+      # max-jobs = 4. The kernel creates /swapfile at first activation if
+      # missing. See the earlyoom note above for why the daemon no longer backs
+      # this up.
       swapDevices = [
         {
           device = "/swapfile";
           size = 8192;
         }
       ];
-      # Slight zram bump to 100% (7.3 GiB) for extra headroom alongside disk.
+      # zram bumped to 100% (7.3 GiB) for headroom alongside the disk swap.
       zramSwap.memoryPercent = lib.mkForce 100;
 
       # The Mac's existing login is "da" (carried over from hm-v3); unlike

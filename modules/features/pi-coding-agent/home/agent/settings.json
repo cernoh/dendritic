@@ -21,7 +21,7 @@
     "npm:@valdo766hi/pi-lazy-skill-tool",
     "../../.funes/agents/pi"
   ],
-  "lastChangelogVersion": "0.87.1",
+  "lastChangelogVersion": "1.1.0",
   "pi-computer-use": {
     "mode": "path",
     "binaryPath": "${HOME}/.local/share/cua-driver/cua-driver"

@@ -34,12 +34,11 @@
       watt
       timeSync
       tailscale
-      # Client half of the NIXPC build link (issue #209): the Mac schedules
-      # its aarch64-linux derivations on NIXPC instead of its own single
-      # build slot. The builder half is imported by hosts/NIXPC/default.nix.
-      # One-time setup: the private key at /root/.ssh/remotebuild, see
-      # modules/system/distributed-builds/_link.nix.
-      distributedBuilds
+      # NO `distributedBuilds` here, deliberately. It used to hand this Mac's
+      # aarch64 work to NIXPC over the tailnet (issue #209). This host now
+      # builds every derivation it installs locally; asahiConfiguration.nix
+      # forces `nix.buildMachines = []` so the link cannot come back through
+      # any other route. See modules/system/AGENTS.md and ASAHI/RESCUE.md.
       flatpakAsahi
       obs
       ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })

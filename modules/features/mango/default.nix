@@ -11,6 +11,11 @@
 # The values left in `settings` are the ones the hosts share. Where the hosts
 # differ, the default mirrors the niri session ASAHI ran before.
 #
+# `app_id`/`is_floating` inside window_rule were renamed from `appid`/`isfloating`
+# at the same rev; `allow_csd` and `title` are unchanged. The window-rule key
+# list is the `strcmp(key, "...")` chain in `src/config/option_defs.c` around
+# line 1380; monitor_rule and tag_rule options came through the bump intact.
+#
 # The input's modules default `package` to their own build
 # (packages.<system>.mango), so no overlay wiring is needed — unlike hm-v3,
 # whose overlay only served unrelated pkgs.mangowm references.
@@ -27,378 +32,420 @@
 # NOTE on the settings lists below: the renderer emits every list element
 # as a config line, so keep comments as Nix comments between elements and
 # never inside the string values themselves.
+#
+# CONFIG KEYWORDS ARE mango's, NOT ours. Upstream renamed most of them to
+# snake_case, and the `mango -c <file> -p` gate below rejects the whole build
+# on a single unknown keyword, so a mangowm bump that renames anything fails
+# the rebuild rather than degrading. What changed at rev 0fbfef4b:
+#   monitorrule  -> monitor_rule      windowrule      -> window_rule
+#   tagrule      -> tag_rule          exec-once       -> exec_once
+#   numlockon    -> numlock_on        sloppyfocus     -> sloppy_focus
+#   warpcursor   -> warp_cursor       borderpx        -> border_px
+#   gappih       -> gap_inner_horizontal   gappiv     -> gap_inner_vertical
+#   gappoh       -> gap_outer_horizontal   gappov     -> gap_outer_vertical
+#   focuscolor   -> focus_color       bordercolor     -> border_color
+#   urgentcolor  -> urgent_color      rootcolor       -> root_color
+#   shadowscolor -> shadows_color
+# `bind`, `bindl`, `bindml`, `mousebind`, `gesturebind`, `axisbind`, `env`,
+# `xkb_rules_layout` and the trackpad/tap keys are prefix- or exact-matched
+# upstream and came through the bump unaffected. The authoritative list is the
+# `strcmp(key, "...")` chain in `src/config/option_defs.c`; after any bump,
+# `grep -oP '(?<=strcmp\(key, ")[a-z0-9_-]+'` over it lists every accepted name.
 {
-        self,
-        inputs,
-        ...
+  self,
+  inputs,
+  ...
 }:
 {
-        flake.nixosModules.mango =
-                {
-                        config,
-                        lib,
-                        pkgs,
-                        ...
-                }:
-                let
-                        # This machine's facts, from its hosts/<HOST>/_mango-settings.nix
-                        # through the options declared at the end of this module.
-                        host = config.dendritic.mango;
+  flake.nixosModules.mango =
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      # This machine's facts, from its hosts/<HOST>/_mango-settings.nix
+      # through the options declared at the end of this module.
+      host = config.dendritic.mango;
 
-                        realMango = inputs.mangowm.packages.${pkgs.stdenv.hostPlatform.system}.mango;
+      realMango = inputs.mangowm.packages.${pkgs.stdenv.hostPlatform.system}.mango;
 
-                        # Same renderer the mangowm HM module used, so the config text is
-                        # byte-identical for the settings (verified: diff rendered config
-                        # before/after, issue #97).
-                        toMango = (import "${inputs.mangowm}/nix/lib.nix" lib).toMango { };
+      # Same renderer the mangowm HM module used, so the config text is
+      # byte-identical for the settings (verified: diff rendered config
+      # before/after, issue #97).
+      toMango = (import "${inputs.mangowm}/nix/lib.nix" lib).toMango { };
 
-                        # Session-root autostart: replicating what the HM module's
-                        # autostart_sh wrapper did — import the session env into the systemd/
-                        # dbus user environment, start the session target, then the helpers.
-                        autostartSh = pkgs.writeShellScript "mango-autostart.sh" ''
-                                ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
-                                systemctl --user reset-failed
-                                systemctl --user start mango-session.target
-                                udiskie &
-                        '';
+      # Session-root autostart: replicating what the HM module's
+      # autostart_sh wrapper did — import the session env into the systemd/
+      # dbus user environment, start the session target, then the helpers.
+      autostartSh = pkgs.writeShellScript "mango-autostart.sh" ''
+        ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE NIXOS_OZONE_WL XCURSOR_THEME XCURSOR_SIZE
+        systemctl --user reset-failed
+        systemctl --user start mango-session.target
+        udiskie &
+      '';
 
-                        settings = {
-                                # Mango setenv()s these entries in-process; children of spawn_shell
-                                # inherit them, and that is the only channel that reaches a
-                                # greeter-spawned compositor — neither the session root nor spawn_shell
-                                # sources a profile (issue #86). The same vars also reach login shells
-                                # through environment.sessionVariables (issue #95). The host appends
-                                # its own entries (NIXPC: the NVIDIA/Wayland GPU vars) through
-                                # dendritic.mango.extraEnv.
-                                env = [
-                                        # Name and size come from the retrosmart cursor feature, so the
-                                        # compositor channel on both hosts names the same theme.
-                                        "XCURSOR_SIZE,${toString self.retrosmartCursor.size}"
-                                        "XCURSOR_THEME,${self.retrosmartCursor.name}"
-                                        # $TERMINAL is expanded by the SUPER+T binding below.
-                                        "TERMINAL,ghostty"
-                                ]
-                                ++ host.extraEnv;
+      # Mango caps a config value at 255 bytes and rejects the whole build past
+      # it, and the full swaylock invocation with the sepia palette is 305.
+      # Same shape as `autostartSh`: render the long command into the store
+      # so the bind stays short. `swaylock-effects` (not plain swaylock — it
+      # ignores the --effect-* flags) stays a system package, because the
+      # script runs it by name through PATH.
+      swaylockSh = pkgs.writeShellScript "mango-swaylock" ''
+        exec swaylock-effects \
+            --screenshots --clock --indicator \
+            --indicator-radius 100 --indicator-thickness 7 \
+            --effect-blur 7x5 --effect-vignette 0.5:0.5 \
+            --ring-color ${self.scheme.palette.primary} \
+            --key-hl-color ${self.scheme.palette.secondary} \
+            --line-color ${self.scheme.palette.border} \
+            --inside-color ${self.scheme.palette.shadow}e6 \
+            --separator-color ${self.scheme.palette.outline} \
+            --grace 2 --fade-in 0.2
+      '';
 
-                                # Outputs belong to the machine: see dendritic.mango.monitorRule.
-                                monitorrule = host.monitorRule;
+      settings = {
+        # Mango setenv()s these entries in-process; children of spawn_shell
+        # inherit them, and that is the only channel that reaches a
+        # greeter-spawned compositor — neither the session root nor spawn_shell
+        # sources a profile (issue #86). The same vars also reach login shells
+        # through environment.sessionVariables (issue #95). The host appends
+        # its own entries (NIXPC: the NVIDIA/Wayland GPU vars) through
+        # dendritic.mango.extraEnv.
+        env = [
+          # Name and size come from the retrosmart cursor feature, so the
+          # compositor channel on both hosts names the same theme.
+          "XCURSOR_SIZE,${toString self.retrosmartCursor.size}"
+          "XCURSOR_THEME,${self.retrosmartCursor.name}"
+          # $TERMINAL is expanded by the SUPER+T binding below.
+          "TERMINAL,ghostty"
+        ]
+        ++ host.extraEnv;
 
-                                repeat_rate = 35;
-                                repeat_delay = 200;
-                                numlockon = 1;
-                                # GB layout: Shift+2 gives quote. Matches system xkb layout gb.
-                                xkb_rules_layout = "gb";
+        # Outputs belong to the machine: see dendritic.mango.monitorRule.
+        monitor_rule = host.monitorRule;
 
-                                trackpad_accel_profile = 1;
-                                trackpad_accel_speed = 0.2;
-                                tap_to_click = 0;
-                                tap_and_drag = 1;
-                                trackpad_click_method = 2;
-                                trackpad_natural_scrolling = 1;
-                                trackpad_disable_while_typing = 1;
+        repeat_rate = 35;
+        repeat_delay = 200;
+        numlock_on = 1;
+        # GB layout: Shift+2 gives quote. Matches system xkb layout gb.
+        xkb_rules_layout = "gb";
 
-                                mouse_natural_scrolling = 0;
+        trackpad_accel_profile = 1;
+        trackpad_accel_speed = 0.2;
+        tap_to_click = 0;
+        tap_and_drag = 1;
+        trackpad_click_method = 2;
+        trackpad_natural_scrolling = 1;
+        trackpad_disable_while_typing = 1;
 
-                                sloppyfocus = 1;
-                                warpcursor = 1;
-                                focus_cross_monitor = 1;
-                                exchange_cross_monitor = 1;
+        mouse_natural_scrolling = 0;
 
-                                # Layout values are per host (dendritic.mango.gaps / borderWidth).
-                                gappih = host.gaps;
-                                gappiv = host.gaps;
-                                gappoh = host.gaps;
-                                gappov = host.gaps;
-                                borderpx = host.borderWidth;
-                                # Sepia palette, from features/scheme. mango takes 0xRRGGBBAA.
-                                focuscolor = "0x${self.scheme.palette.primary}ff";
-                                bordercolor = "0x${self.scheme.palette.outline}ff";
-                                urgentcolor = "0x${self.scheme.palette.error}ff";
-                                rootcolor = "0x${self.scheme.palette.base}ff";
+        sloppy_focus = 1;
+        warp_cursor = 1;
+        focus_cross_monitor = 1;
+        exchange_cross_monitor = 1;
 
-                                border_radius = 5;
-                                shadows = 0;
-                                shadows_size = 5;
-                                shadows_blur = 30;
-                                shadows_position_x = 0;
-                                shadows_position_y = 5;
-                                shadowscolor = "0x${self.scheme.palette.shadow}70";
+        # Layout values are per host (dendritic.mango.gaps / borderWidth).
+        gap_inner_horizontal = host.gaps;
+        gap_inner_vertical = host.gaps;
+        gap_outer_horizontal = host.gaps;
+        gap_outer_vertical = host.gaps;
+        border_px = host.borderWidth;
+        # Sepia palette, from features/scheme. mango takes 0xRRGGBBAA.
+        focus_color = "0x${self.scheme.palette.primary}ff";
+        border_color = "0x${self.scheme.palette.outline}ff";
+        urgent_color = "0x${self.scheme.palette.error}ff";
+        root_color = "0x${self.scheme.palette.base}ff";
 
-                                animations = 1;
-                                layer_animations = 1;
-                                animation_type_open = "zoom";
-                                animation_type_close = "fade";
-                                animation_fade_in = 1;
-                                animation_fade_out = 1;
+        border_radius = 5;
+        shadows = 0;
+        shadows_size = 5;
+        shadows_blur = 30;
+        shadows_position_x = 0;
+        shadows_position_y = 5;
+        shadows_color = "0x${self.scheme.palette.shadow}70";
 
-                                scroller_default_proportion = 0.5;
-                                scroller_proportion_preset = "0.33,0.5,0.67";
-                                scroller_focus_center = 0;
-                                scroller_prefer_center = 0;
-                                circle_layout = "scroller,tile,monocle,grid";
+        animations = 1;
+        layer_animations = 1;
+        animation_type_open = "zoom";
+        animation_type_close = "fade";
+        animation_fade_in = 1;
+        animation_fade_out = 1;
 
-                                tagrule = [
-                                        "id:1,layout_name:scroller,no_hide:1"
-                                        "id:2,layout_name:scroller,no_hide:1"
-                                        "id:3,layout_name:scroller,no_hide:1"
-                                        "id:4,layout_name:scroller,no_hide:1"
-                                        "id:5,layout_name:scroller"
-                                        "id:6,layout_name:scroller"
-                                        "id:7,layout_name:scroller"
-                                        "id:8,layout_name:scroller"
-                                        "id:9,layout_name:scroller"
-                                ];
+        scroller_default_proportion = 0.5;
+        scroller_proportion_preset = "0.33,0.5,0.67";
+        scroller_focus_center = 0;
+        scroller_prefer_center = 0;
+        circle_layout = "scroller,tile,monocle,grid";
 
-                                windowrule = [
-                                        "isfloating:1,appid:firefox,title:^Picture-in-Picture$"
-                                        "allow_csd:0,appid:.*"
-                                ];
+        tag_rule = [
+          "id:1,layout_name:scroller,no_hide:1"
+          "id:2,layout_name:scroller,no_hide:1"
+          "id:3,layout_name:scroller,no_hide:1"
+          "id:4,layout_name:scroller,no_hide:1"
+          "id:5,layout_name:scroller"
+          "id:6,layout_name:scroller"
+          "id:7,layout_name:scroller"
+          "id:8,layout_name:scroller"
+          "id:9,layout_name:scroller"
+        ];
 
-                                mousebind = [
-                                        "SUPER,btn_left,moveresize,curmove"
-                                ];
+        window_rule = [
+          "is_floating:1,app_id:firefox,title:^Picture-in-Picture$"
+          "allow_csd:0,app_id:.*"
+        ];
 
-                                gesturebind = [
-                                        "none,up,4,toggleoverview"
-                                        "none,down,4,toggleoverview"
-                                        "none,left,3,focusdir,left"
-                                        "none,right,3,focusdir,right"
+        mousebind = [
+          "SUPER,btn_left,moveresize,curmove"
+        ];
 
-                                ];
+        gesturebind = [
+          "none,up,4,toggleoverview"
+          "none,down,4,toggleoverview"
+          "none,left,3,focusdir,left"
+          "none,right,3,focusdir,right"
 
-                                axisbind = [
-                                        "SUPER,UP,viewtoleft_have_client"
-                                        "SUPER,DOWN,viewtoright_have_client"
-                                ];
+        ];
 
-                                # The two-monitor binds tagmon to DP-1/DP-2 and belong to NIXPC
-                                # (issue #114); they arrive through dendritic.mango.extraBinds.
-                                bind = [
-                                        "SUPER,T,spawn_shell,$TERMINAL"
-                                        "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
-                                        "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
-                                        "SUPER+ALT+SHIFT,L,spawn_shell,swaylock --screenshots --clock --indicator --indicator-radius 100 --indicator-thickness 7 --effect-blur 7x5 --effect-vignette 0.5:0.5 --ring-color ${self.scheme.palette.primary} --key-hl-color ${self.scheme.palette.secondary} --line-color ${self.scheme.palette.border} --inside-color ${self.scheme.palette.shadow}e6 --separator-color ${self.scheme.palette.outline} --grace 2 --fade-in 0.2"
-                                        "SUPER,Q,killclient"
-                                        "SUPER,F,togglemaximizescreen"
-                                        "SUPER+SHIFT,F,togglefullscreen"
-                                        "SUPER,V,togglefloating"
-                                        "SUPER,O,toggleoverview"
-                                        "SUPER,W,setlayout,monocle"
-                                        "SUPER,C,centerwin"
-                                        "SUPER,Left,focusdir,left"
-                                        "SUPER,Down,focusdir,down"
-                                        "SUPER,Up,focusdir,up"
-                                        "SUPER,Right,focusdir,right"
-                                        "SUPER,H,focusdir,left"
-                                        "SUPER,J,focusdir,down"
-                                        "SUPER,K,focusdir,up"
-                                        "SUPER,L,focusdir,right"
-                                        "SUPER+CTRL,Left,exchange_client,left"
-                                        "SUPER+CTRL,Down,exchange_client,down"
-                                        "SUPER+CTRL,Up,exchange_client,up"
-                                        "SUPER+CTRL,Right,exchange_client,right"
-                                        "SUPER+CTRL,H,exchange_client,left"
-                                        "SUPER+CTRL,J,exchange_client,down"
-                                        "SUPER+CTRL,K,exchange_client,up"
-                                        "SUPER+CTRL,L,exchange_client,right"
-                                        "SUPER+SHIFT,M,tagmon,right,1"
-                                        "SUPER+SHIFT,Left,focusmon,left"
-                                        "SUPER+SHIFT,Down,focusmon,down"
-                                        "SUPER+SHIFT,Up,focusmon,up"
-                                        "SUPER+SHIFT,Right,focusmon,right"
-                                        "SUPER+SHIFT,H,focusmon,left"
-                                        "SUPER+SHIFT,J,focusmon,down"
-                                        "SUPER+SHIFT,K,focusmon,up"
-                                        "SUPER+SHIFT,L,focusmon,right"
-                                        "SUPER+SHIFT+CTRL,Left,tagmon,left,1"
-                                        "SUPER+SHIFT+CTRL,Down,tagmon,down,1"
-                                        "SUPER+SHIFT+CTRL,Up,tagmon,up,1"
-                                        "SUPER+SHIFT+CTRL,Right,tagmon,right,1"
-                                        "SUPER+SHIFT+CTRL,H,tagmon,left,1"
-                                        "SUPER+SHIFT+CTRL,J,tagmon,down,1"
-                                        "SUPER+SHIFT+CTRL,K,tagmon,up,1"
-                                        "SUPER+SHIFT+CTRL,L,tagmon,right,1"
-                                        "SUPER,Page_Down,viewtoright_have_client"
-                                        "SUPER,Page_Up,viewtoleft_have_client"
-                                        "SUPER,U,viewtoright_have_client"
-                                        "SUPER,I,viewtoleft_have_client"
-                                        "SUPER+CTRL,Page_Down,tagtoright"
-                                        "SUPER+CTRL,Page_Up,tagtoleft"
-                                        "SUPER+CTRL,U,tagtoright"
-                                        "SUPER+CTRL,I,tagtoleft"
-                                        "SUPER,1,view,1"
-                                        "SUPER,2,view,2"
-                                        "SUPER,3,view,3"
-                                        "SUPER,4,view,4"
-                                        "SUPER,5,view,5"
-                                        "SUPER,6,view,6"
-                                        "SUPER,7,view,7"
-                                        "SUPER,8,view,8"
-                                        "SUPER,9,view,9"
-                                        "SUPER+CTRL,1,tag,1"
-                                        "SUPER+CTRL,2,tag,2"
-                                        "SUPER+CTRL,3,tag,3"
-                                        "SUPER+CTRL,4,tag,4"
-                                        "SUPER+CTRL,5,tag,5"
-                                        "SUPER+CTRL,6,tag,6"
-                                        "SUPER+CTRL,7,tag,7"
-                                        "SUPER+CTRL,8,tag,8"
-                                        "SUPER+CTRL,9,tag,9"
-                                        "SUPER,bracketleft,scroller_stack,left"
-                                        "SUPER,bracketright,scroller_stack,right"
-                                        "SUPER,comma,scroller_stack,left"
-                                        "SUPER,period,scroller_stack,right"
-                                        "SUPER,R,switch_proportion_preset"
-                                        "SUPER,minus,resizewin,-50,0"
-                                        "SUPER,equal,resizewin,50,0"
-                                        "SUPER+SHIFT,minus,resizewin,0,-50"
-                                        "SUPER+SHIFT,equal,resizewin,0,50"
-                                        "SUPER,N,switch_layout"
-                                        "SUPER+SHIFT,S,spawn_shell,grimshot copy area || grim -g \"$(slurp)\" - | wl-copy"
-                                        "CTRL,Print,spawn_shell,grimshot copy screen || grim - | wl-copy"
-                                        ''ALT,Print,spawn_shell,grimshot copy window || grim -g "$(swaymsg -t get_tree | jq -r '.. | select(.focused?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"')" - | wl-copy''
-                                        "SUPER,Escape,setoption,allow_shortcuts_inhibit,0"
-                                        "SUPER+SHIFT,E,quit"
-                                        "CTRL+ALT,Delete,quit"
-                                        "SUPER+SHIFT,P,spawn_shell,wlr-dpms off"
-                                        "SUPER,Home,focusstack,prev"
-                                        "SUPER,End,focusstack,next"
-                                ]
-                                ++ host.extraBinds;
+        axisbind = [
+          "SUPER,UP,viewtoleft_have_client"
+          "SUPER,DOWN,viewtoright_have_client"
+        ];
 
-                                bindl = [
-                                        "NONE,XF86AudioRaiseVolume,spawn_shell,wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
-                                        "NONE,XF86AudioLowerVolume,spawn_shell,wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-"
-                                        "NONE,XF86AudioMute,spawn_shell,wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-                                        "NONE,XF86AudioMicMute,spawn_shell,wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-                                        "NONE,XF86MonBrightnessUp,spawn_shell,brightnessctl -e4 -n2 set 1%+"
-                                        "NONE,XF86MonBrightnessDown,spawn_shell,brightnessctl -e4 -n2 set 1%-"
-                                        "NONE,XF86AudioPlay,spawn_shell,playerctl play-pause"
-                                        "NONE,XF86AudioStop,spawn_shell,playerctl stop"
-                                        "NONE,XF86AudioPrev,spawn_shell,playerctl previous"
-                                        "NONE,XF86AudioNext,spawn_shell,playerctl next"
-                                        "SUPER+ALT,S,spawn_shell,pkill orca || exec orca"
-                                ];
-                        };
+        # The two-monitor binds tagmon to DP-1/DP-2 and belong to NIXPC
+        # (issue #114); they arrive through dendritic.mango.extraBinds.
+        bind = [
+          "SUPER,T,spawn_shell,$TERMINAL"
+          "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
+          "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
+          "SUPER+ALT+SHIFT,L,spawn_shell,${swaylockSh}/bin/mango-swaylock"
+          "SUPER,Q,killclient"
+          "SUPER,F,togglemaximizescreen"
+          "SUPER+SHIFT,F,togglefullscreen"
+          "SUPER,V,togglefloating"
+          "SUPER,O,toggleoverview"
+          "SUPER,W,setlayout,monocle"
+          "SUPER,C,centerwin"
+          "SUPER,Left,focusdir,left"
+          "SUPER,Down,focusdir,down"
+          "SUPER,Up,focusdir,up"
+          "SUPER,Right,focusdir,right"
+          "SUPER,H,focusdir,left"
+          "SUPER,J,focusdir,down"
+          "SUPER,K,focusdir,up"
+          "SUPER,L,focusdir,right"
+          "SUPER+CTRL,Left,exchange_client,left"
+          "SUPER+CTRL,Down,exchange_client,down"
+          "SUPER+CTRL,Up,exchange_client,up"
+          "SUPER+CTRL,Right,exchange_client,right"
+          "SUPER+CTRL,H,exchange_client,left"
+          "SUPER+CTRL,J,exchange_client,down"
+          "SUPER+CTRL,K,exchange_client,up"
+          "SUPER+CTRL,L,exchange_client,right"
+          "SUPER+SHIFT,M,tagmon,right,1"
+          "SUPER+SHIFT,Left,focusmon,left"
+          "SUPER+SHIFT,Down,focusmon,down"
+          "SUPER+SHIFT,Up,focusmon,up"
+          "SUPER+SHIFT,Right,focusmon,right"
+          "SUPER+SHIFT,H,focusmon,left"
+          "SUPER+SHIFT,J,focusmon,down"
+          "SUPER+SHIFT,K,focusmon,up"
+          "SUPER+SHIFT,L,focusmon,right"
+          "SUPER+SHIFT+CTRL,Left,tagmon,left,1"
+          "SUPER+SHIFT+CTRL,Down,tagmon,down,1"
+          "SUPER+SHIFT+CTRL,Up,tagmon,up,1"
+          "SUPER+SHIFT+CTRL,Right,tagmon,right,1"
+          "SUPER+SHIFT+CTRL,H,tagmon,left,1"
+          "SUPER+SHIFT+CTRL,J,tagmon,down,1"
+          "SUPER+SHIFT+CTRL,K,tagmon,up,1"
+          "SUPER+SHIFT+CTRL,L,tagmon,right,1"
+          "SUPER,Page_Down,viewtoright_have_client"
+          "SUPER,Page_Up,viewtoleft_have_client"
+          "SUPER,U,viewtoright_have_client"
+          "SUPER,I,viewtoleft_have_client"
+          "SUPER+CTRL,Page_Down,tagtoright"
+          "SUPER+CTRL,Page_Up,tagtoleft"
+          "SUPER+CTRL,U,tagtoright"
+          "SUPER+CTRL,I,tagtoleft"
+          "SUPER,1,view,1"
+          "SUPER,2,view,2"
+          "SUPER,3,view,3"
+          "SUPER,4,view,4"
+          "SUPER,5,view,5"
+          "SUPER,6,view,6"
+          "SUPER,7,view,7"
+          "SUPER,8,view,8"
+          "SUPER,9,view,9"
+          "SUPER+CTRL,1,tag,1"
+          "SUPER+CTRL,2,tag,2"
+          "SUPER+CTRL,3,tag,3"
+          "SUPER+CTRL,4,tag,4"
+          "SUPER+CTRL,5,tag,5"
+          "SUPER+CTRL,6,tag,6"
+          "SUPER+CTRL,7,tag,7"
+          "SUPER+CTRL,8,tag,8"
+          "SUPER+CTRL,9,tag,9"
+          # No SUPER,bracketleft / bracketright here. The new mango resolves a digit
+          # to the keysym it produces on the configured layout, so `SUPER,8`
+          # collides with `SUPER,bracketleft` and `SUPER,9` with
+          # `SUPER,bracketright` — and since 0fbfef4b a conflict fails
+          # `mango -p`, which fails the build. Nothing is lost: SUPER,comma
+          # and SUPER,period below are the same scroller_stack pair.
+          "SUPER,comma,scroller_stack,left"
+          "SUPER,period,scroller_stack,right"
+          "SUPER,R,switch_proportion_preset"
+          "SUPER,minus,resizewin,-50,0"
+          "SUPER,equal,resizewin,50,0"
+          "SUPER+SHIFT,minus,resizewin,0,-50"
+          "SUPER+SHIFT,equal,resizewin,0,50"
+          "SUPER,N,switch_layout"
+          "SUPER+SHIFT,S,spawn_shell,grimshot copy area || grim -g \"$(slurp)\" - | wl-copy"
+          "CTRL,Print,spawn_shell,grimshot copy screen || grim - | wl-copy"
+          ''ALT,Print,spawn_shell,grimshot copy window || grim -g "$(swaymsg -t get_tree | jq -r '.. | select(.focused?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"')" - | wl-copy''
+          "SUPER,Escape,setoption,allow_shortcuts_inhibit,0"
+          "SUPER+SHIFT,E,quit"
+          "CTRL+ALT,Delete,quit"
+          "SUPER+SHIFT,P,spawn_shell,wlr-dpms off"
+          "SUPER,Home,focusstack,prev"
+          "SUPER,End,focusstack,next"
+        ]
+        ++ host.extraBinds;
 
-                        # The settings render, plus exec-once for the session-root autostart
-                        # (identical structure to the HM module's finalConfigText: toMango +
-                        # "\nexec-once=...\n").
-                        configText = (toMango settings) + "\nexec-once=${autostartSh}\n";
+        bindl = [
+          "NONE,XF86AudioRaiseVolume,spawn_shell,wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"
+          "NONE,XF86AudioLowerVolume,spawn_shell,wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%-"
+          "NONE,XF86AudioMute,spawn_shell,wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
+          "NONE,XF86AudioMicMute,spawn_shell,wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+          "NONE,XF86MonBrightnessUp,spawn_shell,brightnessctl -e4 -n2 set 1%+"
+          "NONE,XF86MonBrightnessDown,spawn_shell,brightnessctl -e4 -n2 set 1%-"
+          "NONE,XF86AudioPlay,spawn_shell,playerctl play-pause"
+          "NONE,XF86AudioStop,spawn_shell,playerctl stop"
+          "NONE,XF86AudioPrev,spawn_shell,playerctl previous"
+          "NONE,XF86AudioNext,spawn_shell,playerctl next"
+          "SUPER+ALT,S,spawn_shell,pkill orca || exec orca"
+        ];
+      };
 
-                        # Build-time validation, exactly like the HM module's validatedConfig:
-                        # mango -c <file> -p checks the config before it ever ships.
-                        configFile = pkgs.runCommand "mango-config.conf" { } ''
-                                cp ${pkgs.writeText "mango-config.conf" configText} "$out"
-                                ${realMango}/bin/mango -c "$out" -p || exit 1
-                        '';
+      # The settings render, plus exec_once for the session-root autostart
+      # (identical structure to the HM module's finalConfigText: toMango +
+      # "\nexec_once=...\n").
+      configText = (toMango settings) + "\nexec_once=${autostartSh}\n";
 
-                        # Session entry stays intact (programs.mango.package feeds
-                        # systemPackages + displayManager.sessionPackages); only bin/mango is
-                        # replaced with the -c wrapper. The desktop file's Exec=mango resolves
-                        # via PATH, so both the greeter session and manual `mango` invocations
-                        # always use the flake-owned config.
-                        mangoWrapped = pkgs.symlinkJoin {
-                                name = "mango-wrapped";
-                                paths = [ realMango ];
-                                # displayManager.sessionPackages requires `providedSessions` on the
-                                # package (it builds the session directory from it) — carry the real
-                                # package's passthru over the join.
-                                passthru = realMango.passthru;
-                                nativeBuildInputs = [ pkgs.makeWrapper ];
-                                postBuild = ''
-                                        rm -f "$out/bin/mango"
-                                        makeWrapper ${realMango}/bin/mango "$out/bin/mango" --add-flags "-c ${configFile}"
-                                '';
-                        };
-                in
-                {
-                        # Machine facts, set by each host from its own _mango-settings.nix. The
-                        # defaults describe a generic single-output desktop — niri's gaps and
-                        # ring width, no GPU env — not any particular machine.
-                        options.dendritic.mango = {
-                                monitorRule = lib.mkOption {
-                                        type = lib.types.listOf lib.types.str;
-                                        default = [ ];
-                                        description = ''
-                                                `monitorrule` lines for this host. Empty leaves every output to
-                                                mango's own layout and mode selection.
-                                        '';
-                                };
+      # Build-time validation, exactly like the HM module's validatedConfig:
+      # mango -c <file> -p checks the config before it ever ships.
+      configFile = pkgs.runCommand "mango-config.conf" { } ''
+        cp ${pkgs.writeText "mango-config.conf" configText} "$out"
+        ${realMango}/bin/mango -c "$out" -p || exit 1
+      '';
 
-                                extraEnv = lib.mkOption {
-                                        type = lib.types.listOf lib.types.str;
-                                        default = [ ];
-                                        description = ''
-                                                Entries appended to the compositor's `env` list, in mango's
-                                                `NAME,value` form. Use it for variables the whole session needs
-                                                (the GPU backend, for example), not for per-application settings.
-                                        '';
-                                };
+      # Session entry stays intact (programs.mango.package feeds
+      # systemPackages + displayManager.sessionPackages); only bin/mango is
+      # replaced with the -c wrapper. The desktop file's Exec=mango resolves
+      # via PATH, so both the greeter session and manual `mango` invocations
+      # always use the flake-owned config.
+      mangoWrapped = pkgs.symlinkJoin {
+        name = "mango-wrapped";
+        paths = [ realMango ];
+        # displayManager.sessionPackages requires `providedSessions` on the
+        # package (it builds the session directory from it) — carry the real
+        # package's passthru over the join.
+        passthru = realMango.passthru;
+        nativeBuildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          rm -f "$out/bin/mango"
+          makeWrapper ${realMango}/bin/mango "$out/bin/mango" --add-flags "-c ${configFile}"
+        '';
+      };
+    in
+    {
+      # Machine facts, set by each host from its own _mango-settings.nix. The
+      # defaults describe a generic single-output desktop — niri's gaps and
+      # ring width, no GPU env — not any particular machine.
+      options.dendritic.mango = {
+        monitorRule = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            `monitorrule` lines for this host. Empty leaves every output to
+            mango's own layout and mode selection.
+          '';
+        };
 
-                                extraBinds = lib.mkOption {
-                                        type = lib.types.listOf lib.types.str;
-                                        default = [ ];
-                                        description = ''
-                                                Bindings appended to the shared `bind` list, in mango's
-                                                `MODIFIERS,key,action,argument` form. Use it for bindings that
-                                                name this host's outputs.
-                                        '';
-                                };
+        extraEnv = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Entries appended to the compositor's `env` list, in mango's
+            `NAME,value` form. Use it for variables the whole session needs
+            (the GPU backend, for example), not for per-application settings.
+          '';
+        };
 
-                                gaps = lib.mkOption {
-                                        type = lib.types.int;
-                                        default = 16;
-                                        description = ''
-                                                Window gaps in logical pixels; sets gappih, gappiv, gappoh, and
-                                                gappov together.
-                                        '';
-                                };
+        extraBinds = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = ''
+            Bindings appended to the shared `bind` list, in mango's
+            `MODIFIERS,key,action,argument` form. Use it for bindings that
+            name this host's outputs.
+          '';
+        };
 
-                                borderWidth = lib.mkOption {
-                                        type = lib.types.int;
-                                        default = 4;
-                                        description = "Window border width in logical pixels (mango's `borderpx`).";
-                                };
-                        };
+        gaps = lib.mkOption {
+          type = lib.types.int;
+          default = 16;
+          description = ''
+            Window gaps in logical pixels; sets gap_inner_horizontal, gap_inner_vertical,
+            gap_outer_horizontal, and gap_outer_vertical together.
+          '';
+        };
 
-                        imports = [ inputs.mangowm.nixosModules.mango ];
+        borderWidth = lib.mkOption {
+          type = lib.types.int;
+          default = 4;
+          description = "Window border width in logical pixels (mango's `borderpx`).";
+        };
+      };
 
-                        # The option block above forces the rest into an explicit `config`
-                        # attribute: a module that declares `options` cannot also carry
-                        # configuration attributes at the top level. `imports` stays a module
-                        # key, so it sits outside.
-                        config = {
-                                programs.mango = {
-                                        enable = true;
-                                        package = mangoWrapped;
-                                };
+      imports = [ inputs.mangowm.nixosModules.mango ];
 
-                                # Same session target the mangowm HM module declared (systemd.enable),
-                                # so user services bound to mango-session.target keep working. (NixOS
-                                # option shape: lowercase flat attrs, unlike HM's systemd module.)
-                                systemd.user.targets.mango-session = {
-                                        description = "mango compositor session";
-                                        documentation = [ "man:systemd.special(7)" ];
-                                        bindsTo = [ "graphical-session.target" ];
-                                        wants = [ "graphical-session-pre.target" ];
-                                        after = [ "graphical-session-pre.target" ];
-                                };
+      # The option block above forces the rest into an explicit `config`
+      # attribute: a module that declares `options` cannot also carry
+      # configuration attributes at the top level. `imports` stays a module
+      # key, so it sits outside.
+      config = {
+        programs.mango = {
+          enable = true;
+          package = mangoWrapped;
+        };
 
-                                # Helper binaries referenced by bindings/autostart. Noctalia (including
-                                # its notification daemon, which claims org.freedesktop.Notifications)
-                                # and the terminal are deliberately absent — they are separate features.
-                                # (Formerly home.packages in the HM module; moved system-side with the
-                                # homelessness change, issue #97.)
-                                environment.systemPackages = with pkgs; [
-                                        udiskie
-                                        brightnessctl
-                                        grim
-                                        slurp
-                                        wl-clipboard-rs
-                                        # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
-                                        swaylock-effects
-                                ];
-                        };
-                };
+        # Same session target the mangowm HM module declared (systemd.enable),
+        # so user services bound to mango-session.target keep working. (NixOS
+        # option shape: lowercase flat attrs, unlike HM's systemd module.)
+        systemd.user.targets.mango-session = {
+          description = "mango compositor session";
+          documentation = [ "man:systemd.special(7)" ];
+          bindsTo = [ "graphical-session.target" ];
+          wants = [ "graphical-session-pre.target" ];
+          after = [ "graphical-session-pre.target" ];
+        };
+
+        # Helper binaries referenced by bindings/autostart. Noctalia (including
+        # its notification daemon, which claims org.freedesktop.Notifications)
+        # and the terminal are deliberately absent — they are separate features.
+        # (Formerly home.packages in the HM module; moved system-side with the
+        # homelessness change, issue #97.)
+        environment.systemPackages = with pkgs; [
+          udiskie
+          brightnessctl
+          grim
+          slurp
+          wl-clipboard-rs
+          # SUPER+ALT+L passes --effect-* flags; plain swaylock ignores them.
+          swaylock-effects
+        ];
+      };
+    };
 }
