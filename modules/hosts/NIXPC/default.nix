@@ -34,16 +34,21 @@
       # trusted-users. ASAHI imports the matching client module. The link
       # addresses NIXPC by its tailnet name, so both halves need tailscale.
       remoteBuilder
-      # The herdr-web bridge runs from the home-manager module; this module
-      # publishes it on the tailnet, so the phone reaches it over HTTPS.
-      # ASAHI does not import it: no agent runs there.
+      # The herdr-web bridge. This import is the whole enable switch: the NixOS
+      # module also adds homeManagerModules.herdr-web to the user's Home
+      # Manager, so the server runs on loopback and this half publishes it on
+      # the tailnet, which is how the phone reaches it over HTTPS. ASAHI does
+      # not import it: no agent runs there, and the bridge would grant it
+      # terminal control of every pane.
       herdr-web
       ({ services.herdr-web.tailscaleServe.enable = true; })
       # The second herdr client UI (chat view, file viewer, remote PCs, push
       # alerts) runs beside the bridge above on its own port. Same split: the
       # home-manager module runs the server on loopback, this publishes it on
       # the tailnet. Both try the tailnet and neither starts the herdr daemon,
-      # so the order they come up in does not matter.
+      # so the order they come up in does not matter. NIXPC only, and the
+      # package's node_modules FOD hash is the x86_64 dependency tree, so
+      # building it on another architecture fails the hash.
       herdr-web-ui
       ({ services.herdr-web-ui.tailscaleServe.enable = true; })
       # The Docker daemon comes in through attrs/desktop -> act -> docker;

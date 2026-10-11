@@ -55,6 +55,7 @@
 # `_herdr-web-ui.pkg.nix` is the derivation; see its header for why the
 # dependency install is a fixed-output derivation.
 {
+  self,
   moduleWithSystem,
   ...
 }:
@@ -167,14 +168,22 @@
   # target can not drift from the port the server listens on.
   #
   # That read makes `homeManagerModules.herdr-web-ui` a requirement for the
-  # primary user. Nix reports an unknown option when it is absent, so the read
-  # is guarded and the message names the module.
+  # primary user, which is why this module adds it to
+  # `home-manager.sharedModules` itself. Nix reports an unknown option when it
+  # is absent, so the read is guarded and the message names the module.
   #
-  # Two defaults differ from `herdr-web` on purpose. The port follows the
-  # home-manager service instead of overriding it, because upstream already
-  # picked 7317 and nothing here needs a different one. And this reads
-  # `services.herdr-web.*` to keep clear of the *other* bridge's port — the two
-  # servers are separate programs and must not be pointed at one port.
+  # NIXPC is the only host that imports this aspect. That is a build contract,
+  # not just a placement choice: `herdr-web-ui-node-modules` is a fixed-output
+  # derivation, and the tree bun resolves for aarch64 is not the tree bun
+  # resolves for x86_64 (platform-specific esbuild/oxide/node-pty packages), so
+  # the pinned recursive hash only holds on the architecture it was taken on.
+  # ASAHI ran the whole stack and failed the build with a hash mismatch until
+  # the import was made host-local.
+  #
+  # The httpsPort follows the home-manager service's port instead of overriding
+  # it, because upstream already picked 7317 and nothing here needs a different
+  # one; 17317 keeps it clear of the `herdr-web` bridge's 17930, and the two
+  # servers are separate programs that must never share a port.
   flake.nixosModules.herdr-web-ui =
     {
       config,
@@ -210,8 +219,17 @@
         };
       };
 
-      config = lib.mkIf cfg.tailscaleServe.enable {
-        assertions = [
+      config = {
+        # Importing this NixOS aspect is the enable switch for both halves. The
+        # user service is not part of the all-host Home Manager feature set
+        # (`system/home-manager`), and it must not be: the package's dependency
+        # tree is a fixed-output derivation whose recursive hash describes the
+        # tree bun resolves for *this* architecture. NIXPC (x86_64-linux) is the
+        # only host that imports the module, and it is the host the hash was
+        # taken on, so no other host can pull the derivation into its closure.
+        home-manager.sharedModules = [ self.homeManagerModules.herdr-web-ui ];
+
+        assertions = lib.optionals cfg.tailscaleServe.enable [
           {
             assertion = config.services.tailscale.enable;
             message = ''
@@ -228,7 +246,7 @@
         # timeout by default, so bound the wait explicitly. The unit then fails
         # in about 45 seconds, and the restart policy retries it. Once the
         # tailnet owner enables Serve, a retry applies the mapping.
-        systemd.services.herdr-web-ui-tailscale-serve = {
+        systemd.services.herdr-web-ui-tailscale-serve = lib.mkIf cfg.tailscaleServe.enable {
           description = "Publish the herdr-web-ui server on the tailnet";
           wantedBy = [ "multi-user.target" ];
           wants = [ "tailscaled.service" ];

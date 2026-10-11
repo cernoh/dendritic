@@ -31,11 +31,15 @@
             ...
           }:
           {
+            # Both hosts share this set. A feature that runs on one host only
+            # (the two herdr bridges, `wayfinder-dashboard`) is NOT listed here:
+            # its NixOS module injects the matching home-manager module through
+            # `home-manager.sharedModules`, so importing the NixOS module stays
+            # the single enable switch and the other host never sees the
+            # service or its package.
             imports = with self.homeManagerModules; [
               nvf
               agent-browser
-              herdr-web
-              herdr-web-ui
               programming
               fish
               nushell

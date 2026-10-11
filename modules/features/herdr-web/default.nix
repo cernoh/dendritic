@@ -34,10 +34,12 @@
 # The unit gives up after 45 seconds and retries once a minute, so it turns
 # active on its own after that step.
 #
-# Any authenticated reverse proxy works the same way. The option needs
-# `homeManagerModules.herdr-web` for `config.dendritic.userName`, because it
-# reads the bridge address from that service. The flake's HM wiring imports
-# it.
+# Any authenticated reverse proxy works the same way. The NixOS module reads the
+# bridge address back from this home-manager module, and adds it to the host's
+# Home Manager through `home-manager.sharedModules` — so importing
+# `nixosModules.herdr-web` on a host is the whole enable switch. NIXPC is the
+# only host that does: ASAHI runs no agents, so it neither builds nor starts the
+# bridge.
 #
 # The service PATH carries every binary the bridge shells out to:
 #   - `herdr` — spawns `herdr server` when none runs. It also keeps a hidden
@@ -54,6 +56,7 @@
 # The settings UI writes `~/.config/herdr-web/settings.json`. That file is
 # application state, so this feature leaves it alone.
 {
+  self,
   moduleWithSystem,
   ...
 }:
@@ -180,15 +183,12 @@
         };
       };
 
-      config = lib.mkIf cfg.tailscaleServe.enable {
-        assertions = [
-          {
-            assertion = config.services.tailscale.enable;
-            message = ''
-              services.herdr-web.tailscaleServe needs services.tailscale.
-            '';
-          }
-        ];
+      config = {
+        # Importing this NixOS aspect is the enable switch for both halves. The
+        # user service is not part of the all-host Home Manager feature set
+        # (`system/home-manager`): NIXPC is the only host that imports it, so
+        # ASAHI never builds the bridge or starts a server.
+        home-manager.sharedModules = [ self.homeManagerModules.herdr-web ];
 
         # `--bg` writes the mapping into tailscaled and returns, so a oneshot
         # unit fits. `off` removes only this port's mapping.
@@ -198,7 +198,7 @@
         # timeout by default, so bound the wait explicitly. The unit then fails
         # in about 45 seconds, and the restart policy retries it. Once the
         # tailnet owner enables Serve, a retry applies the mapping.
-        systemd.services.herdr-web-tailscale-serve = {
+        systemd.services.herdr-web-tailscale-serve = lib.mkIf cfg.tailscaleServe.enable {
           description = "Publish the herdr-web bridge on the tailnet";
           wantedBy = [ "multi-user.target" ];
           wants = [ "tailscaled.service" ];
@@ -218,6 +218,15 @@
             RestartSec = 60;
           };
         };
+
+        assertions = lib.optionals cfg.tailscaleServe.enable [
+          {
+            assertion = config.services.tailscale.enable;
+            message = ''
+              services.herdr-web.tailscaleServe needs services.tailscale.
+            '';
+          }
+        ];
       };
     };
 }
