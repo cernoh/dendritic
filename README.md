@@ -48,7 +48,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `computer-use` | Wayland desktop-control toolchain: `grim`, `slurp`, `wtype`, `wlrctl`, `wlr-randr`, `wayland-utils`. Enabled by the `desktop` bundle |
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902) as systemd-managed oci-containers |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
-| `flatpak` | Declarative Flatpak management via [nix-flatpak](https://github.com/gmodena/nix-flatpak): OBS Studio on both hosts; Sober and the pinned Spotifast release bundle on NIXPC |
+| `flatpak` | Declarative Flatpak management via [nix-flatpak](https://github.com/gmodena/nix-flatpak): OBS Studio, Sober, and the pinned Spotifast release bundle on NIXPC (all x86_64-only); no apps on ASAHI |
 | `funes` | [funes](https://github.com/huggingface/funes) agent-memory CLI via overlay (`overlays.funes`, `packages.funes`); pinned upstream release binary. Ships the binary only — `funes add pi` is a one-time interactive step you run yourself, because it edits pi's git-tracked config |
 | `gaming-tools` | Lutris, MangoHud, Wine, Vulkan tooling and friends — beyond Steam |
 | `ghostty` | Ghostty terminal; the flake settings (Cascadia Code NF with a slashed zero and the cursive italic, the sepia palette) travel in a CLI-flag wrapper over `pkgs.ghostty`, so no user config file exists |
