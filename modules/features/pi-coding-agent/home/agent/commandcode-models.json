@@ -666,6 +666,14 @@
       "maxTokens": 65536
     },
     {
+      "id": "meta/muse-wonder-1.0",
+      "name": "Muse Wonder (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 1048576,
+      "maxTokens": 65536
+    },
+    {
       "id": "xai/grok-4.5",
       "name": "Grok 4.5 (CC)",
       "api": "openai-responses",

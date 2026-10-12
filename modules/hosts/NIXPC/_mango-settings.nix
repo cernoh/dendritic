@@ -42,4 +42,8 @@
   # Tuned on this host: 10 px gaps, 5 px border.
   gaps = 10;
   borderWidth = 5;
+
+  # UK layout: Shift+2 gives quote. Matches services.xserver.xkb.layout = "gb"
+  # and console.keyMap = "uk" in modules/system/core/locale.nix.
+  xkbRulesLayout = "gb";
 }

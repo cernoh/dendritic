@@ -8,6 +8,7 @@
 #   extraEnv    — the NVIDIA/Wayland GPU vars (NIXPC)
 #   extraBinds  — the two-monitor tagmon binds (NIXPC)
 #   gaps, borderWidth — the tuned layout values, which differ per host
+#   xkbRulesLayout — the keymap the session loads (NIXPC gb, ASAHI us)
 # The values left in `settings` are the ones the hosts share. Where the hosts
 # differ, the default mirrors the niri session ASAHI ran before.
 #
@@ -129,8 +130,11 @@
         repeat_rate = 35;
         repeat_delay = 200;
         numlock_on = 1;
-        # GB layout: Shift+2 gives quote. Matches system xkb layout gb.
-        xkb_rules_layout = "gb";
+        # The keymap mango itself loads. This is the layout that actually types,
+        # and it wins over services.xserver.xkb (wlroots seeds its keymap from
+        # the xkb rules itself), so it is a per-machine fact and not a shared
+        # default: NIXPC is gb, ASAHI is us. See dendritic.mango.xkbRulesLayout.
+        xkb_rules_layout = host.xkbRulesLayout;
 
         trackpad_accel_profile = 1;
         trackpad_accel_speed = 0.2;
@@ -406,6 +410,17 @@
           type = lib.types.int;
           default = 4;
           description = "Window border width in logical pixels (mango's `borderpx`).";
+        };
+
+        xkbRulesLayout = lib.mkOption {
+          type = lib.types.str;
+          default = "gb";
+          description = ''
+            XKB layout name this machine's compositor session loads
+            (`xkb_rules_layout`). Set it to the same value the host uses in
+            `services.xserver.xkb.layout`, because mango's own keymap is what
+            types. NIXPC = `gb`, ASAHI = `us`.
+          '';
         };
       };
 

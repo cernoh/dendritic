@@ -156,7 +156,6 @@
             brave
           ];
           programs.noctalia.settings = import ./_noctalia-settings.nix;
-          home.packages = [ pkgs.evremap ];
 
           # ASAHI-only: ambient-light auto brightness. Out-of-store like the
           # terminal plugin, so edits stay live. The plugins.enabled entry in
@@ -180,23 +179,10 @@
             Install.WantedBy = [ "default.target" ];
           };
 
-          # Evremap configuration to remap Ctrl+2 to @ and Option+3 to #.
-          home.file.\".config/evremap.conf\".source = pkgs.writeText "evremap.conf" ''
-            event {
-              key two {
-                control + at
-              }
-              key 3 {
-                alt + numbersign
-              }
-            }
-          '';
-
-          home.sessionCommands = [
-            ''
-              evremap /home/da/.config/evremap.conf &
-            ''
-          ];
+          # No evremap here any more: it existed only to work around the gb
+          # keymap (Ctrl+2 for @, Option+3 for #). With the us layout (see
+          # hosts/ASAHI/_mango-settings.nix and hosts/ASAHI/default.nix) those
+          # glyphs are on their native keys, and the remap would break Ctrl+2.
         };
     };
 }
