@@ -16,9 +16,10 @@
   gaps = 16;
   borderWidth = 4;
 
-  # US layout: this MacBook's keyboard is the US one, so `gb` would put @
-  # and ~ on the keys left of 1/2 instead of Shift+2 / Shift+`. Must match
-  # services.xserver.xkb.layout and console.keyMap, which
-  # hosts/ASAHI/default.nix also sets to us.
-  xkbRulesLayout = "us";
+  # "English (UK, Macintosh)": Shift+3 is £, € and # are on the third level
+  # of 2 and 3. Shift+2 is still @ and ` / ~ are still on the key next to
+  # left Shift, so only the number row differs from the US keycaps. Must
+  # match services.xserver.xkb.layout/variant and console.keyMap, which
+  # hosts/ASAHI/default.nix also sets to gb / mac.
+  xkbRulesLayout = "gb(mac)";
 }

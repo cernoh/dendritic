@@ -43,16 +43,20 @@
       obs
       ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
 
-      # Keyboard layout: this Mac's keyboard is the US one, so the shared gb
-      # layout from core/locale.nix puts @ and ~ on the keys left of 1/2
-      # instead of where a US typist expects them (Shift+2 / Shift+`). Locales
-      # stay en_GB — only the keymap changes.
+      # Keyboard layout: `gb` variant `mac` — "English (UK, Macintosh)" in
+      # xkeyboard-config. The keymap follows macOS UK, not the US ANSI keycaps
+      # soldered to this keyboard: Shift+3 is £, and € / # sit on the third
+      # level of 2 / 3 (ISO_Level3_Shift). Every other habit stays US: Shift+2
+      # is @ and ` / ~ stay on the key next to left Shift, both because the
+      # `mac` variant defines them so. Locales stay en_GB — only the keymap
+      # changes. Must match dendritic.mango.xkbRulesLayout = "gb(mac)" in
+      # _mango-settings.nix, which is the layer that actually types.
       ({
         services.xserver.xkb = {
-          layout = "us";
-          variant = "";
+          layout = "gb";
+          variant = "mac";
         };
-        console.keyMap = "us";
+        console.keyMap = "gb";
       })
     ];
   };

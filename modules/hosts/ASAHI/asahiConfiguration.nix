@@ -6,6 +6,7 @@
   flake.nixosModules.asahiConfiguration =
     {
       lib,
+      pkgs,
       config,
       ...
     }:
@@ -130,6 +131,45 @@
 
       hardware.asahi.peripheralFirmwareDirectory = vendorfw;
       hardware.asahi.extractPeripheralFirmware = onMacAsRoot;
+
+      # fn is the third level, as on macOS UK. The `gb(mac)` keymap puts £ on
+      # Shift+3 and € / # on the third level of 2 / 3, and XKB reaches that
+      # level with ISO_Level3_Shift, which the `mac` variant binds to Right
+      # Alt (level3(ralt_switch)). A MacBook's fn key IS reported to userspace,
+      # as KEY_FN (0x1d0) — verified by reading /dev/input/event1, not assumed
+      # — so evremap turns the physical fn into that Right Alt and fn+2 / fn+3
+      # land where macOS put them. The real Right Alt still works; this only
+      # adds a second key reaching the same layer, and the backslash key keeps
+      # # as well.
+      #
+      # evdev-level, so it holds in MangoWM, niri, XWayland, a VT and the
+      # greeter at once. fn+F1..F12 is untouched: hid-apple does that
+      # translation in the kernel, above evdev.
+      #
+      # A system service, not a session command: evremap must grab the device
+      # exclusively and write its virtual device to /dev/uinput, which is
+      # root-owned (crw-------) on this machine. Restart=always because the
+      # internal keyboard is not guaranteed to be up when multi-user.target is
+      # reached — evremap exits if the device is missing.
+      environment.etc."evremap.toml".source = pkgs.writeText "evremap.toml" ''
+        device_name = "Apple MTP keyboard"
+
+        [[remap]]
+        input = [ "KEY_FN" ]
+        output = [ "KEY_RIGHTALT" ]
+      '';
+
+      systemd.services.evremap = {
+        description = "Map the Apple fn key to Right Alt (third level of gb(mac))";
+        documentation = [ "man:evremap(1)" ];
+        wantedBy = [ "multi-user.target" ];
+        after = [ "systemd-udev-settle.service" ];
+        serviceConfig = {
+          ExecStart = "${pkgs.evremap}/bin/evremap remap /etc/evremap.toml";
+          Restart = "always";
+          RestartSec = 3;
+        };
+      };
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
       home-manager.users.${config.dendritic.userName} =
@@ -179,10 +219,13 @@
             Install.WantedBy = [ "default.target" ];
           };
 
-          # No evremap here any more: it existed only to work around the gb
-          # keymap (Ctrl+2 for @, Option+3 for #). With the us layout (see
-          # hosts/ASAHI/_mango-settings.nix and hosts/ASAHI/default.nix) those
-          # glyphs are on their native keys, and the remap would break Ctrl+2.
+          # No key remapping here. The keymap is `gb(mac)` (see
+          # hosts/ASAHI/_mango-settings.nix and hosts/ASAHI/default.nix): @ is
+          # on Shift+2 and # is on the third level of 3 as well as the
+          # backslash key, so nothing needs an evremap and Ctrl+2 stays
+          # Ctrl+2. The one remap this machine needs — fn to Right Alt — is a
+          # system service at the NixOS level above, because it has to run as
+          # root.
         };
     };
 }
