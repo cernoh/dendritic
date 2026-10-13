@@ -11,6 +11,11 @@
       ...
     }:
     {
+      # Audio stack plus its effects app. EasyEffects lives in
+      # `features/easyeffects` (the wiki's HM + dconf install,
+      # not a system package), so audio owns the import.
+      imports = [ self.nixosModules.easyeffects ];
+
       environment.systemPackages = with pkgs; [
         playerctl
         pavucontrol

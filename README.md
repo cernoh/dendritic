@@ -47,6 +47,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `act` | GitHub Actions local runner via [nektos/act](https://github.com/nektos/act); composes `docker`, ships a default runner image in `~/.actrc`. Enabled by the `desktop` bundle |
 | `computer-use` | Wayland desktop-control toolchain: `grim`, `slurp`, `wtype`, `wlrctl`, `wlr-randr`, `wayland-utils`. Enabled by the `desktop` bundle |
 | `docker` | Docker runtime + compose CLI; sibling module `mcpContainers` provisions the omp MCP stack (scrapling :8000, agentwebsearch-mcp :8902) as systemd-managed oci-containers |
+| `easyeffects` | [EasyEffects](https://github.com/wwmm/easyeffects) the way its wiki documents a NixOS install: HM `services.easyeffects.enable` plus NixOS `programs.dconf.enable`, so presets persist through dconf instead of shipping as a bare system package. Imported by the `audio` system module |
 | `fish` | fish shell config + companion CLI tools (direnv hook comes from `programming`) |
 | `flatpak` | Declarative Flatpak management via [nix-flatpak](https://github.com/gmodena/nix-flatpak): OBS Studio, Sober, and the pinned Spotifast release bundle on NIXPC (all x86_64-only); no apps on ASAHI |
 | `funes` | [funes](https://github.com/huggingface/funes) agent-memory CLI via overlay (`overlays.funes`, `packages.funes`); pinned upstream release binary. Ships the binary only — `funes add pi` is a one-time interactive step you run yourself, because it edits pi's git-tracked config |
