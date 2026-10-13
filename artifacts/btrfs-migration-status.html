@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // btrfs migration — NIXPC Phase 4 gate (sdb wipe)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+/* ==== theme.css inlined (canonical) ==== */
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em;
+  --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:64px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{position:sticky;top:0;z-index:8;display:flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(8,9,10,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chip{font:600 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:7px 10px}
+.chip b{color:var(--acid)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.chip.warn{border-color:var(--warn);color:var(--warn)}
+.chip.warn b{color:var(--warn)}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;text-decoration:none;color:var(--dim);background:var(--panel2);border:1px solid var(--line);padding:8px 13px}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:26px 0 0;padding:16px 18px;background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+pre{padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel)}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+.pass{color:var(--acid)} .fail{color:var(--bad)} .wait{color:var(--warn)}
+.checks{display:grid;gap:10px}
+.check{display:flex;gap:12px;align-items:flex-start;padding:13px 15px}
+.check .badge{font:700 10px/1.6 var(--f-mono);letter-spacing:.14em;white-space:nowrap;padding-top:2px}
+.check p{font-size:13.5px;color:var(--dim)}
+.check p b{color:var(--fg);font-weight:400}
+.export{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim)}
+.export kbd{font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:4px 6px;border-radius:2px}
+button.act{margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){.brand{font-size:16px}nav.top{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip">Issue <b>#274</b></div>
+  <div class="chip">Phase <b>4 gate · sdb wipe</b></div>
+  <div class="chip warn">Gate <b>awaiting UUID paste-back</b></div>
+  <nav class="top">
+    <a href="#verdict">Overview</a>
+    <a href="#drives">Drives</a>
+    <a href="#checks">Checks</a>
+    <a href="#next">Next</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Status <b>/</b> btrfs migration <b>/</b> 2026-10-13</div>
+    <h1>sdb is the last ext4 disk.<br>Backups verified. <em>Awaiting the wipe.</em></h1>
+    <p class="lede">NVMe root and sdc1 are already btrfs and live. sdb1 (mounted at /mnt/2tb-storage, 417G used) is the final ext4 volume. Its full contents exist twice — in /mnt/2tb-storage/MIGRATION/ and staged on the btrfs disk at /mnt/2tb-ext4/MIGRATION-CARRY/ — and every comparison passes. No destructive command has run. The runbook requires the human to paste back the wipe UUID before mkfs.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>please ensure all data from 2tb-storage is saved somewhere, then run mkfs and continue. use ❱ gh issue view 274, and use gh issue comment to note down where you are while this is happening. + there should be a html artefact that notes where abouts we are too.</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">VERDICT</span>
+    <p><b>Safe to wipe on human confirm.</b> All sdb data is staged on btrfs sda. Next action: paste back UUID <b>3121d45d-1143-4745-bfc8-7222cf4234f0</b> to authorize <b>mkfs.btrfs -f -L data2</b> on that UUID only.</p>
+  </div>
+
+  <section id="drives">
+    <div class="lbl">Drive map <b>06</b> <span class="rule"></span> <span>lsblk 2026-10-13, letters re-verified</span></div>
+    <div class="panel" style="padding:6px 18px 12px;overflow:auto">
+    <table>
+      <thead><tr><th>Disk</th><th>UUID</th><th>Mount</th><th>Now</th><th>Target</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>nvme0n1p2</td><td>dbf949b5-…-0fa3ba35797a</td><td>/, /home, /nix</td><td>btrfs @/@home/@nix</td><td>btrfs</td><td class="pass">DONE</td></tr>
+        <tr><td>sdc1</td><td>(blkid-blind, by-id WWN)</td><td>/mnt/2tb-ext4</td><td>btrfs, 332G used</td><td>btrfs</td><td class="pass">DONE</td></tr>
+        <tr><td>sdb1</td><td><b>3121d45d-…-7222cf4234f0</b></td><td>/mnt/2tb-storage</td><td>ext4, 417G used</td><td>btrfs</td><td class="wait">GATE — wipe pending</td></tr>
+        <tr><td>sda2</td><td>c6c7f349-…-0b358cb61b7b</td><td>/mnt/endeavouros</td><td>btrfs</td><td>never touch</td><td class="pass">UNTOUCHED</td></tr>
+        <tr><td>nvme0n1p1</td><td>1CE1-8D52</td><td>/boot</td><td>vfat</td><td>never touch</td><td class="pass">UNTOUCHED</td></tr>
+        <tr><td>nvme0n1p3</td><td>afaca157-…-690e690632</td><td>[SWAP]</td><td>swap</td><td>never touch</td><td class="pass">UNTOUCHED</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="checks">
+    <div class="lbl">Verify-before-destroy <b>05</b> <span class="rule"></span> <span>runbook §0 rule 4</span></div>
+    <div class="checks">
+      <div class="panel check"><span class="badge pass">PASS</span><p><b>Live file lists match both copies.</b> <b>ls /mnt/2tb-storage</b> (excl MIGRATION, lost+found) == <b>MIGRATION/data-sdb-orig</b> == <b>MIGRATION-CARRY/data-sdb-orig</b>. Live data ≈ 11G: moon-down 8.2G, settings-editable 1.9G, wire-aria2c-vim 1G.</p></div>
+      <div class="panel check"><span class="badge pass">PASS</span><p><b>rsync dry-run home → CARRY/home: zero diffs</b> (179G / 179G). Straggler <b>moon-down/.git/FETCH_HEAD</b> mtime drift found in data-sdb-orig, re-synced, re-verify clean, cmp confirms in-sync.</p></div>
+      <div class="panel check"><span class="badge pass">PASS</span><p><b>/mnt/2tb-ext4 live == MIGRATION/data-sda</b> except <b>MIGRATION-CARRY/</b> itself (expected — it is the staging dir created after Phase 3 restore). Phase 3 restore confirmed intact.</p></div>
+      <div class="panel check"><span class="badge pass">PASS</span><p><b>Spot-checks open correctly:</b> CARRY/home/.config/dendritic/flake.nix present, data-sdb-orig dirs list, CARRY holds runbook + MANIFEST + etc-nixos. Target disk holds 1.5T free on btrfs sda — staging fits with headroom.</p></div>
+      <div class="panel check"><span class="badge wait">GATE</span><p><b>No destructive command run.</b> Per runbook §0 rule 6 the wipe needs the operator to paste back UUID <b>3121d45d-1143-4745-bfc8-7222cf4234f0</b>. Progress logged to issue #274 (start + verify comments).</p></div>
+    </div>
+  </section>
+
+  <section id="next">
+    <div class="lbl">Next <b>04</b> <span class="rule"></span> <span>exact commands, in order</span></div>
+    <div class="panel" style="padding:20px;display:grid;gap:14px">
+<pre><span class="c"># 1. human pastes back the UUID, then ONLY this wipe runs (by-uuid, never sdX):</span>
+mkfs.btrfs -f -L data2 /dev/disk/by-uuid/<span class="s">3121d45d-1143-4745-bfc8-7222cf4234f0</span></pre>
+<pre><span class="c"># 2. mount + restore the staged copy, re-verify:</span>
+mount -o compress=zstd,noatime /dev/disk/by-label/data2 /mnt/2tb-storage
+rsync -aAXH /mnt/2tb-ext4/MIGRATION-CARRY/data-sdb-orig/ /mnt/2tb-storage/
+du -sh /mnt/2tb-storage  <span class="c"># expect ~11G + restored layout</span></pre>
+<pre><span class="c"># 3. track the NEW uuid in the flake (blkid gives it), btrfs + zstd:</span>
+<span class="k">fileSystems</span>.<span class="s">"/mnt/2tb-storage"</span> = {
+  device = <span class="s">"/dev/disk/by-uuid/&lt;new-uuid&gt;"</span>;
+  fsType = <span class="s">"btrfs"</span>;
+  options = [ <span class="s">"compress=zstd"</span> <span class="s">"noatime"</span> <span class="s">"nofail"</span> ];
+};
+nixos-rebuild switch --impure --flake ~/.config/dendritic#NIXPC</pre>
+<pre><span class="c"># 4. reboot check + keep CARRY/home one week, then reclaim ~179G</span>
+findmnt -rn -o TARGET,SOURCE,FSTYPE | grep btrfs</pre>
+    </div>
+  </section>
+
+  <footer>Artifact · issue #274 · runbook /mnt/2tb-storage/MIGRATION/00-RUNBOOK-FOR-FUTURE-AGENT.md · generated by pi · self-contained</footer>
+</div>
+
+<div class="export">
+  <span><kbd>reply</kbd> paste back UUID 3121d45d-…-7222cf4234f0 to authorize the wipe</span>
+  <button class="act" id="copy">Copy checkpoint</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const TEXT = () => `btrfs migration checkpoint (issue #274, Phase 4 gate): nvme DONE (btrfs), sdc1 DONE (btrfs live), sdb1 still ext4 (417G used). All sdb data staged at /mnt/2tb-ext4/MIGRATION-CARRY/ (home 179G + data-sdb-orig 11G), all 4 verify checks PASS, 1 straggler re-synced. No destructive command run. To authorize: paste back UUID 3121d45d-1143-4745-bfc8-7222cf4234f0 for mkfs.btrfs -f -L data2.`;
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(TEXT()); }
+  catch { prompt('Copy:', TEXT()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

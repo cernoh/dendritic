@@ -36,18 +36,22 @@
         transmission_4-qt
         persepolis
       ];
-      # Spare SATA data disks (sda1 + sdb1), pinned by UUID. nofail
-      # keeps boot green if a disk is absent or unmountable.
+      # Spare SATA data disks, pinned by stable path. nofail keeps boot green
+      # if a disk is absent or unmountable.
       #
-      # 2026-10-13 (issue #274): sda1 moved ext4 -> btrfs with zstd compression
-      # and a new UUID. sdb1 is still ext4 here on purpose: it is converted in
-      # a second pass (its old UUID stays valid until that mkfs runs), so this
-      # entry is updated to btrfs only once the disk is actually reformatted.
+      # 2026-10-13 (issue #274, Phase 4): both disks are btrfs with zstd now.
+      # sdb1 (data2) was the last ext4 volume; wiped and restored from
+      # MIGRATION-CARRY/data-sdb-orig. Both btrfs filesystems use the new
+      # mkfs.btrfs block-group-tree default, which util-linux 2.42.3 blkid
+      # cannot probe (no TYPE, no by-uuid/by-partuuid symlinks), so both
+      # entries pin /dev/disk/by-id WWN paths (udev-built, blkid-independent).
       fileSystems = {
         "/mnt/2tb-storage" = {
-          device = "/dev/disk/by-uuid/3121d45d-1143-4745-bfc8-7222cf4234f0";
-          fsType = "ext4";
+          device = "/dev/disk/by-id/wwn-0x5000c500e5f021d1-part1";
+          fsType = "btrfs";
           options = [
+            "compress=zstd"
+            "noatime"
             "nofail"
           ];
         };
