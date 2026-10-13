@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // ext4 vs ZFS vs XFS — single-NVMe NixOS desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em;
+  --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg); color:var(--fg); font-family:var(--f-ui); font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased; padding-bottom:64px;}
+body::after{content:""; position:fixed; inset:0; pointer-events:none; z-index:9; background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{font:600 11px/1 var(--f-ui); letter-spacing:var(--ls); text-transform:uppercase; color:var(--dim); display:flex; align-items:center; gap:10px;}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{position:sticky; top:0; z-index:8; display:flex; align-items:center; gap:10px; padding:12px 24px; background:rgba(8,9,10,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); flex-wrap:wrap;}
+.chip{font:600 11px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--line2); background:var(--panel2); color:var(--fg); padding:7px 10px;}
+.chip b{color:var(--acid)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase; text-decoration:none;color:var(--dim);background:var(--panel2); border:1px solid var(--line);padding:8px 13px;}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp); letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0;}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line); border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch;}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls); text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap; margin:26px 0 0;padding:16px 18px; background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid); clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line); clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{position:absolute;top:-1px;right:var(--notch); background:var(--panel3);border:1px solid var(--line2);border-top:0; padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim);}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6; border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel);}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line); border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase; color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+.flow{width:100%;height:auto;display:block}
+.flow text{font:600 10px var(--f-ui);letter-spacing:.12em;fill:var(--dim);text-transform:uppercase}
+.flow .node{fill:var(--panel2);stroke:var(--line2)}
+.flow .hot{stroke:var(--acid);fill:var(--panel3)}
+.flow .edge{stroke:var(--acid-dk);stroke-width:1.5;fill:none}
+.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center; font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase; color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+.tabs > summary::-webkit-details-marker{display:none}
+.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+.export{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center; padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line); font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);}
+.export kbd{font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2); color:var(--fg);padding:4px 6px;border-radius:2px;}
+button.act{margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase; background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer;}
+button.act:active{transform:translateY(1px)}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08; padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line); color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip">Status <b>Final</b></div>
+  <div class="chip">Scope <b>3 Filesystems</b></div>
+  <div class="chip">Rev <b>01</b></div>
+  <nav class="top">
+    <a href="#verdict">Overview</a>
+    <a href="#options">Options</a>
+    <a href="#flow">Data Flow</a>
+    <a href="#open">Open Questions</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Exploration <b>/</b> Filesystem <b>/</b> 2026-10-13</div>
+    <h1>ext4 vs ZFS vs XFS<br>for <em>this NixOS box</em></h1>
+    <p class="lede">You are on ext4 on a 466&nbsp;GB NVMe root, with 32&nbsp;GB RAM and three idle HDDs (2&times;1.8&nbsp;TB + 931&nbsp;GB). For a single-disk NixOS desktop root the boring answer wins — but those HDDs change the second half of the answer. Reader-who-stops-here version: keep ext4 on <span style="font-family:var(--f-mono)">/</span>, put ZFS on the bulk disks.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>whats the best file system to use? Ext4, zfs or xfs — context: currently ext4 on /dev/nvme0n1p2 mounted on / (df -T + findmnt confirmed), 32GB RAM, NVMe 466GB + sda 1.8T + sdb 1.8T + sdc 931GB, dendritic NixOS (NIXPC x86_64 / ASAHI aarch64)</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">Selected</span>
+    <p><b>Option A (ext4) for / — plus Option B (ZFS) for /data.</b> Keep the NVMe root on ext4: zero NixOS friction, shrinkable, fast enough. Build the three HDDs into a ZFS mirror pool for bulk data where checksums, compression and snapshots actually pay. XFS only if your root becomes a large-file video/VM volume.</p>
+  </div>
+
+  <section id="options">
+    <div class="lbl">Options <b>03</b> <span class="rule"></span> <span>Vary the axis, not the wording</span></div>
+    <div class="cards">
+
+      <article class="panel card pick">
+        <div class="key">A · PICK</div>
+        <h2>ext4 — keep it for root</h2>
+        <div class="tradeoff">◈ TRADEOFF // gives up checksums + snapshots to buy zero friction</div>
+        <pre><span class="c"># what you already have — nothing to do</span>
+<span class="s">df -T /</span>  <span class="c"># /dev/nvme0n1p2 ext4</span>
+
+<span class="c"># dendritic / NixOS root stays declarative, shrinkable</span>
+<span class="k">fileSystems</span>.<span class="s">"/"</span> = {
+  device = <span class="s">"/dev/nvme0n1p2"</span>;
+  fsType = <span class="s">"ext4"</span>;
+};</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Already running; kernel-native, every rescue USB reads it.</dd>
+          <dt class="up">PRO</dt><dd>Shrink + grow online tooling (resize2fs) — only one of the three that shrinks.</dd>
+          <dt class="up">PRO</dt><dd>Zero NixOS friction: any kernel, no hostId, no separate /boot dance.</dd>
+          <dt class="up">PRO</dt><dd>Lowest RAM/CPU overhead; ideal for 466&nbsp;GB NVMe root.</dd>
+          <dt class="down">CON</dt><dd>No checksums — bitrot on root goes undetected.</dd>
+          <dt class="down">CON</dt><dd>No snapshots / compression; Nix generations cover config, not user data.</dd>
+        </dl>
+        <div class="metrics"><div><b>0</b><span>Migrate cost</span></div><div><b>LOW</b><span>NixOS friction</span></div><div><b>~0</b><span>Extra RAM</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">B</div>
+        <h2>ZFS — bulk pool, not root</h2>
+        <div class="tradeoff">◈ TRADEOFF // gives up simplicity + RAM to buy integrity at rest</div>
+        <pre><span class="c"># mirror the 2x1.8T, keep 931GB as spare / scratch</span>
+zpool create -o ashift=12 tank mirror sda sdb
+zfs <span class="s">set</span> compression=zstd tank
+zfs <span class="s">set</span> atime=off tank
+zfs create tank/data  <span class="c"># mount at /data</span>
+
+<span class="c"># NixOS side (pinned kernel + hostId required)</span>
+<span class="k">networking</span>.hostId = <span class="s">"8425e349"</span>;
+<span class="k">boot</span>.supportedFilesystems = [ <span class="s">"zfs"</span> ];</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>End-to-end checksums + scrub: only option that detects HDD bitrot.</dd>
+          <dt class="up">PRO</dt><dd>zstd compression ~1.3–2× on typical bulk; snapshots + send/receive free.</dd>
+          <dt class="up">PRO</dt><dd>32&nbsp;GB RAM is enough ARC for a 2–3&nbsp;TB mirror pool.</dd>
+          <dt class="down">CON</dt><dd>RAM-hungry (reserve ~1–2&nbsp;GB ARC + tune);ARC pressure on a desktop workload.</dd>
+          <dt class="down">CON</dt><dd>NixOS root-on-ZFS costs a pinned kernel, hostId, separate /boot, slower boot.</dd>
+          <dt class="down">CON</dt><dd>No shrink-a-vdev: oversized pool cannot be shrunk later.</dd>
+        </dl>
+        <div class="metrics"><div><b>MED</b><span>Setup cost</span></div><div><b>HIGH</b><span>As root</span></div><div><b>1–2G</b><span>ARC want</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">C</div>
+        <h2>XFS — large-file specialist</h2>
+        <div class="tradeoff">◈ TRADEOFF // gives up shrink + integrity to buy parallel throughput</div>
+        <pre><span class="c"># format + mount for a video / VM / build volume</span>
+mkfs.xfs -L data /dev/sdc1
+<span class="c"># /etc/fstab</span>
+LABEL=data  /data  xfs  defaults,noatime  0 2
+
+<span class="c"># grow later is online; shrink never is</span>
+xfs_growfs /data</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Best sustained throughput on large files + parallel I/O (video, VMs, builds).</dd>
+          <dt class="up">PRO</dt><dd>Online grow + defrag (xfs_fsr); mature, kernel-native, low NixOS friction.</dd>
+          <dt class="up">PRO</dt><dd>Fast mkfs/fsck on multi-TB volumes where ext4 fsck drags.</dd>
+          <dt class="down">CON</dt><dd>Cannot shrink — layout mistakes are permanent without reformat.</dd>
+          <dt class="down">CON</dt><dd>No checksums, no snapshots, no compression — same integrity story as ext4.</dd>
+          <dt class="down">CON</dt><dd>Small-file + metadata-heavy trees (nix store!) measurably slower than ext4.</dd>
+        </dl>
+        <div class="metrics"><div><b>LOW</b><span>Setup cost</span></div><div><b>LOW</b><span>NixOS friction</span></div><div><b>~0</b><span>Extra RAM</span></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="flow">
+    <div class="lbl">Decision path <b>/</b> where each one wins</div>
+    <div class="panel" style="padding:22px">
+      <svg class="flow" viewBox="0 0 1000 190" role="img" aria-label="Filesystem decision path">
+        <rect class="node hot" x="8" y="60" width="170" height="56"/><text x="26" y="92">NVMe root /</text>
+        <rect class="node" x="258" y="60" width="170" height="56"/><text x="276" y="92">Bulk HDDs</text>
+        <rect class="node" x="508" y="60" width="170" height="56"/><text x="526" y="92">Big files?</text>
+        <rect class="node" x="758" y="10" width="234" height="40"/><text x="776" y="35">ext4 stays ◈ pick</text>
+        <rect class="node" x="758" y="60" width="234" height="40"/><text x="776" y="85">ZFS mirror ◈ data</text>
+        <rect class="node" x="758" y="110" width="234" height="40"/><text x="776" y="135">XFS ◈ video/VM vol</text>
+        <path class="edge" d="M178 88 H258" marker-end="url(#a)"/>
+        <path class="edge" d="M428 88 H508" marker-end="url(#a)"/>
+        <path class="edge" d="M678 74 L758 30" marker-end="url(#a)"/>
+        <path class="edge" d="M678 88 H758" marker-end="url(#a)"/>
+        <path class="edge" d="M678 102 L758 130" marker-end="url(#a)"/>
+        <text x="180" y="150">◈ ROOT STAYS BORING — INTEGRITY LIVES ON THE BULK POOL</text>
+      </svg>
+    </div>
+    <table style="margin-top:22px">
+      <thead><tr><th>Property</th><th>ext4 (A)</th><th>ZFS (B)</th><th>XFS (C)</th></tr></thead>
+      <tbody>
+        <tr><td>checksums / scrub</td><td>no</td><td><b>yes</b></td><td>no (metadata CRC only)</td></tr>
+        <tr><td>snapshots</td><td>no (LVM only)</td><td><b>native</b></td><td>no</td></tr>
+        <tr><td>compression</td><td>no</td><td><b>zstd / lz4</b></td><td>no</td></tr>
+        <tr><td>shrink volume</td><td><b>yes</b></td><td>no</td><td>no</td></tr>
+        <tr><td>NixOS root friction</td><td><b>none</b></td><td>kernel pin + hostId + /boot</td><td>none</td></tr>
+        <tr><td>RAM hunger</td><td>~0</td><td>1–2 GB ARC want</td><td>~0</td></tr>
+        <tr><td>best at</td><td>general root</td><td><b>bulk integrity</b></td><td>large-file throughput</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="open">
+    <div class="lbl">Open questions <b>02</b> <span class="rule"></span></div>
+    <details class="tabs" open><summary>▸ Q1 — Are the three HDDs free to pool, and is the data replaceable?</summary>
+      <div class="body">If sda/sdb/sdc hold data you need, the ZFS pool build needs a backup target first — pooling destroys contents. Owner: you. By: before any <span style="font-family:var(--f-mono)">zpool create</span>. If they are spare, the mirror can be built today and mounted at <span style="font-family:var(--f-mono)">/data</span> without touching <span style="font-family:var(--f-mono)">/</span>.</div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ Q2 — Does any volume hold hours-long video renders or large VM images?</summary>
+      <div class="body">That is the only case that flips a volume from ext4 to XFS. For the Nix store itself (metadata-heavy, many small files) ext4 stays faster — do not put <span style="font-family:var(--f-mono)">/nix</span> on XFS without measuring. Why not blocking: root decision is already made; this only shapes a future <span style="font-family:var(--f-mono)">/data</span> subvolume.</div></details>
+  </section>
+
+  <footer>Artifact · generated by pi · self-contained, upload to share · ext4 on / confirmed via df -T + findmnt 2026-10-13</footer>
+</div>
+
+<div class="export">
+  <span><kbd>A</kbd> ext4 root + ZFS data</span>
+  <span><kbd>scroll</kbd> Read</span>
+  <button class="act" id="copy">Copy as prompt</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const PICK = 'A';
+const SPEC = () => {
+  const sel = document.querySelector('.card.pick');
+  const opt = [...document.querySelectorAll('.card')]
+    .map((c, i) => `Option ${'ABC'[i]} — ${c.querySelector('h2').textContent.trim()}: ${c.querySelector('.tradeoff').textContent.replace('◈ TRADEOFF // ','')}`)
+    .join('\n');
+  return `Implement option ${PICK} from artifacts/filesystem-ext4-zfs-xfs.html\n\n${opt}\n\nSelected: ${sel.querySelector('h2').textContent.trim()}\n${sel.querySelector('.tradeoff').textContent.replace('◈ TRADEOFF // ','Why: ')}\n\nConstraints: NixOS dendritic, ext4 root on NVMe stays, ZFS mirror on sda+sdb for /data. Do not widen scope.`;
+};
+document.getElementById('copy').onclick = async (e) => {
+  try { await navigator.clipboard.writeText(SPEC()); }
+  catch { prompt('Copy:', SPEC()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

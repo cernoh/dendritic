@@ -9,6 +9,12 @@ web-search-cache/
 # provider sends to the relay worker. Runtime state like auth.json, so it must
 # never be `git add`ed — see home/agent/AGENTS.md.
 pi-freeflow-relay-state.json
+# Backup copies of the file above carry the same live tokens (one such .bak
+# was nearly committed via a squash-merge; unstage, never track).
+*.bak
+# Ephemeral herdsman state: peers, mailboxes, supervision snapshots, lock
+# dirs. config.json next to it is real config and stays tracked.
+pi-herdsman/runtime/
 # Written on every switch by home.activation.piTheme from features/scheme.
 themes/
 # `*.log*`, not `*.log`: a rotated log is `….log.1`, which `*.log` never matched,

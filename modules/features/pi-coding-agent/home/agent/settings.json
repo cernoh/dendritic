@@ -10,7 +10,6 @@
     "npm:@juicesharp/rpiv-todo",
     "npm:bigpowers",
     "npm:@dietrichgebert/ponytail",
-    "npm:pi-memory",
     "npm:pi-subagents",
     "npm:pi-agent-browser-native",
     "npm:@andrewjacop/pi-herdr",
@@ -39,6 +38,7 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "defaultProvider": "freeflow",
-  "defaultModel": "space-bunny-free"
+  "defaultProvider": "opencode-go",
+  "defaultModel": "muse-spark-1.3-contributor",
+  "hideThinkingBlock": false
 }

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<!--
+  MARATHON ARTIFACT — NIXPC nix-store split decision
+  Self-contained: theme inlined, no external assets (fonts link is the one exception).
+  Evidence: all numbers measured on NIXPC 2026-10-12.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIXPC // Split the Nix store across two disks?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ---- tokens: the only place a hex may appear ---- */
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em;
+  --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--f-ui);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:64px;
+}
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);
+}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+.lbl{
+  font:600 11px/1 var(--f-ui); letter-spacing:var(--ls); text-transform:uppercase;
+  color:var(--dim); display:flex; align-items:center; gap:10px;
+}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+
+.status{
+  position:sticky; top:0; z-index:8; display:flex; align-items:center; gap:10px;
+  padding:12px 24px; background:rgba(8,9,10,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); flex-wrap:wrap;
+}
+.chip{
+  font:600 11px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--line2); background:var(--panel2); color:var(--fg);
+  padding:7px 10px;
+}
+.chip b{color:var(--acid)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  text-decoration:none;color:var(--dim);background:var(--panel2);
+  border:1px solid var(--line);padding:8px 13px;
+}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{
+  font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);
+  letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0;
+}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{
+  margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);
+  border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:86ch;
+}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);
+  text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{
+  display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+  margin:26px 0 0;padding:16px 18px;
+  background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px;max-width:92ch}
+.panel{
+  background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{
+  position:absolute;top:-1px;right:var(--notch);
+  background:var(--panel3);border:1px solid var(--line2);border-top:0;
+  padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim);
+}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{
+  padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;
+  border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel);
+}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+.quote{
+  border-left:2px solid var(--violet);background:var(--panel2);padding:11px 14px;
+  font:13.5px/1.65 var(--f-serif);color:var(--dim);margin-top:10px;
+}
+.quote i{color:var(--fg);font-style:normal}
+.quote em{display:block;margin-top:7px;font:600 10px/1.4 var(--f-mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--violet)}
+details.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+details.tabs > summary::-webkit-details-marker{display:none}
+details.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+details.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel);
+  font:14px/1.65 var(--f-serif);color:var(--dim)}
+details.tabs .body code{font:12.5px var(--f-mono);color:var(--acid);background:var(--panel2);padding:1px 5px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px;color:var(--dim)}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+td.hot{color:var(--fg)}
+.flow{width:100%;height:auto;display:block}
+.flow text{font:600 10px var(--f-ui);letter-spacing:.12em;fill:var(--dim);text-transform:uppercase}
+.flow .node{fill:var(--panel2);stroke:var(--line2)}
+.flow .hot{stroke:var(--acid);fill:var(--panel3)}
+.flow .bad{stroke:var(--bad);fill:var(--panel3)}
+.flow .edge{stroke:var(--acid-dk);stroke-width:1.5;fill:none}
+.flow .edge-dim{stroke:var(--line2);stroke-width:1.5;fill:none}
+.export{
+  position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;
+  padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);
+}
+.export kbd{
+  font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);
+  color:var(--fg);padding:4px 6px;border-radius:2px;
+}
+button.act{
+  margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer;
+}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;
+  padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+  color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip">Host <b>NIXPC</b></div>
+  <div class="chip">Store <b>61 GiB</b></div>
+  <div class="chip">Free on / <b>138 GiB</b></div>
+  <div class="chip on">Reclaimable <b>152 GiB</b></div>
+  <nav class="top">
+    <a href="#verdict" aria-current="page">Verdict</a>
+    <a href="#evidence">Evidence</a>
+    <a href="#blockers">Blockers</a>
+    <a href="#options">Options</a>
+    <a href="#boot">Boot path</a>
+    <a href="#reclaim">Reclaim</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Decision <b>/</b> Storage <b>/</b> 2026-10-12</div>
+    <h1>Split the Nix store<br>across <em>two disks</em>?</h1>
+    <p class="lede">mergerfs can union <code>/nix/store</code> with a folder on the 2&nbsp;TB drive, and it is the idea the Stack&nbsp;Overflow answer leads with. Nix does not treat the store as a pile of folders, though — it treats it as one immutable filesystem that must exist before <code>nix-daemon</code> starts. And NIXPC does not need the union: the store is <b>61&nbsp;GiB</b> while <code>/</code> has <b>138&nbsp;GiB</b> free, because <b>152&nbsp;GiB</b> of already-dead data is parked in <code>~/.local/share</code>.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>can i split my nix store on NIXPC between my 2tb-ext4 drive and my main drive? https://stackoverflow.com/questions/73909005/nix-store-across-multiple-disks
+<br><br>— follow-up —<br>
+i've found this idea, could i implement it here? Combine arbitrary folders with a union filesystem … mergerfs … <span style="color:var(--acid)">[the SO union-filesystem section verbatim]</span></div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">VERDICT</span>
+    <p><b>No to mergerfs — and you do not need any split.</b> Empty the Trash (<b>90 GiB</b>, one 49 GiB archive) and move the Steam library (<b>62 GiB</b>) to the <code>/mnt/2tb-ext4/SteamLibrary</code> that already exists: <code>/</code> goes from 138&nbsp;GiB free to roughly <b>290&nbsp;GiB</b>, which is <b>4.7×</b> the current store. If you later genuinely outgrow NVMe, <b>option C</b> (<code>local-overlay</code>) is the only layering Nix supports; <b>option B</b> (move <code>/nix</code> wholesale) is the only one that keeps the store on a single filesystem.</p>
+  </div>
+
+  <section id="evidence">
+    <div class="lbl">Evidence <b>06</b> <span class="rule"></span> <span>Measured on NIXPC, 2026-10-12</span></div>
+    <table>
+      <thead><tr><th>Path</th><th>Size</th><th>Device</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="hot">/nix/store</td><td><b>61 GiB</b> · 70 787 paths</td><td>nvme0n1p2 · CT500P3SSD8 · ROTA <b>0</b></td><td>weekly <code>nix-optimise</code> already deduped it</td></tr>
+        <tr><td class="hot">/ (free)</td><td><b>138 GiB</b> free of 448 GiB</td><td>nvme0n1p2 · ext4</td><td>the actual budget</td></tr>
+        <tr><td>~/.local/share/Trash</td><td><b>90 GiB</b> · 24 entries</td><td>on /</td><td>49 GiB is one <code>.7z</code>; deleted 2026-09-22…24</td></tr>
+        <tr><td>~/.local/share/Steam/steamapps</td><td><b>62 GiB</b></td><td>on /</td><td>libraryfolders.vdf already lists two external libraries</td></tr>
+        <tr><td>/mnt/2tb-ext4</td><td>1.5 TiB free</td><td>sda1 · ST2000DM008 · ROTA <b>1</b></td><td><code>nofail</code> in fstab</td></tr>
+        <tr><td>/mnt/2tb-storage</td><td>1.7 TiB free</td><td>sdb1 · ST2000DM008 · ROTA <b>1</b></td><td><code>nofail</code> in fstab</td></tr>
+      </tbody>
+    </table>
+    <div class="quote" style="margin-top:18px">
+      The one line that reframes the question: <i>61 GiB of store, 138 GiB free, 152 GiB of removable data inside the 448 GiB root.</i> The store is not the reason <code>/</code> is 68&nbsp;% full. <code>/home</code> is 186&nbsp;GiB and 155 of it is Trash + Steam.
+      <em>du -xhs /nix/store · df · du -xhs /home/davr/.local/share/*</em>
+    </div>
+  </section>
+
+  <section id="blockers">
+    <div class="lbl">What the SO answer is <b>/</b> and why mergerfs breaks here</div>
+    <p class="lede" style="max-width:none">That question has two answers. The accepted one is a <b>survey of six different strategies</b> and the union-filesystem section is a generic pitch for mergerfs — it even marks the cost itself ("at the cost of performance") and never mentions Nix's immutability, atomic-commit or boot-ordering requirements. The other answer states the constraint plainly: <i>"as far as I know it is not possible to share nix across multiple disks transparently without either LVM/ZFS … or write your own fuse overlay for nixpkgs … you need to ensure <code>/nix/store</code> contains enough stuff to boot before the fuse overlay is started."</i> That is the real blocker, and NixOS makes it worse in a way the answer only half-guesses.</p>
+
+    <div class="cards" style="margin-top:18px">
+      <article class="panel card">
+        <div class="key">01</div>
+        <h2>The store is deliberately one immutable mount</h2>
+        <div class="tradeoff">◈ BLOCKING // the seam is NixOS's, not yours</div>
+        <p style="color:var(--dim);font-size:13.5px">On this machine <code>/nix/store</code> is not a plain directory — it is a read-only self-bind of <code>/dev/nvme0n1p2[/nix/store]</code>. NixOS applies it at boot from <code>boot.nixStoreMountOpts</code>:</p>
+        <div class="quote"><i>Defines the mount options used on a bind mount for the <code>/nix/store</code>. This affects the whole system except the nix store daemon, <b>which will undo the bind mount</b>. <code>ro</code> enforces immutability of the Nix store.</i><em>nixpkgs · nixos/modules/system/boot/stage-2.nix</em></div>
+        <pre><span class="c"># live state on NIXPC right now</span>
+$ findmnt -rno OPTIONS /nix/store
+ro,nosuid,nodev,relatime,x-initrd.mount
+
+$ systemctl show nix-daemon.service -p RequiresMountsFor
+RequiresMountsFor=/nix/store /nix/var /nix/var/nix/db</pre>
+        <p style="color:var(--dim);font-size:13.5px">So a union has to be inserted <i>under</i> that seam and be live before <code>nix-daemon</code> starts — and the daemon will then undo the top mount, which would now be yours.</p>
+      </article>
+
+      <article class="panel card">
+        <div class="key">02</div>
+        <h2>mergerfs cannot rename or link across branches</h2>
+        <div class="tradeoff">◈ BLOCKING // EXDEV is the documented answer</div>
+        <p style="color:var(--dim);font-size:13.5px">Nix commits a store path by writing a temporary name and <code>rename()</code>-ing it into place, because a hash-addressed path must be all-or-nothing. mergerfs's own docs describe exactly that pattern as the one it cannot serve:</p>
+        <div class="quote"><i>there is no way to link or rename from one of the underlying branches into mergerfs. They are different filesystems even if logically they seem related.</i><br><br><i>it is common and even best practice for a program to write to a temporary file first and then rename to its final destination. <b>That temporary file name will typically be random and have no indication of the type of file being written.</b></i><em>mergerfs · FAQ → Technical Behavior and Limitations</em></div>
+        <p style="color:var(--dim);font-size:13.5px">"Split of files across branches" is also on mergerfs's own non-features list. Nix tolerates <code>EXDEV</code> on some moves by falling back to a full copy — which means every store-path addition can degrade into copying a whole closure through FUSE.</p>
+      </article>
+
+      <article class="panel card">
+        <div class="key">03</div>
+        <h2>Placement is a guess, decided per create</h2>
+        <div class="tradeoff">◈ BLOCKING // the DB and the disk can disagree</div>
+        <p style="color:var(--dim);font-size:13.5px">Path-preserving placement is what makes the mergerfs pitch sound like it fits Nix — but it is best-effort, evaluated when the file is created, against free space:</p>
+        <div class="quote"><i>This is why it is impossible for mergerfs to choose the branch for a create based on file size or the source of the data. … if the source of a link or rename is on branch A but the target directory is on branch B, given the whole point of the policy is to strictly enforce behavior based on what branches already exist, it must return EXDEV.</i><em>mergerfs · FAQ</em></div>
+        <p style="color:var(--dim);font-size:13.5px">Nix's temp name and its final name are unrelated strings, so nothing guarantees they resolve to the same branch — and the store's SQLite database records the path as valid either way.</p>
+      </article>
+
+      <article class="panel card">
+        <div class="key">04</div>
+        <h2>Boot depends on a disk marked <code>nofail</code></h2>
+        <div class="tradeoff">◈ BLOCKING // absent disk = silently partial store</div>
+        <p style="color:var(--dim);font-size:13.5px">The 2 TB drives are <code>nofail</code> — "this disk may legitimately be absent". <code>/nix/store</code> is needed <b>during</b> early boot, before <code>nix-daemon</code>, for systemd itself. mergerfs advertises this as a feature, which for Nix is the worst possible failure mode:</p>
+        <div class="quote"><i>Unaffected by individual filesystem failure</i><br><br><i>What happens if a branch filesystem blocks? … If enough threads block then mergerfs will block. There are no timeouts or ways to truly work around this situation.</i><em>mergerfs · Features / FAQ</em></div>
+        <p style="color:var(--dim);font-size:13.5px">A vanished branch does not error — the union keeps answering, with an arbitrary subset of the store missing while <code>/nix/var/nix/db</code> still claims every path is valid. Plus the bootstrap circle: the mergerfs binary you need to mount <code>/nix/store</code> lives inside <code>/nix/store</code>.</p>
+      </article>
+
+      <article class="panel card">
+        <div class="key">05</div>
+        <h2>Cost lands on the hottest path you own</h2>
+        <div class="tradeoff">◈ BLOCKING // FUSE + 7200 rpm, for every exec</div>
+        <dl class="pros">
+          <dt class="down">DEP</dt><dd>mergerfs is not installed; it would come from nixpkgs and has to reach the initrd via <code>boot.initrd.extraUtilsCommands</code>.</dd>
+          <dt class="down">PERF</dt><dd><code>getxattr security.capability</code> is issued before <i>every single write</i> — mergerfs's docs call the result "massive slowdowns".</dd>
+          <dt class="down">PERF</dt><dd><code>FICLONE</code>/reflink unsupported by FUSE: no clone-file-range for store copies.</dd>
+          <dt class="down">PERF</dt><dd>Half the store would move from an NVMe SSD to a <b>rotational</b> ST2000DM008 (<code>ROTA 1</code>). <code>/nix/store</code> is touched by essentially every process launch.</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">06</div>
+        <h2>It solves a problem you do not have</h2>
+        <div class="tradeoff">◈ THE ACTUAL FINDING</div>
+        <pre><span class="c"># root filesystem, by consumer</span>
+186 G  /home        ← 90 Trash + 62 Steam + 34 real
+ 62 G  /nix         ← 61 of it is the store
+ 11 G  /var
+  3 G  /tmp
+
+<span class="c"># what is really in the Trash</span>
+ 49 G  The Blood of Dawnwalker - Kryoto.7z
+ 10 G  xchange]
+ 10 G  X-Change_Life_v0.25.9_Full.zip
+  8 G  img        5 G  ANewLife.zip     2 G  aud</pre>
+        <p style="color:var(--dim);font-size:13.5px">Every trash entry is dated <b>2026-09-22…24</b> — deliberate deletes that were never purged, three weeks stale. And <code>Carnal Nova Imperium 0.1</code> in the Trash is a byte-identical 309&nbsp;MiB duplicate of the copy already sitting on <code>/mnt/2tb-ext4</code>.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="options">
+    <div class="lbl">Options <b>04</b> <span class="rule"></span> <span>The axis each one gives up</span></div>
+    <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(440px,1fr))">
+
+      <article class="panel card">
+        <div class="key">A</div>
+        <h2>mergerfs union of /nix/store</h2>
+        <div class="tradeoff">◈ TRADEOFF // blast radius — this sits in the boot path</div>
+        <pre><span class="c"># modules/system/core/storage.nix (new)</span>
+<span class="k">boot</span>.initrd.extraUtilsCommands = <span class="s">''</span>
+  copy_bin_and_libs ${pkgs.mergerfs}/bin/mergerfs
+  copy_bin_and_libs ${pkgs.fuse}/bin/fusermount3
+<span class="s">''</span>;
+
+<span class="k">fileSystems</span>.<span class="s">"/nix/store"</span> = {
+  fsType  = <span class="s">"mergerfs"</span>;
+  device  = <span class="s">"/nix/store:/mnt/2tb-ext4/nix-store"</span>;
+  options = [ <span class="s">"allow_other"</span> <span class="s">"use_ino"</span>
+              <span class="s">"category.create=epmfs"</span>
+              <span class="s">"moveonenospc=error"</span> ];
+};</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>No reformat; adds 1.5 TiB; removable by unmounting.</dd>
+          <dt class="up">PRO</dt><dd>mergerfs-tools gives balancing and replication for free.</dd>
+          <dt class="down">CON</dt><dd>Cross-branch <code>rename()</code>/<code>link()</code> → <code>EXDEV</code> exactly where Nix commits store paths.</dd>
+          <dt class="down">CON</dt><dd>The union defines what the daemon will undo; initrd must carry a FUSE server that lives in the store it mounts.</dd>
+          <dt class="down">CON</dt><dd>Boot now requires a <code>nofail</code> rotational disk; a missing branch yields a silently partial store instead of a clean error.</dd>
+        </dl>
+        <div class="metrics"><div><b>~20</b><span>Lines nix</span></div><div><b>+initrd</b><span>Modules</span></div><div><b>CRIT</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">B</div>
+        <h2>Move /nix wholesale to the 2 TB</h2>
+        <div class="tradeoff">◈ TRADEOFF // buys one filesystem, spends NVMe speed</div>
+        <pre><span class="c"># the standard, documented move — one filesystem, no union</span>
+$ rsync -aHAX --info=progress2 /nix/ /mnt/2tb-ext4/nix/
+$ mv /nix /nix.old      <span class="c"># keep until it boots twice</span>
+
+<span class="c"># then, in the flake:</span>
+<span class="k">fileSystems</span>.<span class="s">"/nix"</span> = {
+  device  = <span class="s">"/mnt/2tb-ext4/nix"</span>;
+  options = [ <span class="s">"nodev"</span> <span class="s">"nosuid"</span> ];
+};
+<span class="c"># AND remove `nofail` from the sda1 mount — an absent</span>
+<span class="c"># store disk is no longer a survivable condition.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Single filesystem: atomic commit, hard-link optimise and <code>nix store verify</code> all keep their meaning.</dd>
+          <dt class="up">PRO</dt><dd>No FUSE, no new daemon, no experimental features.</dd>
+          <dt class="down">CON</dt><dd>The whole store drops from NVMe to a 7200 rpm SATA — every exec pays for it.</dd>
+          <dt class="down">CON</dt><dd><code>nofail</code> must go, so a dead/absent drive means no boot at all.</dd>
+          <dt class="down">CON</dt><dd>Does not add space, only relocates 61 GiB onto a 1.5 TiB disk.</dd>
+        </dl>
+        <div class="metrics"><div><b>~6</b><span>Lines nix</span></div><div><b>0</b><span>Modules</span></div><div><b>HIGH</b><span>Risk (boot)</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">C</div>
+        <h2>local-overlay store</h2>
+        <div class="tradeoff">◈ TRADEOFF // the supported layering, at the price of a frozen base</div>
+        <pre><span class="c"># Nix 2.34.8 has it; the feature flag is off today</span>
+<span class="k">nix</span>.settings = {
+  extra-experimental-features = [ <span class="s">"local-overlay-store"</span> ];
+  store = <span class="s">"local-overlay://?root=/nix"
+        + <span class="s">"&amp;lower-store=/nix/base"</span>
+        + <span class="s">"&amp;upper-layer=/mnt/2tb-ext4/nix-upper"</span></span>;
+};
+
+<span class="c"># Nix VERIFIES the mount, it does not mount it. You supply,</span>
+<span class="c"># before nix-daemon starts (upperdir and workdir: same volume):</span>
+$ mount -t overlay overlay \
+    -o lowerdir=/nix/base/nix/store \
+    -o upperdir=/mnt/2tb-ext4/nix-upper \
+    -o workdir=/mnt/2tb-ext4/nix-work \
+    /nix/store</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>The only layering Nix actually supports — it validates the mount itself.</dd>
+          <dt class="up">PRO</dt><dd>Kernel overlayfs, not FUSE: hard links, renames and xattrs behave.</dd>
+          <dt class="down">CON</dt><dd>Lower store "must not change at all" while mounted → GC can only ever reclaim the upper layer; the base's 61 GiB becomes permanent. <b>Verify this before adopting.</b></dd>
+          <dt class="down">CON</dt><dd>No NixOS module: you hand-write the overlay mount plus daemon ordering, and it still depends on the big disk at boot.</dd>
+          <dt class="down">CON</dt><dd>Experimental; the lower store's metadata has its own grow-only restriction.</dd>
+        </dl>
+        <div class="metrics"><div><b>~15</b><span>Lines + unit</span></div><div><b>1</b><span>Mount unit</span></div><div><b>HIGH</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card pick">
+        <div class="key">D · PICK</div>
+        <h2>Reclaim the 152 GiB already on /</h2>
+        <div class="tradeoff">◈ TRADEOFF // one manual triage pass instead of a new filesystem</div>
+        <pre><span class="c"># 1 — Trash: 90 GiB, 24 entries, all deleted 2026-09-22…24</span>
+$ du -xhs ~/.local/share/Trash/files/* | sort -rh | head
+  49G  The Blood of Dawnwalker - Kryoto.7z
+  10G  xchange]   10G  X-Change_Life_v0.25.9_Full.zip
+   8G  img          5G  ANewLife.zip
+
+<span class="c"># 2 — verified duplicate, keep the copy on the 2 TB</span>
+$ diff -r ~/.local/share/Trash/files/'Carnal Nova Imperium 0.1' \
+          /mnt/2tb-ext4/'Carnal Nova Imperium 0.1' && echo IDENTICAL
+
+<span class="c"># 3 — Steam, 62 GiB: /mnt/2tb-ext4/SteamLibrary already exists</span>
+<span class="c">#     Steam ▸ Settings ▸ Storage ▸ select title ▸ Move</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>No initrd, no FUSE, no boot risk, no experimental flag. 138 → ~<b>290 GiB</b> free, 4.7× the current store.</dd>
+          <dt class="up">PRO</dt><dd>The store stays on the NVMe where it belongs.</dd>
+          <dt class="up">PRO</dt><dd>Reversible for anything you keep: the archive can be parked on <code>/mnt/2tb-ext4</code> instead of deleted.</dd>
+          <dt class="down">CON</dt><dd>A one-time manual pass over 24 entries; 49 GiB of it is a single archive you may actually want.</dd>
+        </dl>
+        <div class="metrics"><div><b>152 GiB</b><span>Reclaimed</span></div><div><b>0</b><span>Nix lines</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="boot">
+    <div class="lbl">Boot path <b>/</b> where A and C would have to cut in</div>
+    <div class="panel" style="padding:22px">
+      <svg class="flow" viewBox="0 0 1000 250" role="img" aria-label="NIXPC boot path and the store mount seam">
+        <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0 0 L7 3 L0 6 z" style="fill:var(--acid-dk)"/></marker></defs>
+
+        <rect class="node" x="8" y="40" width="176" height="60"/>
+        <text x="26" y="66">STAGE-1 INITRD</text><text x="26" y="84">MOUNTS / AS RW</text>
+
+        <rect class="node hot" x="232" y="40" width="200" height="60"/>
+        <text x="250" y="66">STAGE-2 INIT</text><text x="250" y="84">BIND /NIX/STORE RO ◈</text>
+
+        <rect class="node" x="480" y="40" width="176" height="60"/>
+        <text x="498" y="66">NIX-DAEMON</text><text x="498" y="84">UNDOES THE BIND</text>
+
+        <rect class="node" x="704" y="40" width="270" height="60"/>
+        <text x="722" y="66">STORE WRITABLE IN ITS OWN NS</text>
+        <text x="722" y="84">REQUIRESMOUNTSFOR=/NIX/STORE</text>
+
+        <path class="edge" d="M184 70 H232" marker-end="url(#ar)"/>
+        <path class="edge" d="M432 70 H480" marker-end="url(#ar)"/>
+        <path class="edge" d="M656 70 H704" marker-end="url(#ar)"/>
+
+        <rect class="node bad" x="120" y="160" width="250" height="66"/>
+        <text x="138" y="184">OPTION A · MERGERFS</text>
+        <text x="138" y="200">MUST BE MOUNTED BEFORE THE</text>
+        <text x="138" y="216">RO BIND — FROM A HDD MARKED NOFAIL</text>
+        <path class="edge-dim" d="M245 160 V100" marker-end="url(#ar)"/>
+
+        <rect class="node bad" x="410" y="160" width="250" height="66"/>
+        <text x="428" y="184">OPTION C · OVERLAYFS</text>
+        <text x="428" y="200">SAME ORDERING PROBLEM: LOWER LAYER</text>
+        <text x="428" y="216">FROZEN, UPPER LAYER ON THE 2 TB</text>
+        <path class="edge-dim" d="M535 160 V100" marker-end="url(#ar)"/>
+
+        <rect class="node hot" x="700" y="160" width="274" height="66"/>
+        <text x="718" y="184">OPTION B / D · NO NEW SEAM</text>
+        <text x="718" y="200">B: ONE FILESYSTEM, MOVE THE MOUNT</text>
+        <text x="718" y="216">D: NOTHING IN THE BOOT PATH AT ALL</text>
+        <path class="edge" d="M837 160 V100" marker-end="url(#ar)"/>
+      </svg>
+    </div>
+    <div class="quote" style="margin-top:16px">
+      <i>boot.nixStoreMountOpts</i> already defaults to <code>[ "x-initrd.mount" "ro" "nodev" "nosuid" ]</code> — exactly the four options <code>findmnt</code> reports on this machine. The knob exists because NixOS knows people stack mounts at <code>/nix/store</code>; the stage-2 script even carries a workaround for nixpkgs issue 375257 (<i>"Ensure that we pick the top (i.e. last) mount so we don't get a false positive for a lower mount"</i>). Options A and C are both a request to be that top mount.
+      <em>nixpkgs · nixos/modules/system/boot/stage-2-init.sh</em>
+    </div>
+  </section>
+
+  <section id="reclaim">
+    <div class="lbl">Reclaim plan <b>04</b> <span class="rule"></span> <span>Nothing here touches /nix</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Action</th><th>Frees</th><th>Confidence</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="hot">Park or delete <code>The Blood of Dawnwalker - Kryoto.7z</code> from the Trash</td><td><b>49 GiB</b></td><td>yours to decide</td></tr>
+        <tr><td>2</td><td class="hot">Steam ▸ Settings ▸ Storage ▸ Move, to the existing <code>/mnt/2tb-ext4/SteamLibrary</code></td><td><b>62 GiB</b></td><td>Steam-supported, reversible</td></tr>
+        <tr><td>3</td><td>Purge the rest of the Trash (<code>xchange]</code>, <code>X-Change_Life…zip</code>, <code>img</code>, <code>ANewLife.zip</code>, <code>aud</code>, …)</td><td><b>41 GiB</b></td><td>deleted on purpose 2026-09-22…24</td></tr>
+        <tr><td>4</td><td><code>diff -r</code> then purge the duplicate <code>Carnal Nova Imperium 0.1</code></td><td><b>309 MiB</b></td><td>verified copy on /mnt/2tb-ext4</td></tr>
+        <tr><td>5</td><td class="hot">Relocate <code>~/Downloads</code> to <code>/mnt/2tb-ext4/Downloads</code> (home-manager symlink)</td><td><b>1.5 GiB</b></td><td>done — archives now land off the NVMe</td></tr>
+        <tr><td>+</td><td class="hot">Optional: <code>nix.gc.automatic</code> is <b>off</b> (no <code>nix-gc.timer</code>; <code>nix-optimise.timer</code> is on)</td><td>ongoing</td><td>70 787 paths, never auto-collected</td></tr>
+      </tbody>
+    </table>
+    <p class="lede" style="max-width:78ch;margin-top:18px">Nothing in this plan touches <code>/nix</code>, the initrd, or the boot path. It also does not need to be done all at once — item 1 alone triples the store's headroom.</p>
+  </section>
+
+  <section id="open">
+    <div class="lbl">Open questions <b>03</b> <span class="rule"></span></div>
+    <details class="tabs" open><summary>▸ Q1 — Is 290 GiB of headroom enough, or does this decision come back?</summary>
+      <div class="body">The store is 61 GiB at 70 787 paths and grows with every <code>nixos-rebuild</code> generation. Track it: <code>du -sx --block-size=1G /nix/store</code>. Under ~8 GiB/month, 290 GiB is years of room. Above it, revisit <b>option C</b> before reclaiming anything else — and measure first, do not assume.</div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ Q2 — Does <code>nix store gc</code> reclaim space from a <code>local-overlay</code> lower layer?</summary>
+      <div class="body">This single question decides C versus B. Nix's own docs say the lower store "must not change at all" while an overlay store is mounted on it, and that "deleting or modifying store objects is not allowed in general". If that means the base is frozen, then GC permanently stops reclaiming the 61 GiB you started with — a bad trade on a store you collect to save space. <b>Test it on a throwaway store before committing.</b></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ Q3 — deferred: is <code>auto-optimise-store</code> worth enabling?</summary>
+      <div class="body">Not a reason to act. <code>auto-optimise-store = false</code>, but <code>nix-optimise.timer</code> is active and ran most recently on 2026-10-11 — so the 61 GiB is already the deduplicated size. Turning the per-build flag on changes nothing about the space question.</div></details>
+  </section>
+
+  <footer>NIXPC · nix-store-split · measured 2026-10-12 · nix 2.34.8 · mergerfs not installed · self-contained, upload to share</footer>
+</div>
+
+<div class="export">
+  <span><kbd>scroll</kbd> Read</span>
+  <span>Pick <kbd>D</kbd> · the store does not move</span>
+  <button class="act" id="copy">Copy as prompt</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const SPEC = () => `Act on the verdict in artifacts/nix-store-split-nixpc.html.
+
+Decision: do NOT union or split /nix/store. Reclaim space on / instead.
+
+Findings (measured on NIXPC 2026-10-12):
+- /nix/store is 61 GiB across 70787 paths, on nvme0n1 (SSD, ROTA 0).
+- / has 138 GiB free of 448 GiB. /home/davr is 186 GiB of it.
+- ~/.local/share/Trash is 90 GiB / 24 entries, all deleted 2026-09-22..24.
+  Largest single item: "The Blood of Dawnwalker - Kryoto.7z" at 49 GiB.
+- ~/.local/share/Steam/steamapps is 62 GiB; libraryfolders.vdf already lists
+  /mnt/2tb-storage/SteamLibrary and /mnt/2tb-ext4/SteamLibrary.
+- "Carnal Nova Imperium 0.1" in Trash is a 309 MiB byte-identical duplicate of
+  /mnt/2tb-ext4/Carnal Nova Imperium 0.1.
+- /mnt/2tb-ext4 (sda1) and /mnt/2tb-storage (sdb1) are rotational HDDs, both
+  marked nofail in fstab.
+- mergerfs is NOT installed and is rejected: cross-branch rename/link returns
+  EXDEV (exactly how Nix commits store paths), a missing branch yields a
+  silently partial store instead of an error, and it would insert a FUSE server
+  into the pre-nix-daemon boot path.
+- local-overlay is the only layering Nix supports (nix 2.34.8, feature flag off).
+  Open question: whether GC can reclaim from its lower layer. Docs imply no.
+
+Do: triage the Trash with me item by item (ask before deleting anything over
+1 GiB), park anything I want to keep on /mnt/2tb-ext4, and move the Steam home
+library with Steam's own migration.
+
+Do not: touch /nix, the initrd, or boot.nixStoreMountOpts. Do not add mergerfs.
+If /nix still needs more room afterwards, come back to option C first, then B.`;
+
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(SPEC()); }
+  catch { prompt('Copy:', SPEC()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

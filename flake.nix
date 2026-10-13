@@ -77,12 +77,18 @@
     };
     # Pinned tag (v2.0.1), flake = false: consumed as a plain source tree by the
     # cursor build in modules/features/retrosmart-cursor/_retrosmart-cursor.pkg.nix.
-    # The fork lives off github.com, so the URL is spelled out; the URL form is
-    # the tag archive, because this host's Nix cannot fetch a git+https input
-    # (its git transport fails even for github.com). The input carries no flake;
-    # only its XPM artwork and build scripts cross the boundary.
+    # URL form, not git+https, on purpose: this host's Nix cannot fetch a
+    # git+https input (its git transport fails even for github.com). Only the
+    # unpacked source tree crosses the boundary; the input carries no flake.
+    #
+    # 2026-10-13 (btrfs migration, issue #274): this URL pointed at a
+    # third-party mirror, github.laiyagushi.com, which is now NXDOMAIN and
+    # cannot be fetched at all. It silently blocked every fresh nixos-install
+    # from this flake. The upstream tag archive is byte-identical (same
+    # narHash sha256-zZwxtdFlxYUNbyGtC8nNWqrvS9DW1H+2YOYr7LdcEVU=), so the URL
+    # moved back to github.com and flake.lock needed no change.
     retrosmart-cursor = {
-      url = "https://github.laiyagushi.com/useless-anvil/retrosmart-cursor/archive/refs/tags/v2.0.1.tar.gz";
+      url = "https://github.com/useless-anvil/retrosmart-cursor/archive/refs/tags/v2.0.1.tar.gz";
       flake = false;
     };
     mangowm = {

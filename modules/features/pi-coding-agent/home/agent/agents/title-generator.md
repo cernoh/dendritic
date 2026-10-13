@@ -1,7 +1,7 @@
 ---
 name: title-generator
 description: Session title agent — names the current pi session for the herdr pane title
-model: freeflow/muse-spark-1.3-contributor-free
+model: freeflow/cline-free/muse-spark-1.3-contributor
 thinking: off
 ---
 
