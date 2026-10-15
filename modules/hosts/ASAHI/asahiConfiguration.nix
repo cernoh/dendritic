@@ -194,6 +194,7 @@
             clipboard
             widevine
             brave
+            vesktop
           ];
           programs.noctalia.settings = import ./_noctalia-settings.nix;
 
