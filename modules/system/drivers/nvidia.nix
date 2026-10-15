@@ -5,6 +5,14 @@
 # GPU family) live in modules/system/hardware-profiles and in each host's
 # `_hardware-profiles-settings.nix`.
 #
+# A per-host `hardware.nvidia.package` choice is the same kind of fact and
+# belongs in the host's config module, not here:
+# `hosts/NIXPC/nixpcConfiguration.nix` names
+# `config.boot.kernelPackages.nvidiaPackages.latest`. This module therefore
+# must keep assigning no package at all — a host without a line of its own
+# still gets whatever nixpkgs calls production, and NIXPC's choice stays
+# visible where its other machine facts live.
+#
 # What the wiki asks for, and where it is:
 #   hardware.graphics.enable                    -> below
 #   services.xserver.videoDrivers = ["nvidia"]  -> below

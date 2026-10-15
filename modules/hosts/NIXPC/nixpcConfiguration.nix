@@ -18,10 +18,38 @@
       # the mango feature holds the settings both hosts share (issue #245).
       dendritic.mango = import ./_mango-settings.nix;
 
-      # Pin the kernel to the 7.1 series (resolves to 7.1.10 in the current
-      # nixos-unstable pin). The default nixos-unstable kernel (6.18.x) is too
-      # old for this host's hardware/driver requirements.
+      # Kernel: `linuxPackages_latest` is a channel, not a version pin — it
+      # resolves to the newest kernel series inside the pinned nixpkgs (7.2.10
+      # at the 2026-10-14 pin) and moves on its own whenever the flake's
+      # nixpkgs input moves. Nothing here needs hand-editing; only the lock
+      # does, via `nix flake update`.
       boot.kernelPackages = pkgs.linuxPackages_latest;
+      # NVIDIA userspace driver. A per-host fact, so it lives here rather than
+      # in system/drivers/nvidia.nix, which stays host-agnostic (its header
+      # says so and records what the wiki does and does not require).
+      #
+      # `latest` was chosen on 2026-10-14 to move this box off the 595
+      # production branch and onto NVIDIA's new-feature branch, whose
+      # user-visible gain here is VK_NV_low_latency2 revision 3 (latency and
+      # stutter under Proton's VKD3D-Proton). At the 2026-10-14 pin `latest`
+      # resolves to 615.78.08; `production`/`stable` are 595.104.02.
+      #
+      # It is a compound, not a branch and not a version pin: nixpkgs defines
+      # `latest = selectHighestVersion production new_feature`, so this box
+      # re-points on its own whenever the flake's nixpkgs input advances
+      # new_feature. Name `new_feature` instead to hold the branch steady, or
+      # `production` to return to 595.x.
+      #
+      # Two known driver-side defects, recorded in
+      # artifacts/dawnwalker-crash-report.html, carried over from the 595
+      # branch and not verified fixed on 615 — vkd3d-proton refusing the
+      # title's WaveSize(64) compute shaders (`Required WaveSize range
+      # [64, 64], but supported range is [32, 32]` then `Failed to create
+      # Vulkan compute pipeline, hr 0x80070057`) and the libnvidia-gpucomp
+      # compile spin seen on 2026-10-14. The abort and the freeze were fixed on
+      # the Steam-overlay side, not here. The roll-back below 595 remains
+      # `nvidiaPackages.legacy_580` (580.178.04).
+      hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.latest;
       # Register qemu-aarch64 via binfmt_misc so NIXPC can build ASAHI
       # (aarch64-linux) derivations locally; cross builds run foreign
       # fixup binaries under emulation.

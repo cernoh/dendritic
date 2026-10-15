@@ -85,7 +85,11 @@
         systemd.user.services.wayfinder-dashboard = {
           Unit = {
             Description = "Wayfinder Relay: mobile ticket queue for Herdr and Pi";
-            After = [ "herdr-web.service" ];
+            # This service drives Herdr, not herdr-web: it reads panes over the
+            # Herdr socket, so the daemon (`features/herdr`, `herdr.service`) is
+            # what it has to wait for.
+            Wants = [ "herdr.service" ];
+            After = [ "herdr.service" ];
           };
           Service = {
             ExecStart = lib.getExe cfg.package;

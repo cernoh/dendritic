@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // pi-cowboy worktree failure — herdr server has no git</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em; --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:64px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{position:sticky;top:0;z-index:8;display:flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(8,9,10,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chip{font:600 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:7px 10px}
+.chip b{color:var(--acid)}
+.chip.bad{border-color:var(--bad)} .chip.bad b{color:var(--bad)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;text-decoration:none;color:var(--dim);background:var(--panel2);border:1px solid var(--line);padding:8px 13px}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:26px 0 0;padding:16px 18px;background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{position:absolute;top:-1px;right:var(--notch);background:var(--panel3);border:1px solid var(--line2);border-top:0;padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim)}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel)}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)} pre .b{color:var(--bad)}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+.tabs > summary::-webkit-details-marker{display:none}
+.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px;word-break:break-word}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+td.bad{color:var(--bad)} td.ok{color:var(--acid)}
+.flow{width:100%;height:auto;display:block}
+.flow text{font:600 10px var(--f-ui);letter-spacing:.12em;fill:var(--dim);text-transform:uppercase}
+.flow .node{fill:var(--panel2);stroke:var(--line2)}
+.flow .hot{stroke:var(--acid);fill:var(--panel3)}
+.flow .dead{stroke:var(--bad);fill:var(--panel3)}
+.flow .edge{stroke:var(--acid-dk);stroke-width:1.5;fill:none}
+.flow .edge-dim{stroke:var(--line2);stroke-width:1.5;fill:none}
+.flow .edge-bad{stroke:var(--bad);stroke-width:1.5;fill:none}
+.flow #ar-f path{fill:var(--acid-dk)}
+.flow #ar-b path{fill:var(--bad)}
+.export{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim)}
+.export kbd{font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:4px 6px;border-radius:2px}
+button.act{margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer}
+button.act:active{transform:translateY(1px)}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip bad">Verdict <b>Env break</b></div>
+  <div class="chip">Blame <b>herdr-web PATH</b></div>
+  <div class="chip on">Fix <b>1 line</b></div>
+  <div class="chip">Rev <b>01</b></div>
+  <nav class="top">
+    <a href="#verdict">Overview</a>
+    <a href="#evidence">Evidence</a>
+    <a href="#control">A/B Control</a>
+    <a href="#fix">Fix Options</a>
+    <a href="#patch">Patch</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Incident report <b>/</b> pi-cowboy <b>/</b> 2026-10-15</div>
+    <h1>pi-cowboy is not broken.<br>herdr's worktree runtime<br>cannot reach <em>git</em>.</h1>
+    <p class="lede">Two <span style="font-family:var(--f-mono)">cowboy_agent</span> spawns died with <span style="font-family:var(--f-mono)">could not create the herdr worktree: No such file or directory (os error 2)</span>. The orchestrator code is correct. Every herdr command that touches a git worktree fails, because the herdr <b>server</b> is started by <span style="font-family:var(--f-mono)">herdr-web.service</span> — a unit whose explicit <span style="font-family:var(--f-mono)">PATH</span> lists five store directories and not one of them contains <span style="font-family:var(--f-mono)">git</span>. pi-cowboy asks herdr to create a worktree; herdr runs <span style="font-family:var(--f-mono)">Command::new("git")</span>; the spawn fails; the agent never starts.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>test pi cowboy and see if its not working.</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">VERDICT</span>
+    <p><b>pi-cowboy is working code hitting a broken environment.</b> Disable nothing, patch nothing upstream — add <span style="font-family:var(--f-mono)">git</span> to the <span style="font-family:var(--f-mono)">herdr-web</span> unit's <span style="font-family:var(--f-mono)">PATH</span> in this repo (1 line + 2 doc lines), rebuild, restart the service. Reproduced and fixed in an isolated probe: identical PATH without git → the exact production error; same PATH with git → success.</p>
+  </div>
+
+  <section id="evidence">
+    <div class="lbl">What was tested <b>05</b> <span class="rule"></span> <span>Exact commands, exact output</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Probe</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>pi-cowboy registers at all?</td><td class="ok">YES — all five tools present (<b>cowboy_agent</b>, stop/steer/cleanup, merge) in the dendritic sessions' tool schemas. gated on cwd being a git repo.</td></tr>
+        <tr><td>2</td><td><span style="font-family:var(--f-mono)">cowboy_agent</span> × 2 in session 14:43</td><td class="bad">FAIL — <span style="font-family:var(--f-mono)">could not create the herdr worktree: No such file or directory (os error 2)</span>. Both agents. No pi process ever started.</td></tr>
+        <tr><td>3</td><td><span style="font-family:var(--f-mono)">herdr worktree list</span> (live server, from repo and from non-repo)</td><td class="bad">FAIL — <span style="font-family:var(--f-mono)">{"code":"worktree_list_failed","message":"No such file or directory (os error 2)"}</span> — independent of pi-cowboy, and independent of cwd.</td></tr>
+        <tr><td>4</td><td>Which PATH does the herdr server run under?</td><td class="bad">NO GIT — pid 293122's PATH holds herdr, zoxide, findutils, iproute2, coreutils. Zero of the five dirs contains a <span style="font-family:var(--f-mono)">git</span> executable.</td></tr>
+        <tr><td>5</td><td>Who started that server?</td><td class="bad">pid 293122 ← 292924 (<span style="font-family:var(--f-mono)">herdr-web</span> node) ← systemd → <span style="font-family:var(--f-mono)">herdr-web.service</span>, whose <span style="font-family:var(--f-mono)">Environment=PATH=</span> is that exact string.</td></tr>
+      </tbody>
+    </table>
+
+    <details class="tabs" style="margin-top:16px"><summary>▸ The server's PATH, verbatim</summary>
+      <div class="body"><pre><span class="c"># /proc/293122/environ  (herdr server, started by herdr-web.service)</span>
+/nix/store/165nx6z7j3g0zxdn6jr7kxs3pj479srs-herdr-0.9.3/bin
+/nix/store/96nvcalq8d9fnvajzm6h5kbsv0n4x2gm-zoxide-0.10.0/bin
+/nix/store/ycrbcy9sg4knpnik6a01dk70l0m673x7-findutils-4.11.0/bin
+/nix/store/y9qysn0swmsr7mcknww5f40vch93i4cv-iproute2-7.1.0/bin
+/nix/store/2gfxiwls9hbgwdwcy43mprchwsq36mg6-coreutils-9.11/bin
+<span class="c"># git lives at /etc/profiles/per-user/davr/bin/git — not on that list.</span></pre></div></details>
+  </section>
+
+  <section id="cause">
+    <div class="lbl">Root cause <b>/</b> the failing chain</div>
+    <div class="panel" style="padding:22px">
+      <svg class="flow" viewBox="0 0 1000 210" role="img" aria-label="Failure chain from herdr-web unit PATH to cowboy_agent spawn failure">
+        <defs>
+          <marker id="ar-f" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z"/></marker>
+          <marker id="ar-b" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z"/></marker>
+        </defs>
+        <rect class="node" x="6"   y="70" width="150" height="60"/><text x="22"  y="96">HERDR-WEB</text><text x="22" y="112">SERVICE PATH</text>
+        <rect class="node" x="216" y="70" width="150" height="60"/><text x="232" y="96">HERDR SERVER</text><text x="232" y="112">INHERITS IT</text>
+        <rect class="node hot" x="426" y="70" width="150" height="60"/><text x="442" y="96">COMMAND::NEW</text><text x="442" y="112">("GIT")</text>
+        <rect class="node dead" x="636" y="70" width="150" height="60"/><text x="652" y="96">ENOENT</text><text x="652" y="112">OS ERROR 2</text>
+        <rect class="node dead" x="836" y="20" width="158" height="52"/><text x="850" y="42">COWBOY_AGENT</text><text x="850" y="58">SPAWN FAILS</text>
+        <rect class="node dead" x="836" y="128" width="158" height="52"/><text x="850" y="150">WORKTREE LIST</text><text x="850" y="166">/ OPEN / CREATE</text>
+        <path class="edge" d="M156 100 H216" marker-end="url(#ar-f)"/>
+        <path class="edge" d="M366 100 H426" marker-end="url(#ar-f)"/>
+        <path class="edge-bad" d="M576 100 H636" marker-end="url(#ar-b)"/>
+        <path class="edge-bad" d="M786 92 L836 50" marker-end="url(#ar-b)"/>
+        <path class="edge-bad" d="M786 108 L836 150" marker-end="url(#ar-b)"/>
+        <text x="180" y="196">◈ ONE MISSING BINARY NAME IN ONE UNIT — EVERY WORKTREE OPERATION DIES</text>
+      </svg>
+    </div>
+
+    <details class="tabs" style="margin-top:16px" open><summary>▸ herdr 0.9.3 source: the git spawn, and the exact error string</summary>
+      <div class="body"><pre><span class="c">// src/worktree.rs:155 (v0.9.3) — the spawn that fails</span>
+<span class="k">fn</span> <span class="s">repository_git_command</span>(repo_root: &amp;Path, trust_repository: <span class="k">bool</span>) -&gt; std::process::Command {
+    <span class="k">let mut</span> command = crate::noninteractive_process::<span class="s">command</span>(<span class="s">"git"</span>);
+    command.<span class="s">args</span>(<span class="s">repository_git_args</span>(repo_root, trust_repository));
+    command
+}
+
+<span class="c">// src/worktree.rs:494 — what `herdr worktree list` actually runs, and</span>
+<span class="c">// where "No such file or directory (os error 2)" comes from: a failed spawn</span>
+<span class="c">// is an io::Error, and it is stringified straight into the API message.</span>
+<span class="k">pub</span>(crate) <span class="k">fn</span> <span class="s">list_existing_worktrees</span>(repo_root: &amp;Path, trust_repository: <span class="k">bool</span>)
+    -&gt; Result&lt;Vec&lt;ExistingWorktree&gt;, String&gt; {
+    <span class="k">let</span> output = <span class="s">repository_git_command</span>(repo_root, trust_repository)
+        .<span class="s">args</span>([<span class="s">"worktree"</span>, <span class="s">"list"</span>, <span class="s">"--porcelain"</span>])
+        .<span class="s">output</span>()
+        .<span class="s">map_err</span>(|err| err.<span class="s">to_string</span>())?;   <span class="c">// ← ENOENT becomes the message</span>
+
+<span class="c">// src/app/api/worktrees/reads.rs — the code we see over the API</span>
+.<span class="s">map_err</span>(|err| <span class="s">ApiFailure::new</span>(<span class="s">"worktree_list_failed"</span>, err))?;
+
+<span class="c">// Cargo.toml (v0.9.3) declares no gix / git2 / libgit2 dependency, so herdr</span>
+<span class="c">// has no in-process git: the PATH lookup is the only way it finds git at all.</span>
+<span class="c">// noninteractive_process.rs: command(program) { Command::new(program) } — plain PATH search.</span></pre></div></details>
+  </section>
+
+  <section id="control">
+    <div class="lbl">A/B control <b>02</b> <span class="rule"></span> <span>Isolated probe servers, no impact on the live session</span></div>
+    <div class="cards">
+      <article class="panel card">
+        <div class="key">A</div>
+        <h2>Server PATH copied from the unit</h2>
+        <div class="tradeoff">◈ TRADEOFF // isolates exactly one variable: git's absence</div>
+        <pre><span class="c"># probe server, HOME + socket in /tmp, then:</span>
+HOME=/tmp/probe-A HERDR_SOCKET_PATH=/tmp/probe-A/herdr.sock \
+  PATH="&lt;herdr:&gt;zoxide:findutils:iproute2:coreutils&gt;" \
+  herdr server &amp;
+
+herdr worktree list --cwd ~/.config/dendritic
+<span class="c"># →</span>
+<span class="b">{"error":{"code":"worktree_list_failed",
+ "message":"No such file or directory (os error 2)"}}</span>
+<span class="c"># byte-identical to the live failure</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>One variable changed from production.</dd>
+          <dt class="up">PRO</dt><dd>Reproduces the production error verbatim.</dd>
+          <dt class="down">CON</dt><dd>No workspace on the probe — needs <span style="font-family:var(--f-mono)">--cwd</span>.</dd>
+        </dl>
+        <div class="metrics"><div><b>FAIL</b><span>Result</span></div><div><b>ENOENT</b><span>Errno</span></div><div><b>0</b><span>Worktrees</span></div></div>
+      </article>
+
+      <article class="panel card pick">
+        <div class="key">B · CONTROL</div>
+        <h2>Same PATH, <span style="color:var(--acid)">+ git</span></h2>
+        <div class="tradeoff">◈ TRADEOFF // the positive control that closes the case</div>
+        <pre><span class="c"># identical probe, one addition:</span>
+  PATH="&lt;herdr:&gt;zoxide:findutils:iproute2:coreutils&gt;<span class="s">:/etc/profiles/per-user/davr/bin</span>" \
+
+herdr worktree list --cwd ~/.config/dendritic
+<span class="c"># → success, real data:</span>
+{"type":"worktree_list","worktrees":[
+  {"branch":"main","path":"/home/davr/.config/dendritic"},
+  {"branch":"fix/guard-git-hook-worktree", …},
+  {"branch":"feat/wayland-xwayland-smoothness", …}]}
+<span class="c"># same binary, same config, same repo — only git joined PATH</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Proves the cause, not just the correlation.</dd>
+          <dt class="up">PRO</dt><dd>Shows the fix's effect before touching the live server.</dd>
+          <dt class="up">PRO</dt><dd>Ran isolated in /tmp — live panes untouched.</dd>
+        </dl>
+        <div class="metrics"><div><b>PASS</b><span>Result</span></div><div><b>3</b><span>Worktrees</span></div><div><b>0</b><span>Restarts</span></div></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="fix">
+    <div class="lbl">Fix options <b>03</b> <span class="rule"></span> <span>Vary the axis: who supplies the binary</span></div>
+    <div class="cards">
+
+      <article class="panel card pick">
+        <div class="key">A · PICK</div>
+        <h2>Add git to the unit PATH</h2>
+        <div class="tradeoff">◈ TRADEOFF // accepts that the unit must enumerate every binary the daemon shells out to</div>
+        <pre><span class="c"># modules/features/herdr-web/default.nix</span>
+PATH=${lib.<span class="s">makeBinPath</span> (<span class="k">with</span> pkgs; [
+  <span class="s">git</span>          <span class="c"># ◈ herdr shells out to `git worktree …`</span>
+  herdr
+  zoxide
+  findutils
+  iproute2
+  coreutils
+])}</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Exactly what this module's own comment already claims to do.</dd>
+          <dt class="up">PRO</dt><dd>Matches <span style="font-family:var(--f-mono)">modules/features/AGENTS.md:16</span> — the documented rule.</dd>
+          <dt class="up">PRO</dt><dd>One line, no upstream dependency, trivially reversible.</dd>
+          <dt class="down">CON</dt><dd>The list can go stale again when herdr adds a shell-out.</dd>
+        </dl>
+        <div class="metrics"><div><b>1</b><span>Line</span></div><div><b>1</b><span>Module</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">B</div>
+        <h2>Wrap herdr with a pinned git</h2>
+        <div class="tradeoff">◈ TRADEOFF // trades PATH fragility for a wrapper that can drift from the daemon</div>
+        <pre><span class="c"># a herdr wrapper that hard-pins git, e.g.</span>
+writeShellScriptBin <span class="s">"herdr"</span> <span class="s">''</span>
+  <span class="k">export</span> PATH=<span class="s">${lib.makeBinPath [ git ]}</span>:<span class="s">$PATH</span>
+  exec <span class="s">${herdr}/bin/herdr</span> <span class="s">"$@"</span>
+<span class="s">''</span>
+<span class="c"># problem: the module deliberately does NOT wrap herdr —</span>
+<span class="c"># `herdr update` must keep replacing the daemon it talks to.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Immune to later PATH omissions.</dd>
+          <dt class="down">CON</dt><dd>Contradicts the module's deliberate no-wrapper design.</dd>
+          <dt class="down">CON</dt><dd>A store wrapper can lag the daemon after <span style="font-family:var(--f-mono)">herdr update</span>.</dd>
+        </dl>
+        <div class="metrics"><div><b>~12</b><span>Lines</span></div><div><b>2</b><span>Modules</span></div><div><b>MED</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">C</div>
+        <h2>Let a login shell own the server</h2>
+        <div class="tradeoff">◈ TRADEOFF // fixes this host's env by giving up the bridge's auto-start</div>
+        <pre><span class="c"># do not let herdr-web spawn the daemon; start herdr yourself</span>
+<span class="c"># from a shell (authored PATH already contains git), then</span>
+herdr server        <span class="c"># already running → herdr-web attaches</span>
+<span class="c"># cost: the phone bridge no longer boots the server by itself,</span>
+<span class="c"># and the daemon's env now depends on where you happened to be.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>No config change.</dd>
+          <dt class="down">CON</dt><dd>Breaks the bridge's documented "spawns herdr server when none runs".</dd>
+          <dt class="down">CON</dt><dd>Environment becomes whoever-launched-it, i.e. the same class of bug.</dd>
+        </dl>
+        <div class="metrics"><div><b>0</b><span>Lines</span></div><div><b>1</b><span>Module</span></div><div><b>HIGH</b><span>Risk</span></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="patch">
+    <div class="lbl">The patch <b>03</b> <span class="rule"></span> <span>Not applied — awaiting your go-ahead</span></div>
+    <div class="panel" style="padding:22px">
+      <pre><span class="c"># ── 1. modules/features/herdr-web/default.nix ─────────────────────────────</span>
+<span class="c">#    In Systemd.user.services.herdr-web.Service.Environment, add one entry</span>
+<span class="c">#    to the makeBinPath list:</span>
+                <span class="k">with</span> pkgs;
+                [
+<span class="s">+                 git</span>
+                  herdr
+                  zoxide
+                  findutils
+                  iproute2
+                  coreutils
+                ]
+
+<span class="c"># ── 2. the module's own header comment (lines 44–50) ──────────────────────</span>
+<span class="c">#    It claims to carry "every binary the bridge shells out to". Two additions:</span>
+<span class="s">+ #   - `git` — herdr's worktree runtime runs `git worktree list --porcelain`</span>
+<span class="s">+ #     and `git worktree add` from the server it starts, so git must be on</span>
+<span class="s">+ #     this PATH even though the bridge itself never calls it. pi-cowboy's</span>
+<span class="s">+ #     agents are created as git worktrees and fail without it.</span>
+
+<span class="c"># ── 3. modules/features/AGENTS.md:16 ──────────────────────────────────────</span>
+<span class="c">#    The convention line that enumerates the binaries per service:</span>
+<span class="s">- `herdr-web` needs `herdr`, `zoxide`, `find`, and `ss`</span>
+<span class="s">+ `herdr-web` needs `herdr`, `git`, `zoxide`, `find`, and `ss`</span></pre>
+    </div>
+
+    <details class="tabs" style="margin-top:16px"><summary>▸ Turning it on — and what it costs</summary>
+      <div class="body">
+        <pre><span class="c"># rebuild, then restart the unit so the daemon re-execs with the new PATH</span>
+nixos-rebuild switch --flake ~/.config/dendritic#NIXPC
+systemctl --user restart herdr-web.service
+
+<span class="b"># ⚠ the restart kills the herdr server, and "Stopping a server exits its pane</span>
+<span class="b">#   processes" (herdr troubleshooting docs). Every live pi pane in this</span>
+<span class="b">#   workspace dies; sessions are recoverable from their session files.</span>
+<span class="c"># Do it at a moment you choose, not mid-turn.</span>
+
+<span class="c"># verify without burning a cowboy agent:</span>
+herdr worktree list --cwd ~/.config/dendritic     <span class="c"># → real JSON, no error</span>
+herdr worktree create --cwd ~/.config/dendritic --branch probe --no-focus</pre>
+      </div></details>
+
+    <table style="margin-top:22px">
+      <thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>herdr worktree list / open / create</td><td class="bad">ENOENT</td><td class="ok">works</td></tr>
+        <tr><td>cowboy_agent (pi-cowboy)</td><td class="bad">worktree creation fails, no pi process</td><td class="ok">agent starts in its own pane + worktree</td></tr>
+        <tr><td>herdr-web phone bridge</td><td class="ok">works (it never needed git)</td><td class="ok">unchanged</td></tr>
+        <tr><td>ci / other NIXPC services</td><td class="ok">unaffected</td><td class="ok">unaffected</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="open">
+    <div class="lbl">Open questions <b>02</b> <span class="rule"></span></div>
+    <details class="tabs" open><summary>▸ Q1 — when do we eat the restart?</summary>
+      <div class="body">The patch is inert until the unit restarts, and the restart ends every live pane. Options: (a) apply now, restart between turns; (b) apply now, restart at your next natural break; (c) leave the patch unapplied. <kbd>decision needed</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ Q2 — is anything else on that unit silently missing a binary?</summary>
+      <div class="body">Not blocking. `git` is the only failure with evidence behind it, but the same class of bug hides in any daemon that shells out: the <span style="font-family:var(--f-mono)">herdr-web</span> and <span style="font-family:var(--f-mono)">wayfinder-dashboard</span> units both enumerate their binaries by hand. Worth a one-off audit of what each calls, so the next omission is found by grep rather than by a dead agent. <kbd>follow-up</kbd></div></details>
+  </section>
+
+  <footer>Artifact · generated by pi · self-contained, upload to share · edit the file or prompt the agent, both work</footer>
+</div>
+
+<div class="export">
+  <span><kbd>scroll</kbd> Read</span>
+  <span>Section <kbd>Evidence</kbd> → <kbd>Patch</kbd></span>
+  <button class="act" id="copy">Copy as prompt</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const SPEC = () => `Apply fix A from artifacts/pi-cowboy-herdr-worktree-git-path.html
+
+Root cause (proven): the herdr server is started by systemd user unit herdr-web.service,
+whose explicit Environment=PATH lists herdr, zoxide, findutils, iproute2 and coreutils but
+NOT git. herdr 0.9.3 shells out to git for every worktree operation
+(src/worktree.rs: repository_git_command -> noninteractive_process::command("git"), used by
+list_existing_worktrees -> "git worktree list --porcelain"), and Cargo.toml declares no gix /
+git2 dependency, so a PATH lookup is the only way it finds git. With no git, the spawn fails
+with ENOENT and the API returns worktree_list_failed "No such file or directory (os error 2)".
+pi-cowboy's cowboy_agent therefore cannot create its worktree and dies before starting a pi
+process.
+
+Evidence: live `herdr worktree list --cwd ~/.config/dendritic` -> worktree_list_failed ENOENT.
+Isolated probe with the unit's exact PATH -> byte-identical error. Same probe with
+/etc/profiles/per-user/davr/bin appended to PATH -> success, real worktree list.
+
+Changes wanted:
+1. modules/features/herdr-web/default.nix — add \`git\` to the lib.makeBinPath list in
+   systemd.user.services.herdr-web.Service.Environment PATH.
+2. Same file, header comment (lines 44-50) — document that herdr's worktree runtime runs
+   \`git worktree list --porcelain\` / \`git worktree add\` from the server it starts.
+3. modules/features/AGENTS.md:16 — add \`git\` to the binaries listed for herdr-web.
+
+Constraints: keep the module's deliberate no-wrapper design (herdr must stay unwrapped so
+\`herdr update\` keeps working). Do not widen scope to other units. Do not restart
+herdr-web.service or rebuild — report the diff and stop; the restart is a human decision
+because it ends every live herdr pane.`;
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(SPEC()); }
+  catch { prompt('Copy:', SPEC()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

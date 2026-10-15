@@ -80,6 +80,7 @@
     {
       config,
       lib,
+      pkgs,
       ...
     }:
     {
@@ -102,6 +103,17 @@
       programs.noctalia = {
         enable = true;
         systemd.enable = true;
+
+        # The shell package MUST come from the pinned `noctalia` input, not
+        # nixpkgs. HM's own `programs.noctalia` defaults `package` to
+        # `pkgs.noctalia`, and the one module that would override it
+        # (`inputs.noctalia.homeModules.default`) is deliberately not imported
+        # above. Without this line the user service ran the nixpkgs build
+        # (5.2.1) while the NixOS half installed the input's (5.3.0) — two
+        # versions of one shell on the same machine. Not following nixpkgs is
+        # the input's own contract (issue #179), so its store path is the one
+        # noctalia.cachix.org serves and this costs no local build.
+        package = inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default;
 
         # The flake-wide palette (features/scheme), rendered to
         # ~/.config/noctalia/palettes/sepia.json. Each host selects it with

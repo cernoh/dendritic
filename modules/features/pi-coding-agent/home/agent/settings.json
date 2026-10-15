@@ -5,11 +5,9 @@
     "npm:pi-tool-discipline",
     "npm:@ff-labs/pi-fff",
     "npm:pi-web-access",
-    "npm:pi-mcp-client",
     "npm:pi-background-tasks",
     "npm:@juicesharp/rpiv-todo",
     "npm:bigpowers",
-    "npm:@dietrichgebert/ponytail",
     "npm:pi-subagents",
     "npm:pi-agent-browser-native",
     "npm:@andrewjacop/pi-herdr",
@@ -19,9 +17,15 @@
     "npm:pi-lazy-loader",
     "npm:@valdo766hi/pi-lazy-skill-tool",
     "../../.funes/agents/pi",
-    "npm:pi-cowboy"
+    "npm:pi-cowboy",
+    {
+      "source": "npm:@krtclcdy/tersio",
+      "extensions": [
+        "!extensions/server.ts"
+      ]
+    }
   ],
-  "lastChangelogVersion": "1.1.0",
+  "lastChangelogVersion": "1.2.0",
   "pi-computer-use": {
     "mode": "path",
     "binaryPath": "${HOME}/.local/share/cua-driver/cua-driver"

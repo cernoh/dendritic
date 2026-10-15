@@ -42,12 +42,19 @@
 # bridge.
 #
 # The service PATH carries every binary the bridge shells out to:
-#   - `herdr` — spawns `herdr server` when none runs. It also keeps a hidden
-#     `herdr` TUI client in a pty and resizes that pty, which is the only way
-#     the panes reflow to the phone width. The socket path defaults to
+#   - `herdr` — the socket client this bridge drives, plus the hidden `herdr`
+#     TUI client it keeps in a pty and resizes, which is the only way the panes
+#     reflow to the phone width. The socket path defaults to
 #     `~/.config/herdr/herdr.sock` (`HERDR_SOCKET_PATH` overrides it).
 #   - `zoxide` and `find` — the directory picker (lib/dirs.js).
 #   - `ss` — the preview port scan (lib/preview.js).
+#
+# The daemon is NOT this unit's job: `features/herdr` owns it, and this bridge
+# orders `After=herdr.service` so its ping finds a server that is already
+# answering and it never takes its `ensureServer` fallback, which would spawn a
+# detached `herdr server` outside systemd and with this unit's PATH (that is
+# exactly how the daemon ended up without `git`, and how every worktree
+# operation — and with it pi-cowboy — broke).
 #
 # The runtime `herdr` binary is deliberately not baked into the package
 # wrapper: `herdr update` replaces the running daemon, and a store copy could
@@ -110,6 +117,14 @@
           Unit = {
             Description = "herdr-web bridge: mobile web UI for herdr";
             Documentation = [ "https://github.com/eyalev/herdr-web" ];
+            # The bridge attaches to the daemon `features/herdr` owns. Ordering
+            # after it is what makes `ensureServer` find a live socket: the
+            # unit's `ExecStartPost` readiness gate holds this start job until
+            # the API socket answers, so the ping cannot fail and the detached
+            # fallback spawn never fires. `Wants` pulls the daemon in explicitly
+            # rather than relying on both landing in the same target.
+            Wants = [ "herdr.service" ];
+            After = [ "herdr.service" ];
           };
 
           Service = {

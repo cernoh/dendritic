@@ -35,9 +35,10 @@
 #
 # This bridge is client-only: unlike `herdr-web` it never starts the daemon, it
 # only connects to `~/.config/herdr/herdr.sock`. A herdr server must already be
-# running. On NIXPC `herdr-web.service` is what starts it (that bridge spawns
-# `herdr server` when none runs); without either, this server still starts,
-# reports herdr unavailable, and recovers once a herdr client attaches.
+# running. On NIXPC `features/herdr` is what runs it (`herdr.service`), and this
+# server orders `After=herdr.service` so the daemon is answering before it
+# looks; without either, this server still starts, reports herdr unavailable,
+# and recovers once a herdr client attaches.
 #
 # The service PATH carries every binary the bridge shells out to. `herdr` is
 # deliberately not baked into the package: `herdr update` replaces the running
@@ -122,6 +123,11 @@
           Unit = {
             Description = "herdr-web-ui: browser and phone client for herdr";
             Documentation = [ "https://github.com/devswha/herdr-web-ui" ];
+            # Client-only: needs the daemon, does not start one. Ordering after
+            # `herdr.service` means it connects to a server that is already
+            # answering instead of reporting herdr unavailable on first start.
+            Wants = [ "herdr.service" ];
+            After = [ "herdr.service" ];
           };
 
           Service = {

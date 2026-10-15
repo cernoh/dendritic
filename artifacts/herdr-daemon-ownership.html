@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // herdr owns its own daemon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em; --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:64px}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:10px}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{position:sticky;top:0;z-index:8;display:flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(8,9,10,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.chip{font:600 11px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:7px 10px}
+.chip b{color:var(--acid)}
+.chip.bad{border-color:var(--bad)} .chip.bad b{color:var(--bad)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;text-decoration:none;color:var(--dim);background:var(--panel2);border:1px solid var(--line);padding:8px 13px}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:26px 0 0;padding:16px 18px;background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)))}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{position:absolute;top:-1px;right:var(--notch);background:var(--panel3);border:1px solid var(--line2);border-top:0;padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim)}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel)}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)} pre .b{color:var(--bad)}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+.tabs > summary::-webkit-details-marker{display:none}
+.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px;word-break:break-word}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+td.bad{color:var(--bad)} td.ok{color:var(--acid)}
+.flow{width:100%;height:auto;display:block}
+.flow text{font:600 10px var(--f-ui);letter-spacing:.12em;fill:var(--dim);text-transform:uppercase}
+.flow .node{fill:var(--panel2);stroke:var(--line2)}
+.flow .hot{stroke:var(--acid);fill:var(--panel3)}
+.flow .dead{stroke:var(--bad);fill:var(--panel3)}
+.flow .edge{stroke:var(--acid-dk);stroke-width:1.5;fill:none}
+.flow .edge-dim{stroke:var(--line2);stroke-width:1.5;fill:none}
+.flow .edge-bad{stroke:var(--bad);stroke-width:1.5;fill:none}
+.flow #ar-f path{fill:var(--acid-dk)}
+.flow #ar-b path{fill:var(--bad)}
+.export{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim)}
+.export kbd{font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);color:var(--fg);padding:4px 6px;border-radius:2px}
+button.act{margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer}
+button.act:active{transform:translateY(1px)}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip on">Change <b>Applied</b></div>
+  <div class="chip">Owner <b>features/herdr</b></div>
+  <div class="chip">Scope <b>NIXPC</b></div>
+  <div class="chip">Rev <b>01</b></div>
+  <nav class="top">
+    <a href="#verdict">Overview</a>
+    <a href="#changed">What changed</a>
+    <a href="#strategy">Ordering</a>
+    <a href="#unit">The unit</a>
+    <a href="#verified">Verified</a>
+    <a href="#cutover">Cutover</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Change record <b>/</b> herdr <b>/</b> 2026-10-15</div>
+    <h1>herdr owns its own<br>daemon in <em>features/herdr</em></h1>
+    <p class="lede">The herdr server used to be a by-product: whichever client attached first started it, and <span style="font-family:var(--f-mono)">herdr-web.service</span> was that client — so the daemon inherited a five-directory PATH with no <span style="font-family:var(--f-mono)">git</span>, and every git worktree operation died with <span style="font-family:var(--f-mono)">ENOENT</span>. It is now a unit of its own, <span style="font-family:var(--f-mono)">herdr.service</span>, with a declared PATH and a readiness gate, and the three clients are ordered after it so none of them can take the spawn fallback again.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>I dont want the herdr server started by herdr web. It should be started by itself within features/herdr.</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">APPLIED</span>
+    <p><b>The daemon is a first-class unit, and the ordering is what makes it stick.</b> <span style="font-family:var(--f-mono)">herdr-web</span>, <span style="font-family:var(--f-mono)">herdr-web-ui</span> and <span style="font-family:var(--f-mono)">wayfinder-dashboard</span> now carry <span style="font-family:var(--f-mono)">Wants/After = [ "herdr.service" ]</span>, and the unit holds its start job open until the API socket answers — so <span style="font-family:var(--f-mono)">ensureServer</span>'s ping cannot fail and its detached fallback spawn never fires. Files are written and the config evaluates; <b>activating it needs a rebuild plus one restart, which ends every live pane</b>, so that step is yours.</p>
+  </div>
+
+  <section id="changed">
+    <div class="lbl">What changed <b>09</b> <span class="rule"></span> <span>One new module, three orderings, four docs</span></div>
+    <table>
+      <thead><tr><th>File</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><td><b>features/herdr/default.nix</b></td><td class="ok">NEW — <span style="font-family:var(--f-mono)">homeManagerModules.herdr</span> runs <span style="font-family:var(--f-mono)">herdr server</span> with <span style="font-family:var(--f-mono)">git</span>/<span style="font-family:var(--f-mono)">curl</span>/<span style="font-family:var(--f-mono)">coreutils</span> on PATH, a readiness <span style="font-family:var(--f-mono)">ExecStartPost</span>, and start limits. <span style="font-family:var(--f-mono)">nixosModules.herdr</span> injects that half through <span style="font-family:var(--f-mono)">home-manager.sharedModules</span>.</td></tr>
+        <tr><td>features/herdr-web/default.nix</td><td><span style="font-family:var(--f-mono)">Wants</span>/<span style="font-family:var(--f-mono)">After = herdr.service</span>; header corrected — it no longer starts the daemon, and the stale note that it did is gone.</td></tr>
+        <tr><td>features/herdr-web-ui/default.nix</td><td>Same ordering. Its header said <span style="font-family:var(--f-mono)">herdr-web.service</span> is what starts the daemon; now it says <span style="font-family:var(--f-mono)">herdr.service</span>.</td></tr>
+        <tr><td>features/wayfinder-dashboard/default.nix</td><td><span style="font-family:var(--f-mono)">After = herdr-web.service</span> → <span style="font-family:var(--f-mono)">Wants</span>/<span style="font-family:var(--f-mono)">After = herdr.service</span> — it drives Herdr, not the bridge.</td></tr>
+        <tr><td>hosts/NIXPC/default.nix</td><td>Imports <span style="font-family:var(--f-mono)">herdr</span>; the comment claiming the bridges' start order does not matter is now false and rewritten.</td></tr>
+        <tr><td>features/AGENTS.md</td><td>New bullet: daemon ownership, the readiness gate, the three lifecycle facts, and the one-time cutover. Feature table and the PATH rule updated.</td></tr>
+        <tr><td>hosts/AGENTS.md · system/AGENTS.md · README.md</td><td>NIXPC import list, the “host-scoped HM feature” list (now four), and the Features table row.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="strategy">
+    <div class="lbl">The debatable part <b>03</b> <span class="rule"></span> <span>How a dependent knows the daemon is up</span></div>
+    <div class="cards">
+
+      <article class="panel card">
+        <div class="key">A</div>
+        <h2>Bare <span style="color:var(--dim)">After=</span></h2>
+        <div class="tradeoff">◈ TRADEOFF // zero new machinery, and a race you cannot see</div>
+        <pre><span class="c"># herdr-web.service</span>
+[Unit]
+After=herdr.service
+
+<span class="c"># "started" means "forked",</span>
+<span class="c"># not "listening": systemd may</span>
+<span class="c"># start herdr-web the instant</span>
+<span class="c"># the process exists, before it</span>
+<span class="c"># binds the socket.</span>
+
+<span class="c"># ensureServer then pings,</span>
+<span class="c"># fails, and spawns a DETACHED</span>
+<span class="c"># server with this unit's PATH.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Nothing to write.</dd>
+          <dt class="down">CON</dt><dd>Ordering guarantees process start, not a live socket.</dd>
+          <dt class="down">CON</dt><dd>Failure is silent and self-inflicted: a second daemon.</dd>
+        </dl>
+        <div class="metrics"><div><b>0</b><span>Lines</span></div><div><b>1</b><span>Modules</span></div><div><b>HIGH</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card pick">
+        <div class="key">B · PICK</div>
+        <h2>Readiness gate</h2>
+        <div class="tradeoff">◈ TRADEOFF // one poll loop to own, in exchange for <span style="color:var(--acid)">After=</span> meaning something</div>
+        <pre><span class="k">Service</span>.ExecStartPost =
+  <span class="s">"${waitReady}"</span>;
+
+<span class="c"># herdr-wait-ready holds the</span>
+<span class="c"># start job open until the</span>
+<span class="c"># socket answers. `agent list`</span>
+<span class="c"># is the probe: exit 1 with no</span>
+<span class="c"># server, 0 with one.</span>
+<span class="k">for</span> ((i = 0; i &lt; 60; i++)); <span class="k">do</span>
+  <span class="k">if</span> ${herdr} agent list \
+       &gt;/dev/null 2&gt;&amp;1; <span class="k">then</span>
+    <span class="k">exit</span> 0
+  <span class="k">fi</span>
+  sleep 0.5
+<span class="k">done</span>
+<span class="k">exit</span> 1</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd><span style="font-family:var(--f-mono)">After=herdr.service</span> now implies a listening daemon.</dd>
+          <dt class="up">PRO</dt><dd>Superset of the <span style="font-family:var(--f-mono)">ping</span> herdr-web itself uses — if this passes, its ping passes.</dd>
+          <dt class="up">PRO</dt><dd>Measured: 0.12 s on a live socket, clean 30 s failure with a message otherwise.</dd>
+          <dt class="down">CON</dt><dd>A bounded 30 s stall if the daemon is genuinely wedged.</dd>
+        </dl>
+        <div class="metrics"><div><b>~12</b><span>Lines</span></div><div><b>1</b><span>Modules</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">C</div>
+        <h2>Socket unit</h2>
+        <div class="tradeoff">◈ TRADEOFF // the systemd-native answer to “is it listening”, for a daemon that will not take the socket</div>
+        <pre><span class="c"># herdr.socket + Type=notify</span>
+[Socket]
+ListenStream=
+  %h/.config/herdr/herdr.sock
+
+[Service]
+<span class="c"># Needs herdr to adopt an</span>
+<span class="c"># inherited listen fd and</span>
+<span class="c"># speak sd_notify. It does</span>
+<span class="c"># neither: it binds its own</span>
+<span class="c"># socket and has no notify</span>
+<span class="c"># mode (`herdr server --help`:</span>
+<span class="c"># stop, reload-config,</span>
+<span class="c"># agent-manifests ...).</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>No polling; readiness is the kernel's.</dd>
+          <dt class="down">CON</dt><dd>Not implementable against this daemon.</dd>
+          <dt class="down">CON</dt><dd>Would desynchronise from herdr's own socket rules (stale socket, HERDR_SOCKET_PATH).</dd>
+        </dl>
+        <div class="metrics"><div><b>n/a</b><span>Lines</span></div><div><b>1</b><span>Modules</span></div><div><b>BLOCKED</b><span>Risk</span></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="unit">
+    <div class="lbl">The unit <b>/</b> as written</div>
+    <div class="panel" style="padding:22px">
+      <pre><span class="c"># modules/features/herdr/default.nix (excerpt)</span>
+<span class="k">config</span>.systemd.user.services.herdr = {
+  <span class="k">Unit</span> = {
+    Description = <span class="s">"herdr: persistent terminal-workspace server"</span>;
+    <span class="c"># A competing server exits 1 while another owns the socket, so</span>
+    <span class="c"># Restart=on-failure alone would spin. Three tries, then stop.</span>
+    StartLimitIntervalSec = 60;
+    StartLimitBurst = 3;
+  };
+
+  <span class="k">Service</span> = {
+    Type = <span class="s">"simple"</span>;
+    <span class="c"># Default socket: ~/.config/herdr/herdr.sock. Nothing here sets</span>
+    <span class="c"># HERDR_SOCKET_PATH, so every client finds the same server.</span>
+    ExecStart = <span class="s">"${herdr} server"</span>;
+    ExecStartPost = <span class="s">"${waitReady}"</span>;
+    <span class="k">Environment</span> = [
+      <span class="s">"PATH=${lib.makeBinPath (with pkgs; [ git curl coreutils ])}"</span>
+    ];
+    Restart = <span class="s">"on-failure"</span>;    <span class="c"># a deliberate `server stop` exits 0</span>
+    RestartSec = 5;
+  };
+
+  <span class="k">Install</span>.WantedBy = [ <span class="s">"default.target"</span> ];
+};</pre>
+    </div>
+
+    <div class="cards" style="margin-top:18px">
+      <article class="panel card">
+        <div class="key">WHY</div>
+        <h2>git is the whole point</h2>
+        <div class="tradeoff">◈ TRADEOFF // the daemon gets a declared PATH, not its first client's</div>
+        <pre><span class="c">// herdr 0.9.3, src/worktree.rs:155</span>
+<span class="k">let mut</span> command =
+  crate::noninteractive_process::<span class="s">command</span>(<span class="s">"git"</span>);
+<span class="c">// Cargo.toml pulls no gix/git2, so a PATH</span>
+<span class="c">// lookup is the only way herdr finds git.</span>
+<span class="c">// curl: server-side update fetch (src/update.rs).</span>
+<span class="c">// coreutils: base + the readiness probe's sleep.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Worktrees, status and discovery work again — pi-cowboy's agents are worktrees.</dd>
+          <dt class="up">PRO</dt><dd>Panes are unaffected: their shell comes from <span style="font-family:var(--f-mono)">/etc/passwd</span> (<span style="font-family:var(--f-mono)">fish</span>) and rebuilds PATH itself.</dd>
+          <dt class="down">CON</dt><dd><span style="font-family:var(--f-mono)">herdr integration</span> version probes resolve against this PATH too.</dd>
+        </dl>
+        <div class="metrics"><div><b>3</b><span>Binaries</span></div><div><b>git</b><span>Load-bearing</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">WHY</div>
+        <h2>Lifecycle facts that shaped it</h2>
+        <div class="tradeoff">◈ TRADEOFF // each was measured on an isolated probe, not assumed</div>
+        <pre><span class="c"># measured, isolated servers in /tmp</span>
+herdr server            <span class="c"># while another is up</span>
+  → exit 1  "herdr server is already running"
+herdr server stop       <span class="c"># deliberate</span>
+  → server exits 0   → on-failure won't resurrect
+kill -9 &lt;server&gt;        <span class="c"># crash</span>
+  → socket file persists; next start unlinks
+    and rebinds it → no cleanup step needed</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Restart policy is correct for both stop and crash.</dd>
+          <dt class="up">PRO</dt><dd>No <span style="font-family:var(--f-mono)">ExecStartPre</span> rm dance.</dd>
+          <dt class="down">CON</dt><dd>A <i>stray</i> server systemd does not own is still a one-time manual stop.</dd>
+        </dl>
+        <div class="metrics"><div><b>3</b><span>Facts</span></div><div><b>0</b><span>Assumed</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+    </div>
+  </section>
+
+  <section id="verified">
+    <div class="lbl">Verified <b>04</b> <span class="rule"></span> <span>Read-only gates, run against the real flake</span></div>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><span style="font-family:var(--f-mono)">nix eval …NIXPC…user.services</span></td><td class="ok">PASS — <span style="font-family:var(--f-mono)">herdr.service</span> present with <span style="font-family:var(--f-mono)">ExecStart=/nix/store/…herdr-0.9.3/bin/herdr server</span>, <span style="font-family:var(--f-mono)">PATH=git:curl:coreutils</span>, <span style="font-family:var(--f-mono)">ExecStartPost=/nix/store/…herdr-wait-ready</span>, <span style="font-family:var(--f-mono)">Restart=on-failure</span>, <span style="font-family:var(--f-mono)">StartLimitBurst=3/60s</span>, <span style="font-family:var(--f-mono)">WantedBy=default.target</span>.</td></tr>
+        <tr><td>Ordering on all three clients</td><td class="ok">PASS — <span style="font-family:var(--f-mono)">Wants=["herdr.service"] After=["herdr.service"]</span> on herdr-web, herdr-web-ui, wayfinder-dashboard.</td></tr>
+        <tr><td>The generated gate, both paths</td><td class="ok">PASS — built the real script from its derivation: <b>0.119 s</b> exit 0 on a live socket; <b>30.2 s</b> exit 1 with <span style="font-family:var(--f-mono)">herdr server did not answer on the API socket within 30s</span> with no server. Run under an <span style="font-family:var(--f-mono)">env -i</span> systemd-like environment.</td></tr>
+        <tr><td>Scope did not leak</td><td class="ok">PASS — ASAHI's user services matching <span style="font-family:var(--f-mono)">*herdr*</span> = <span style="font-family:var(--f-mono)">[]</span>. The daemon reaches only the host that imports the module.</td></tr>
+        <tr><td><span style="font-family:var(--f-mono)">nixfmt --check</span></td><td class="ok">PASS on all five changed Nix files.</td></tr>
+        <tr><td>Full NIXPC toplevel eval</td><td class="ok">PASS — <span style="font-family:var(--f-mono)">nixosConfigurations.NIXPC.config.system.build.toplevel.drvPath</span> evaluated clean to <span style="font-family:var(--f-mono)">nixos-system-NIXPC-26.11.20261014.55bfb4d.drv</span>. The whole system config, not just the unit, accepts the new module.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="cutover">
+    <div class="lbl">Cutover <b>03</b> <span class="rule"></span> <span>Order matters</span></div>
+    <div class="panel" style="padding:22px">
+      <pre><span class="c"># 1. the currently-running daemon was spawned detached by the OLD herdr-web:</span>
+<span class="c">#    systemd does not own it, so the new unit would just fail with</span>
+<span class="c">#    "herdr server is already running". Stop it once, by hand.</span>
+herdr server stop                <span class="b"># ⚠ exits every pane process in this workspace</span>
+
+<span class="c"># 2. rebuild and switch</span>
+nixos-rebuild switch --flake ~/.config/dendritic#NIXPC
+
+<span class="c"># 3. the unit starts with the session; confirm it owns the socket now</span>
+systemctl --user status herdr.service
+herdr worktree list --cwd ~/.config/dendritic   <span class="c"># → real JSON, no ENOENT</span>
+
+<span class="c"># 4. and the thing this was all for</span>
+<span class="c">#    ask pi for a cowboy agent; the worktree is created instead of dying.</span></pre>
+    </div>
+
+    <details class="tabs" style="margin-top:16px"><summary>▸ Why step 1 cannot be automated away</summary>
+      <div class="body">There is no non-destructive way to hand a live socket to a new owner: the daemon that holds it is not a systemd unit, so nothing can stop it on the unit's behalf, and <span style="font-family:var(--f-mono)">ExecStartPre = herdr server stop</span> would kill the user's panes on every restart of the unit as well. Stopping it once by hand is the honest cost, and from then on the unit is the only owner — which is the property the old arrangement lacked.</div></details>
+
+    <table style="margin-top:22px">
+      <thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+      <tbody>
+        <tr><td>Who owns the daemon</td><td class="bad">first client to connect (herdr-web)</td><td class="ok">herdr.service</td></tr>
+        <tr><td>Daemon PATH</td><td class="bad">5 store dirs, no git</td><td class="ok">git, curl, coreutils</td></tr>
+        <tr><td>Restarting herdr-web</td><td class="bad">could restart the daemon</td><td class="ok">cannot touch it</td></tr>
+        <tr><td>herdr worktree list / open / create</td><td class="bad">ENOENT</td><td class="ok">works</td></tr>
+        <tr><td>cowboy_agent</td><td class="bad">no worktree, no agent</td><td class="ok">spawns in its own worktree</td></tr>
+        <tr><td>ASAHI closure</td><td class="ok">no herdr service</td><td class="ok">unchanged</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="open">
+    <div class="lbl">Open decisions <b>03</b> <span class="rule"></span></div>
+    <details class="tabs" open><summary>▸ D1 — does ASAHI want the daemon too?</summary>
+      <div class="body">It is exported and host-agnostic; NIXPC is the only host importing it. The NIXPC-only rule in <span style="font-family:var(--f-mono)">hosts/AGENTS.md</span> exists because the bridges hand terminal control to whoever reaches them over the network — a user-manager Unix socket does not, so the daemon is arguably safe on ASAHI and would give it the same guaranteed-git environment. One import line either way. <kbd>your call</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ D2 — add <span style="font-family:var(--f-mono)">pi</span> to the daemon PATH?</summary>
+      <div class="body">Herdr resolves integration version probes through this PATH (<span style="font-family:var(--f-mono)">noninteractive_process::command(requirement.binary)</span>), so an agent binary that should report a version has to be listed here. Nothing depends on it today and the old minimal PATH had the same gap, so it is left out rather than coupling this unit to the pi feature — but it is the one addition a future version-probe failure will point at. <kbd>follow-up</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ D3 — <span style="font-family:var(--f-mono)">herdr update</span> vs the nix build</summary>
+      <div class="body">The unit runs <span style="font-family:var(--f-mono)">pkgs.herdr</span> — the nix build with the lld link fix from <span style="font-family:var(--f-mono)">attrs/desktop</span> — so the daemon's update path is <span style="font-family:var(--f-mono)">nixos-rebuild</span>, not <span style="font-family:var(--f-mono)">herdr update</span>. That was already true of the installed binary; owning the daemon just makes it explicit, and it is why the bridges never baked herdr into a wrapper. <kbd>no action</kbd></div></details>
+  </section>
+
+  <footer>Artifact · generated by pi · self-contained, upload to share · edit the file or prompt the agent, both work</footer>
+</div>
+
+<div class="export">
+  <span><kbd>scroll</kbd> Read</span>
+  <span>Section <kbd>What changed</kbd> → <kbd>Cutover</kbd></span>
+  <button class="act" id="copy">Copy as prompt</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const SPEC = () => `Finish the herdr daemon-ownership change recorded in artifacts/herdr-daemon-ownership.html.
+
+Written and evaluated (not yet activated):
+- NEW modules/features/herdr/default.nix — homeManagerModules.herdr runs \`herdr server\` as a
+  systemd user service (WantedBy=default.target) with PATH = git:curl:coreutils, an ExecStartPost
+  readiness gate, Restart=on-failure and StartLimitBurst=3/StartLimitIntervalSec=60;
+  nixosModules.herdr injects that half through home-manager.sharedModules.
+- herdr-web, herdr-web-ui and wayfinder-dashboard now carry Wants/After = [ "herdr.service" ].
+- hosts/NIXPC/default.nix imports herdr; README, features/AGENTS.md, hosts/AGENTS.md and
+  system/AGENTS.md updated.
+
+Verified: NIXPC home-manager services eval with the right ExecStart/PATH/ExecStartPost/restart
+policy; all three dependents ordered; the generated readiness script measured at 0.119s exit 0 on
+a live socket and 30.2s exit 1 with none; ASAHI has no matching herdr service; nixfmt clean.
+
+Remaining, in this order:
+1. \`herdr server stop\` — the running daemon was spawned detached by the old herdr-web and is not
+   systemd-owned, so the new unit would fail with "herdr server is already running". This exits
+   every pane process; do it at a moment you choose.
+2. \`nixos-rebuild switch --flake ~/.config/dendritic#NIXPC\`
+3. \`systemctl --user status herdr.service\` then
+   \`herdr worktree list --cwd ~/.config/dendritic\` (expect real JSON, no ENOENT).
+
+Do not widen scope. Open decisions left deliberately un-made: whether ASAHI should import the
+daemon too (it is host-agnostic), and whether \`pi\` belongs in the daemon PATH for
+\`herdr integration\` version probes.`;
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(SPEC()); }
+  catch { prompt('Copy:', SPEC()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

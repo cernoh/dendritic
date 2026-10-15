@@ -143,9 +143,15 @@
         ];
         after = [ "graphical-session-pre.target" ];
         serviceConfig = {
-          Type = "dbus";
-          BusName = "org.freedesktop.PolicyKit1.Authority";
-          ExecStart = "${pkgs.polkit_gnome}/bin/polkit-gnome-authentication-agent-1";
+          # polkit-gnome installs the agent under `libexec`, not `bin` — the
+          # package's own XDG autostart entry uses this same path. `bin/...`
+          # does not exist, so a unit pointing there dies 203/EXEC and the
+          # session is left with no interactive authentication agent.
+          # It is a plain long-running client of polkitd (it registers through
+          # the Authority), not a D-Bus service of its own, so there is no
+          # `Type = "dbus"`/`BusName` here — naming
+          # `org.freedesktop.PolicyKit1.Authority` would name polkitd itself.
+          ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
           Restart = "on-failure";
         };
       };

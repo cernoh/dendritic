@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // DAWNWALKER CRASH FORENSICS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em;
+  --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--f-ui);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:64px;
+}
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);
+}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{
+  font:600 11px/1 var(--f-ui); letter-spacing:var(--ls); text-transform:uppercase;
+  color:var(--dim); display:flex; align-items:center; gap:10px;
+}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{
+  position:sticky; top:0; z-index:8; display:flex; align-items:center; gap:10px;
+  padding:12px 24px; background:rgba(8,9,10,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); flex-wrap:wrap;
+}
+.chip{
+  font:600 11px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--line2); background:var(--panel2); color:var(--fg);
+  padding:7px 10px;
+}
+.chip b{color:var(--acid)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  text-decoration:none;color:var(--dim);background:var(--panel2);
+  border:1px solid var(--line);padding:8px 13px;
+}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+nav.top a[aria-current]{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{
+  font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);
+  letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0;
+}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{
+  margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);
+  border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch;
+}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);
+  text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{
+  display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+  margin:26px 0 0;padding:16px 18px;
+  background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{
+  background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.cards.wide{grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{
+  position:absolute;top:-1px;right:var(--notch);
+  background:var(--panel3);border:1px solid var(--line2);border-top:0;
+  padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim);
+}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{
+  padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;
+  border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel);
+}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+.tabs > summary::-webkit-details-marker{display:none}
+.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+.export{
+  position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;
+  padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);
+}
+.export kbd{
+  font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);
+  color:var(--fg);padding:4px 6px;border-radius:2px;
+}
+button.act{
+  margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer;
+}
+button.act:active{transform:translateY(1px)}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;
+  padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+  color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+.bad{color:var(--bad)} .warn{color:var(--warn)} .ok{color:var(--acid)} .cool{color:var(--cool)}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">DAWNWALKER<span>·</span>FORENSICS</div>
+  <div class="chip">Host <b>NIXPC</b></div>
+  <div class="chip">Status <b>Root cause isolated</b></div>
+  <div class="chip">Kills <b>6 / 7 launches today</b></div>
+  <div class="chip on">Freeze <b>diagnosed 14:44</b></div>
+  <div class="chip">Fixes <b>both applied</b></div>
+  <div class="chip">Rev <b>03</b></div>
+  <nav class="top">
+    <a href="#verdict" aria-current="page">Verdict</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#evidence">Evidence</a>
+    <a href="#freeze">Freeze</a>
+    <a href="#faults">Faults</a>
+    <a href="#fix">Fix ladder</a>
+    <a href="#caveats">Caveats</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Incident <b>/</b> Blood of the Dawnwalker <b>/</b> 2026-10-15</div>
+    <h1>The game dies inside<br>the <em>Steam overlay's<br>present hook</em></h1>
+    <p class="lede">Every launch of <code>The Blood of Dawnwalker</code> on NIXPC today survived between 2 and 8 minutes, then the process aborted. The one core dump that exists was delivered while the <code>vkd3d_queue</code> thread was executing <code>gameoverlayrenderer.so</code> &mdash; exactly the frame identified in the 2026-10-14 session, whose recommended fix (stop the overlay from running) was never applied: <code>EnableGameOverlay</code> is still <code>1</code>. A second, independent defect (595 driver rejecting the title's <code>WaveSize(64)</code> compute shaders) is also still live.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>there have been multiple crashes when trying to play blood of the dawnwalker</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">PRIMARY</span>
+    <p><b>Option A — disable the overlay's Vulkan layer in the launch options.</b> The 14:31:52 abort's return address resolves into <b>VulkanSteamOverlayPresent</b> (gameoverlayrenderer.so +0x8bf06), reached from the vkd3d-proton present path. Free, reversible, no rebuild. The driver pin (Option B) is the second lever, and per the 2026-10-14 session it is not what a Proton swap can reach. The freeze at 14:39 is the same hook one layer deeper &mdash; its <code>connect()</code> to the overlay's IPC socket never returns because that socket's accept queue is full, so the whole frame parks with the GPU idle. Both symptoms are one cause; Step&nbsp;1 addresses both.</p>
+  </div>
+
+  <section id="timeline">
+    <div class="lbl">Timeline <b>07</b> <span class="rule"></span> <span>Every Dawnwalker launch on 2026-10-15</span></div>
+
+    <div class="panel" style="padding:18px 18px 6px">
+      <table>
+        <thead><tr><th>Launched</th><th>Ended</th><th>Survived</th><th>How it ended</th></tr></thead>
+        <tbody>
+          <tr><td>13:48:25</td><td>13:55:15</td><td>6m50s</td><td>no core dump</td></tr>
+          <tr><td>14:11:19</td><td>14:19:05</td><td>7m46s</td><td>no core dump</td></tr>
+          <tr><td>14:19:32</td><td>14:21:33</td><td>2m01s</td><td>no core dump</td></tr>
+          <tr><td>14:21:40</td><td>14:27:09</td><td>5m29s</td><td>no core dump</td></tr>
+          <tr><td>14:27:10</td><td>14:31:56</td><td>4m46s</td><td><b class="bad">SIGABRT 14:31:52</b> — Core captured</td></tr>
+          <tr><td>14:32:03</td><td>14:37:16</td><td>5m13s</td><td>no core dump</td></tr>
+          <tr><td>14:37:19</td><td>—</td><td>running</td><td>still up at report time</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <details class="tabs" style="margin-top:12px"><summary>▸ Correction to the earlier reading of the crash-report directories</summary>
+      <div class="body">
+        The <code>UECC-Windows-*</code> directories under <code>Saved/Config/CrashReportClient/</code> are created at <b>launch</b>, not at crash &mdash; proven today by the directory stamped <code>14:32:11</code> existing while that launch was still healthy at 5.2&nbsp;GiB VRAM, and by the one stamped <code>14:37:30</code> for the run still live now. Their timestamps therefore map 1:1 onto the <i>launch</i> list above (7 directories today), and they are <b>not</b> a crash count. The 2026-10-14 session treated them as crash timestamps; that inflates the crash tally and shifts every derived duration by a few minutes.
+      </div>
+    </details>
+  </section>
+
+  <section id="evidence">
+    <div class="lbl">Evidence <b>04</b> <span class="rule"></span> <span>What was measured, not inferred</span></div>
+
+    <div class="cards wide">
+
+      <article class="panel card">
+        <div class="key">01</div>
+        <h2>The abort, resolved</h2>
+        <div class="tradeoff">◈ coredumpctl info 319469 — the whole chain in four frames</div>
+        <pre>PID: 319469 (GameThread)
+TID: 319581 (<span class="s">vkd3d_queue</span>)
+Signal: 6 (ABRT)   si_code: <span class="s">SI_TKILL</span>
+Timestamp: Thu 2026-10-15 14:31:52 BST
+Core: …/core.GameThread.1000.e4039b6f…319469….zst (583.2M)
+
+Stack trace of thread 319581:
+#0 0x0000731545a294a4  <span class="c">→ libc.so.6        file off 0x14cc  (abort)</span>
+#1 0x0000731545e80f06  <span class="s">→ gameoverlayrenderer.so  file off 0x8bf06</span>
+#2 0x000000007fe2fb48  <span class="c">→ unmapped in core (win32 / anon region)</span>
+#3 0x0000731545aa84f2  <span class="c">→ libc.so.6        file off 0x8051a</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Frame #1 lands in the overlay, not in the game or the driver.</dd>
+          <dt class="up">PRO</dt><dd>Same glibc abort offset the 2026-10-14 core showed — same failure, two days apart.</dd>
+          <dt class="down">CON</dt><dd><code>SI_TKILL</code> means <i>something in the process</i> raised SIGABRT; the frame proves where, not who asked.</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">02</div>
+        <h2>Which function that is</h2>
+        <div class="tradeoff">◈ file offset 0x8bf06 → VulkanSteamOverlayPresent</div>
+        <pre>$ objdump -d --start-address=0x8be60 --stop-address=0x8bf20 \
+    ~/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so
+
+   8befb:  cmp  -0xc(%rbp),%eax
+   8befe:  jg   8bbe9 <span class="c">&lt;VulkanSteamOverlayPresent+0x2cf99&gt;</span>
+   8bf04:  mov  -0x40(%rbp),%eax
+   8bf07:  and  $0x1,%eax
+   8bf0c:  je   8c098 <span class="c">&lt;VulkanSteamOverlayPresent+0x2d448&gt;</span>
+
+<span class="c"># nearest preceding exported symbol to 0x8bf06:
+#   000000000005ec50  VulkanSteamOverlayPresent</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>objdump attributes the surrounding instructions to that same symbol, so this is not a lookup artefact.</dd>
+          <dt class="up">PRO</dt><dd>Matches the public regression shape: overlay Vulkan layer dies on <code>vkQueuePresentKHR</code>.</dd>
+          <dt class="down">CON</dt><dd>Function size is unknown; the address is inside its span but a static helper cannot be excluded.</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">03</div>
+        <h2>Nothing was suppressed</h2>
+        <div class="tradeoff">◈ the overlay is enabled, preloaded, and re-injecting</div>
+        <pre><span class="c">// userdata/348554024/config/localconfig.vdf:13</span>
+"EnableGameOverlay"  "1"
+
+<span class="c">// userdata/348554024/config/shortcuts.vdf → LaunchOptions</span>
+VKD3D_SHADER_CACHE_PATH=0 gamemoderun PROTON_LOG=1 %command%
+
+<span class="c">// the running process, /proc/&lt;pid&gt; lineage:</span>
+srt-bwrap … --ld-preload=…/gameoverlayrenderer.so
+           --ld-preload=/home/davr/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so
+
+<span class="c">// console_log.txt, 14:32–14:35 — overlay UI (re)started 14 times:</span>
+14:32:22 GameOverlay: started 'gameoverlayui' for game process 351014
+14:32:23 GameOverlay: started 'gameoverlayui' for game process 351014
+14:35:22 GameOverlay: started 'gameoverlayui' for game process 351014</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>The only previously recommended mitigation is provably unapplied.</dd>
+          <dt class="down">CON</dt><dd>Per Valve's own report, unticking the per-game checkbox would <i>not</i> have helped — the layer loads regardless (see Caveats).</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">04</div>
+        <h2>The second defect</h2>
+        <div class="tradeoff">◈ 595.104.02 refuses WaveSize(64) compute shaders</div>
+        <pre>err:vkd3d-proton:d3d12_device_validate_shader_meta: Required
+    WaveSize range [64, 64], but supported range is [32, 32].
+warn:vkd3d-proton:d3d12_pipeline_state_init_compute: Failed to
+    create Vulkan compute pipeline, hr 0x80070057.
+
+<span class="c"># 5 occurrences in today's run, during pipeline precompile
+# steam-13387578276172529664.log, log-time 8834–8840
+# identical failure in the 2026-10-14 cachyos run — it is not the
+# Proton build that decides this, only the driver does.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Same signature as the open reports for FFXVI, ACE COMBAT 8, Mistfall Hunter on 595/610-class drivers.</dd>
+          <dt class="down">CON</dt><dd>The game kept running for minutes after these 5 failures, so they are <b>not</b> the abort &mdash; treat separately.</dd>
+        </dl>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="freeze">
+    <div class="lbl">Live freeze <b>03</b> <span class="rule"></span> <span>pid 407482 — measured live at 14:43, then from its 3.5&nbsp;GiB core at 14:44</span></div>
+
+    <div class="cards wide">
+
+      <article class="panel card pick">
+        <div class="key">01</div>
+        <h2>The frame never finishes</h2>
+        <div class="tradeoff">◈ a game thread inside vkQueuePresentKHR, blocked in connect()</div>
+        <pre>Stack trace of thread 407650 (vkd3d_queue), 14:44 core:
+#26 connect                      libc
+#27 n/a   gameoverlayrenderer.so    <span class="s">+0x57a69</span>
+#28 n/a   gameoverlayrenderer.so    <span class="s">+0x5b4dc</span>
+#29 <span class="s">VulkanSteamOverlayPresent</span>     gameoverlayrenderer.so    +0x5ed33
+#30 vkQueuePresentKHR            steamoverlayvulkanlayer.so +0x509da
+#31 win32u_vkQueuePresentKHR     wine/win32u.so
+#32 thunk64_vkQueuePresentKHR    wine/winevulkan.so
+#33 __wine_unix_call_dispatcher  ntdll.so
+
+<span class="c"># sampled live, before the core was written:</span>
+/proc/407482/task/407650/wchan → <span class="s">unix_wait_for_peer</span>
+/proc/407482/task/407650/syscall → 42  <span class="c">(connect)</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Pins the freeze to one call site: the overlay's present hook on the queue thread.</dd>
+          <dt class="up">PRO</dt><dd>The same thread that aborted at 14:31 — freeze and abort are one hook.</dd>
+          <dt class="down">CON</dt><dd>Node 407482 is the game, so no Steam-side timeline explains the wedge.</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">02</div>
+        <h2>Why connect() never returns</h2>
+        <div class="tradeoff">◈ the overlay's accept queue is full and its owner is idle</div>
+        <pre>$ ss -xlpn | grep spid407482
+u_str LISTEN <span class="s">11</span>  <span class="s">10</span>  /tmp/steam_chrome_overlay_uid1000_spid407482
+      users:(("gameoverlayui",pid=407762,fd=25))
+          <span class="c">↑    ↑  Recv-Q 11 pending, Send-Q backlog 10 → FULL</span>
+
+$ grep -c steam_chrome_overlay_uid1000_spid407482 /proc/net/unix
+13     <span class="c"># client sockets the game holds on that one path</span>
+
+$ grep -c 'GameOverlay: started' console_log.txt
+138    <span class="c"># overlay UI spawns today</span>
+20     <span class="c"># …all for this game process, in 7 minutes</span>
+
+$ # the listener, gameoverlayui 407762: State S, 6 threads,
+  # every one parked in futex_do_wait / poll — it is not accepting</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>A blocked <code>connect()</code> against a full unix backlog is a documented wait, not a GPU fault.</dd>
+          <dt class="up">PRO</dt><dd>Explains the churn: Steam respawns a UI that never drains the queue.</dd>
+          <dt class="down">CON</dt><dd>Why the accepting thread stopped is inside Steam's client — not visible from this host.</dd>
+        </dl>
+      </article>
+
+      <article class="panel card">
+        <div class="key">03</div>
+        <h2>Teardown re-aborts inside the overlay</h2>
+        <div class="tradeoff">◈ the same two overlay offsets as the 2026-10-14 core</div>
+        <pre>Stack trace of thread 407650 (vkd3d_queue) — signal thread:
+#0  abort                    libc +0x294a4
+#1  n/a                      gameoverlayrenderer.so <span class="s">+0xbff06</span>
+#2  n/a                      gameoverlayrenderer.so <span class="s">+0xb6b3e</span>
+#3  _Unwind_ForcedUnwind_Phase2          libgcc_s.so.1
+#7  pthread_exit_wrapper               ntdll.so
+#8  abort_thread                       ntdll.so
+#9  virtual_setup_exception            ntdll.so
+#10 abrt_handler                       ntdll.so
+#13 raise                    libc   #14 abort  libc +0x2943f
+#15 n/a                      gameoverlayrenderer.so <span class="s">+0xbff06</span>
+#16 n/a                      gameoverlayrenderer.so <span class="s">+0xb6b3e</span>
+#23 quit_handler                       ntdll.so
+#26 connect                  libc
+#29 VulkanSteamOverlayPresent         gameoverlayrenderer.so +0x5ed33
+#30 vkQueuePresentKHR        steamoverlayvulkanlayer.so +0x509da
+
+<span class="c"># the unwind walks back into the overlay's frames and aborts
+# a second time — abort inside the handler, hence the pair twice.</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>+0xb6b3e and +0xbff06 are the same overlay cluster the 2026-10-14 core showed.</dd>
+          <dt class="up">PRO</dt><dd>Explains the missing Unreal logs: the process never unwinds cleanly.</dd>
+          <dt class="down">CON</dt><dd>The delivered signal is <code>SI_TKILL</code> (a close/unwind), so the abort is the tail of the freeze, not a fresh fault.</dd>
+        </dl>
+      </article>
+
+    </div>
+
+    <div class="panel" style="padding:18px;margin-top:18px">
+      <div class="lbl" style="margin-bottom:10px">What it is not <b>/</b> nothing here is a GPU, VRAM or driver failure</div>
+      <p style="font:14px/1.6 var(--f-serif);color:var(--dim)">While frozen: no thread burned CPU (0&ndash;2 ticks per 4&nbsp;s across all 109), GPU 28&nbsp;% falling to 4&nbsp;%, SM clock 517&ndash;1095&nbsp;MHz against ~1900 under load, VRAM held at 6.5&nbsp;GiB, and <b>zero</b> Xid, DRM-reset, OOM or swap events in the journal. 39 threads sat in <code>fsync_wait_objects</code>/<code>NtWaitForSingleObject</code>, 7 on futexes, 2 inside the overlay's own <code>read()</code> at <code>+0x52b1b</code>. That is one stuck call site with everything behind it parked &mdash; not the 2026-10-14 shader-compiler spin (which pegged a core in <code>libnvidia-gpucomp</code>), and not a VRAM or driver hang.</p>
+      <p style="font:14px/1.6 var(--f-serif);color:var(--dim);margin-top:10px"><b>Live recovery:</b> <code>kill 407762</code> (the wedged listener) makes the pending connects fail at once with <code>ECONNREFUSED</code>, which releases the present path; Steam may respawn the UI, but on an empty queue. Nothing recovers a session whose accept thread is already wedged — the fix is to stop the layer loading at all (Step&nbsp;1).</p>
+    </div>
+  </section>
+
+  <section id="faults">
+    <div class="lbl">Faults <b>04</b> <span class="rule"></span> <span>Distinct mechanisms, different fixes — do not batch them</span></div>
+
+    <div class="panel" style="padding:18px 18px 6px">
+      <table>
+        <thead><tr><th>Fault</th><th>Mechanism</th><th>Evidence today</th><th>Fixed by</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>A · Overlay present abort</b></td>
+            <td>Overlay Vulkan layer's present hook dies and aborts the Wine process</td>
+            <td><b>PROVEN</b> — core 14:31:52, frame in VulkanSteamOverlayPresent</td>
+            <td>Overlay-off launch option (Step&nbsp;1)</td>
+          </tr>
+          <tr>
+            <td>B · Compute PSO rejection</td>
+            <td>Driver advertises subgroup size 32 only; shaders demand 64</td>
+            <td><b>PRESENT, not fatal</b> — 5× in today's log, game ran on</td>
+            <td>Driver package change (Step&nbsp;2)</td>
+          </tr>
+          <tr>
+            <td><b>C · Overlay IPC stall</b></td>
+            <td><code>connect()</code> in the overlay's present hook blocks on a full accept queue; the frame never completes</td>
+            <td><b>PROVEN</b> — live wchan + the 14:44 core; GPU idle, no CPU burn</td>
+            <td>Overlay-off launch option (Step&nbsp;1)</td>
+          </tr>
+          <tr>
+            <td>D · Shader-compile spin</td>
+            <td>libnvidia-gpucomp/NVVM pegs one core; all game threads wait; window freezes</td>
+            <td><b>2026-10-14 only</b> — the 20:23 hang's 2.2 GB core (not reproduced today)</td>
+            <td>Driver package change (Step&nbsp;2)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="fix">
+    <div class="lbl">Fix ladder <b>03</b> <span class="rule"></span> <span>Cheapest first; each step is independently reversible</span></div>
+
+    <div class="cards wide">
+
+      <article class="panel card pick">
+        <div class="key">A · PICK</div>
+        <h2>Step 1 — launch options</h2>
+        <div class="tradeoff">◈ TRADEOFF // costs the in-game overlay UI, buys both the abort and the freeze</div>
+        <pre><span class="c"># Steam → Dawnwalker shortcut → Properties → Launch Options</span>
+<span class="c"># prepend, keep the existing three:</span>
+VK_LOADER_LAYERS_DISABLE=<span class="s">VK_LAYER_VALVE_steam_overlay_64,VK_LAYER_VALVE_steam_overlay_32</span> \
+  VKD3D_SHADER_CACHE_PATH=0 gamemoderun PROTON_LOG=1 %command%
+
+<span class="c"># verify the layer is gone from the live process:</span>
+grep -o 'VK_LOADER_LAYERS_DISABLE=[^ ]*' /proc/$(pgrep -f Dawnwalker.exe | head -1)/environ</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>No rebuild, no reboot, survives client restarts; revert by deleting the prefix.</dd>
+          <dt class="up">PRO</dt><dd>This is the one switch Valve's own report says actually removes the layer.</dd>
+          <dt class="down">CON</dt><dd>Loses shift-tab, friends UI and screenshots through Steam; F12-style capture still works via the compositor.</dd>
+          <dt class="down">CON</dt><dd>Not proven against <i>this</i> title — it is a test, and the first one to run.</dd>
+        </dl>
+        <div class="metrics"><div><b>1</b><span>Field</span></div><div><b>0</b><span>Rebuilds</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">B</div>
+        <h2>Step 2 — driver package</h2>
+        <div class="tradeoff">◈ TRADEOFF // a rebuild and a reboot, bought for faults B and C</div>
+        <pre><span class="c"># modules/hosts/NIXPC/nixpcConfiguration.nix — host fact, keeps
+# system/drivers/nvidia.nix host-agnostic per its own header</span>
+      <span class="c"># 595.104.02 rejects this title's WaveSize(64) compute shaders and
+      # spins in libnvidia-gpucomp on the pipeline-compile path.</span>
++     hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.latest;
++     <span class="c"># alternatives in the pinned nixpkgs (2026-10-14):</span>
++     <span class="c">#   .latest      615.78.08   — bump past 595</span>
++     <span class="c">#   .legacy_580  580.178.04  — roll back below 595</span>
++     <span class="c">#   .production  595.104.02  — what is installed now</span></pre>
+        <div class="rec"><span class="tag">APPLIED</span><p>2026-10-15: the host names <code>nvidiaPackages.production</code> (595.104.02 at this pin) instead of <code>latest</code>, and the overlay-disabling launch option is in <code>shortcuts.vdf</code>. Choosing <code>production</code> keeps faults B and D in play deliberately — the abort and the freeze were fixed on the overlay side — and leaves <code>latest</code> (615.78.08) as the one-word escape if a DX12 title regresses.</p></div>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Only lever that touches the WaveSize rejection and the gpucomp spin.</dd>
+          <dt class="up">PRO</dt><dd>One line, one host, revert by deleting it; <code>config</code> is already in scope in that module.</dd>
+          <dt class="down">CON</dt><dd>Needs <code>nixos-rebuild</code> + reboot, so it cannot run while a game session is live.</dd>
+          <dt class="down">CON</dt><dd>615 is also named in open freeze reports; 580 is the safer roll-back if 615 misbehaves.</dd>
+        </dl>
+        <div class="metrics"><div><b>1</b><span>Line</span></div><div><b>1</b><span>Reboot</span></div><div><b>MED</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">C</div>
+        <h2>Step 3 — bisect the launch wrapper</h2>
+        <div class="tradeoff">◈ TRADEOFF // one more variable removed if Steps 1–2 do not hold</div>
+        <pre><span class="c"># gamemode injects a second LD_PRELOAD next to the overlay's, and
+# is complaining on every launch today:</span>
+gamemoded[310738]: ERROR: Addition requested for already known
+    client 350692 […/coreutils-9.11/bin/coreutils].
+
+<span class="c"># 2026-10-14 also logged, from inside the game:</span>
+gamemodeauto: dlopen failed - libgamemode.so
+
+<span class="c"># so: drop it while testing, add it back only if FPS suffers</span>
+VK_LOADER_LAYERS_DISABLE=… VKD3D_SHADER_CACHE_PATH=0 PROTON_LOG=1 %command%</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>Removes a preload layer from the same process the abort happens in.</dd>
+          <dt class="down">CON</dt><dd>Low prior probability — gamemode is not in the crashing frame.</dd>
+          <dt class="down">CON</dt><dd>Another edit to remember to undo.</dd>
+        </dl>
+        <div class="metrics"><div><b>1</b><span>Word</span></div><div><b>0</b><span>Rebuilds</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+    </div>
+
+    <div class="panel" style="padding:18px;margin-top:18px">
+      <div class="lbl" style="margin-bottom:10px">VRAM, tracked separately <b>/</b> not the current failure</div>
+      <p style="font:14px/1.6 var(--f-serif);color:var(--dim)">While the 14:32 run was healthy it held <b class="ok">5 247 MiB</b> of the RTX 3050's 8 192 MiB, with the whole GPU at <b class="ok">6 103 MiB / 95 %</b>. The title is reported to size its pool near 7 GiB even on Low, so an out-of-VRAM device-removed remains a live second-order risk &mdash; but nothing in today's evidence is a VRAM failure, and no Xid, DRM reset, OOM or swap event appears in this boot's journal. Watch it with <code>nvidia-smi --query-gpu=memory.used --format=csv -l 1</code> before blaming it.</p>
+    </div>
+  </section>
+
+  <section id="caveats">
+    <div class="lbl">Caveats <b>05</b> <span class="rule"></span> <span>Stated so the next session does not over-read this</span></div>
+
+    <details class="tabs" open><summary>▸ Only one of the six ended launches left a core</summary>
+      <div class="body">Frames are proven for the 14:27 launch only. The other five ended without a dump, which is what a hung-but-alive process looks like when it is closed, and also what the title's own crash dialog looks like. The abort is therefore a <b>confirmed</b> kill for at least one launch and a <b>candidate</b> for the rest &mdash; not a proven count of six identical aborts.</div></details>
+
+    <details class="tabs" style="margin-top:10px"><summary>▸ There are no game logs to read — and this repack is why</summary>
+      <div class="body"><code>Saved/Logs/</code> is empty and no <code>Saved/Crashes/</code> exists for this install: the Kryoto build ships a patched binary (<code>steam_api64.dll.kryoto</code>, <code>Engine/…/steam_settings/</code>) with no vendor support, so the usual Unreal log trail is absent and every conclusion here had to come from the core dump, Steam's own logs and the Proton log. Practical consequence: a retail copy on the same driver would be the cleanest way to separate "this title" from "this build".</div></details>
+
+    <details class="tabs" style="margin-top:10px"><summary>▸ The obvious fix is documented as not working — untick nothing</summary>
+      <div class="body">Valve's steam-for-linux #13669 (overlay Vulkan layer dies in <code>VulkanSteamOverlayPresent</code> via <code>vkQueuePresentKHR</code>; fixed in client 1790904859) records that clearing <i>Enable the Steam Overlay while in-game</i> still leaves <code>ENABLE_VK_LAYER_VALVE_steam_overlay_1=1</code> and <code>gameoverlayrenderer.so</code> in <code>LD_PRELOAD</code>, and that the layer's own <code>DISABLE_VK_LAYER_VALVE_steam_overlay_1</code> is ignored too. Only <code>VK_LOADER_LAYERS_DISABLE</code> removes it. That is why Step 1 is the launch option and not a checkbox.</div></details>
+
+    <details class="tabs" style="margin-top:10px"><summary>▸ Steam client build: past that specific fix, same failure shape</summary>
+      <div class="body">The installed client reports <code>Client version: 1791918634</code> (2026-10-14), newer than the 1790904859 build in which #13669 was confirmed fixed. So this is <b>not</b> that regression re-appearing by build number &mdash; the frame merely shows the same function is again where the process dies. Keep the client updated, and if Step 1 resolves it, the frame is worth reporting upstream with this core.</div></details>
+
+    <details class="tabs" style="margin-top:10px"><summary>▸ Prior sessions and the record they left</summary>
+      <div class="body">2026-10-14 &ldquo;Debug Dawnwalker.exe crashes under Wine&rdquo; isolated this same overlay abort from a systemd core and recommended turning the overlay off &mdash; never applied. 2026-10-14 &ldquo;Diagnose Dawnwalker crash from Proton log&rdquo; isolated a second failure (the NVIDIA shader compiler spin) plus the WaveSize rejections, and concluded the remaining lever is the driver package, not any Proton build. Both conclusions survive; only their crash/timestamp framing of the <code>UECC-*</code> directories needed correcting.</div></details>
+  </section>
+
+  <footer>Artifact · generated by pi · self-contained, upload to share · evidence from coredumpctl 319469, gameoverlayrenderer.so, Steam console_log.txt and today's Proton log</footer>
+</div>
+
+<div class="export">
+  <span><kbd>1</kbd> Launch option</span>
+  <span><kbd>2</kbd> Driver pin</span>
+  <span><kbd>3</kbd> Full fix plan</span>
+  <button class="act" id="copy">Copy fix plan</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const PLAN = () => [
+  'Fix the Dawnwalker crashes on NIXPC (artifacts/dawnwalker-crash-report.html). Do these in order, stop when a launch survives past 10 minutes.',
+  '',
+  'STEP 1 — Steam launch options for the Dawnwalker shortcut (appid 3117038467). Prepend, keep the rest:',
+  '  VK_LOADER_LAYERS_DISABLE=VK_LAYER_VALVE_steam_overlay_64,VK_LAYER_VALVE_steam_overlay_32 VKD3D_SHADER_CACHE_PATH=0 gamemoderun PROTON_LOG=1 %command%',
+  '  Why: the 14:31:52 core has the abort return address inside VulkanSteamOverlayPresent (gameoverlayrenderer.so +0x8bf06) on the vkd3d_queue thread. The per-game overlay checkbox is documented NOT to remove the layer; VK_LOADER_LAYERS_DISABLE is.',
+  '  Verify: grep -o "VK_LOADER_LAYERS_DISABLE=[^ ]*" /proc/$(pgrep -f Dawnwalker.exe | head -1)/environ',
+  '',
+  'STEP 2 — driver package, if it still dies (faults B and C: the 595 driver rejects WaveSize(64) compute pipelines and spins in libnvidia-gpucomp).',
+  '  File: modules/hosts/NIXPC/nixpcConfiguration.nix (host fact; system/drivers/nvidia.nix stays host-agnostic)',
+  '    hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.latest;   # 615.78.08',
+  '    # roll back instead if 615 misbehaves: nvidiaPackages.legacy_580          # 580.178.04',
+  '  Then: sudo nixos-rebuild switch --impure --flake .#NIXPC && reboot',
+  '',
+  'STEP 3 — drop gamemoderun from the launch options while testing (gamemoded errors on every launch; gamemodeauto: dlopen failed - libgamemode.so).',
+  '',
+  'CONTEXT: 6 of 7 launches today survived only 2-8 minutes. UECC-Windows-* dirs are created at LAUNCH, not at crash — they are not a crash count. Only the 14:27 launch left a core; the rest ended without one. No Xid, DRM reset, OOM or swap event this boot. VRAM peaked at 5.2/8.2 GiB, not a VRAM failure.',
+  'If Step 1 fixes it, report the frame upstream (ValveSoftware/steam-for-linux) with the core.',
+].join('\n');
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(PLAN()); }
+  catch { prompt('Copy:', PLAN()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

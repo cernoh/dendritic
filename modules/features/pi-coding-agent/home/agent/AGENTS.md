@@ -62,24 +62,34 @@ stays usable by hand. Self-check:
 
 ## Extension version pins
 
-`pkgs.pi-coding-agent` is the runtime (`pi` 0.87.1). Extensions may only use pi
-APIs that exist in it, so `npm/package.json` pins the one that outran it:
+`pkgs.pi-coding-agent` is the runtime (`pi` 1.2.0). Extensions may only use pi
+APIs that exist in it, so `npm/package.json` holds the install set and its
+ranges:
 
 - `pi-agent-browser-native` — unpin OK since 0.87.0 provides
-  `ctx.sessionManager.buildSessionProjection()`; 0.8.2 installed and working.
-- `pi-mcp-client` `0.10.0` (exact, not `^`) — 0.11.0 calls
-  `pi.getMcpServers()`, added in pi
-  0.99.0. On 0.86 the `session_start` handler throws, and every `mcp_tools`
-  call then reports `[configuration_invalid]` even with no `mcp.json`. That
-error is stale extension state: the `session_start` handler threw at boot, so
-it persists until Pi is reloaded — downgrading the package is not enough
-mid-session.
+  `ctx.sessionManager.buildSessionProjection()`; 0.9.6 installed and working.
+- `@krtclcdy/tersio` — the package ships its OpenCode plugin entry at
+  `extensions/server.ts` (default export is a Plugin object, not a pi factory),
+  and pi's conventional discovery loads every top-level `extensions/*.ts`, so
+  startup aborts with "Extension does not export a valid factory function". The
+  package declares no `pi` manifest, so `settings.json` uses the object form with
+  `extensions: ["!extensions/server.ts"]` to load the real extension set
+  (caveman, pstack, rtk, combo, commands, timing, updater) and skip the plugin
+  entry. Drop the filter only when upstream adds a `pi` manifest.
 
-Unpin only after `pi` itself moves past the floor; `pi-agent-browser-doctor`
-checks the browser extension against the installed pi. `settings.json` lists
-packages unversioned, so a bare `pi install npm:<pkg>` silently un-pins — bump
-`npm/package.json` and reinstall instead (`npm install --legacy-peer-deps`;
-peer ranges name pi 0.99 stubs, the real runtime comes from nix).
+`settings.json` lists packages unversioned, so a bare `pi install npm:<pkg>`
+silently un-pins. Update from the repo path instead: bump the range in
+`npm/package.json` (or `npm update <pkg>`) and run
+`npm install --omit=dev --legacy-peer-deps` in
+`modules/features/pi-coding-agent/home/agent/npm`. Do not run
+`pi update --extensions`: it calls npm with `--prefix ~/.pi/agent/npm`, and npm
+resolves that symlinked path one level deeper every run, appending duplicate
+`../../../.config/dendritic/...` package-lock keys (329 were committed before
+the 2026-10-15 cleanup, and one `pi update` grew them to 1613). A corrupted
+lock also makes `npm audit` report a phantom extraneous `pi-mcp-client`; regen
+with `rm package-lock.json node_modules && npm install --omit=dev
+--legacy-peer-deps` from the repo path. Peer ranges name pi 0.99 stubs; the real
+runtime comes from nix.
 
 ## Runtime state in this git-tracked directory
 
@@ -105,14 +115,12 @@ writes at runtime lands inside a git-owned directory. Most of it is listed in
 ## pi-lazy-loader and pi-lazy-skill-tool
 
 `@valdo766hi/pi-lazy-skill-tool` (skills lazy-loading) declares a peer range of
-pi `>=0.85.1 <0.86.0 || >=1.0.0 <1.1.0`, which excludes our 0.87.1 — installed
-anyway via `--legacy-peer-deps` and verified working on 0.87.1 (2026-10-06:
+pi `>=0.85.1 <0.86.0 || >=1.0.0 <1.1.0`, which excludes our 1.2.0 — installed
+anyway via `--legacy-peer-deps` and verified working (2026-10-06 on 0.87.1:
 `skill` + `skill_search` tools register, exact-name load returns the real
 skill body, `typebox` resolves from pi's own node_modules). It must stay
 eager: it hooks `session_start`/`context`/`before_provider_request`. Default
 adaptive routing, no `lazy-skill.json` — defaults are the config.
-
-`pi-lazy-loader` (extensions lazy-loading) defers **nothing**. Whole-package audit
 
 `pi-lazy-loader` is installed but defers **nothing**. Whole-package audit
 2026-10-06: every installed package registers LLM-callable tools

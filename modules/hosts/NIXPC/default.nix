@@ -24,6 +24,10 @@ in
         nixpcConfiguration
         nixpcDesktop
         nvidiaDrivers
+        # smartmontools + smartd over the NVMe and the three SATA disks. The
+        # noctalia drive-health plugin needs `smartctl` present before its
+        # polkit collector will install; see system/disk-health.
+        diskHealth
         gaming
         flatpakNixpc
         programming
@@ -43,6 +47,12 @@ in
         # trusted-users. ASAHI imports the matching client module. The link
         # addresses NIXPC by its tailnet name, so both halves need tailscale.
         remoteBuilder
+        # The herdr daemon itself: `herdr server` as a systemd user service, so
+        # the multiplexer every other herdr thing below attaches to is owned by
+        # a unit instead of by whichever client connected first. Importing this
+        # is the whole enable switch; the NixOS half injects the home-manager
+        # module through `home-manager.sharedModules`.
+        herdr
         # The herdr-web bridge. This import is the whole enable switch: the NixOS
         # module also adds homeManagerModules.herdr-web to the user's Home
         # Manager, so the server runs on loopback and this half publishes it on
@@ -54,10 +64,11 @@ in
         # The second herdr client UI (chat view, file viewer, remote PCs, push
         # alerts) runs beside the bridge above on its own port. Same split: the
         # home-manager module runs the server on loopback, this publishes it on
-        # the tailnet. Both try the tailnet and neither starts the herdr daemon,
-        # so the order they come up in does not matter. NIXPC only, and the
-        # package's node_modules FOD hash is the x86_64 dependency tree, so
-        # building it on another architecture fails the hash.
+        # the tailnet. Neither bridge starts the herdr daemon — `herdr` above
+        # does, and both are ordered after it — so a daemon is already answering
+        # when either connects. NIXPC only, and the package's node_modules FOD
+        # hash is the x86_64 dependency tree, so building it on another
+        # architecture fails the hash.
         herdr-web-ui
         ({ services.herdr-web-ui.tailscaleServe.enable = true; })
         # The Docker daemon comes in through attrs/desktop -> act -> docker;
