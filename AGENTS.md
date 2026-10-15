@@ -119,6 +119,7 @@ relevant child AGENTS.md
     - `modules/features/wayfinder-dashboard/` — mobile Wayfinder queue, project spaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`
+    - `modules/system/hardware-profiles/` — the nixos-hardware registry and its per-host coverage matrix (why each upstream profile is applied or rejected) → `modules/system/hardware-profiles/AGENTS.md`
 - `.github/` — CI, STE prose lint, workflows, templates → `.github/AGENTS.md`
 
 > Nearest AGENTS.md controls local detail; parent docs supply repo-wide rules. Walk root → target, reading every AGENTS.md on the path.

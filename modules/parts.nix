@@ -34,6 +34,14 @@
     default = { };
   };
 
+  # The nixos-hardware registry (system/hardware-profiles). Hosts select
+  # profiles by key from their `_hardware-profiles-settings.nix`, so the set
+  # this flake will apply stays readable in one table.
+  options.flake.nixosHardwareProfiles = lib.mkOption {
+    type = lib.types.lazyAttrsOf lib.types.raw;
+    default = { };
+  };
+
   config.perSystem =
     { pkgs, ... }:
     {

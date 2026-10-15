@@ -53,8 +53,21 @@
       # NVIDIA/Wayland GPU tuning for Brave on this host; `enable` and the
       # generic --ozone-platform=wayland flag live in the brave feature.
       # commandLineArgs lists merge across modules, so the two combine.
+      #
+      # Vulkan MUST stay off on this host. Chromium rejects it outright
+      # under native Wayland — its GPU process logs
+      #   '--ozone-platform=wayland' is not compatible with Vulkan
+      # and the window is mapped but never painted: a transparent box
+      # showing the desktop through it, or uninitialised garbage after
+      # a resize. This is not cosmetic; it is the whole window surface.
+      # It also auto-enables Vulkan when it sees the NVIDIA ICD, so the
+      # disable below is load-bearing, not a counterpart to an enable.
+      # Only the last --disable-features occurrence reaches Chromium,
+      # so this one must repeat the package defaults it wants to keep
+      # (OutdatedBuildDetector, UseChromeOSDirectVideoDecoder).
       programs.brave.commandLineArgs = [
-        "--enable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan,UseOzonePlatform"
+        "--enable-features=UseOzonePlatform"
+        "--disable-features=OutdatedBuildDetector,UseChromeOSDirectVideoDecoder,Vulkan,VulkanFromANGLE,DefaultANGLEVulkan"
         "--enable-gpu-rasterization"
         "--ignore-gpu-blocklist"
       ];

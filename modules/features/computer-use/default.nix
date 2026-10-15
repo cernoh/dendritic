@@ -28,6 +28,13 @@
 # generic-glibc `cua-driver` ELF that NixOS cannot exec (no loader). See
 # home.activation.cuaDriver below and computer-use/AGENTS.md.
 #
+# Also turns on the AT-SPI2 accessibility bus (org.a11y.Bus). The cua-driver
+# inspects the desktop through it; with the bus unowned the driver reports
+# `ax_capability` down and every element-tree tool fails, even on a live
+# session. Enabling at-spi2-core starts the bus and stops the module's default
+# NO_AT_BRIDGE=1 / GTK_A11Y=none overrides (what actually silences GTK a11y);
+# the dconf key flips toolkit-accessibility so GTK apps publish their tree.
+#
 # Opt in from a host: imports = [ self.nixosModules.computerUse ];
 # attrs/desktop imports it, so both hosts get it.
 { inputs, ... }:
@@ -49,6 +56,25 @@
         # Only needed by home.activation.cuaDriver below, which patchelfs the
         # npm cua-driver at activation.
         patchelf
+      ];
+
+      # The cua-driver sees the desktop through AT-SPI2 (org.a11y.Bus). With the
+      # bus unowned it reports ax_capability down and every element-tree tool
+      # (get_window_state, element click/type/set_value) fails, even on a live
+      # Wayland session. at-spi2-core starts the bus (dbus + systemd user unit)
+      # and, by being enabled, stops the module's default NO_AT_BRIDGE=1 /
+      # GTK_A11Y=none session overrides — those env vars are what actually
+      # silence the GTK accessibility bridge. The dconf key flips
+      # org.gnome.desktop.interface toolkit-accessibility, the switch the
+      # driver's own probe names, so GTK apps publish their accessibility tree.
+      # Host-agnostic: mango (NIXPC) and niri (ASAHI) both expose AT-SPI2 over
+      # the session D-Bus, so this needs no per-host option.
+      services.gnome.at-spi2-core.enable = true;
+      programs.dconf.enable = true;
+      programs.dconf.profiles.user.databases = [
+        {
+          settings."org/gnome/desktop/interface".toolkit-accessibility = true;
+        }
       ];
 
       # pi-computer-use (npm:@amaster.ai/pi-computer-use) needs a runnable

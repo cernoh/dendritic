@@ -114,6 +114,15 @@
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/latest";
     };
+    # Machine-quirk profiles (modules/system/hardware-profiles). Follows
+    # nixpkgs: every profile is a plain NixOS module that reads the host's
+    # `pkgs`/`lib`, so a non-followed copy would evaluate against a second
+    # nixpkgs and duplicate store paths. A host opts in by naming profiles in
+    # its `_hardware-profiles-settings.nix`; see that module's coverage matrix.
+    nixos-hardware = {
+      url = "github:NixOS/nixos-hardware";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
 }

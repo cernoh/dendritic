@@ -5,7 +5,7 @@ Composable NixOS module bundles that group system modules + feature sets by mach
 
 ## Ownership
 - `desktop/` — core desktop base: `core` + `network` + `audio` + `homeManager` + `act` + `waylandBase` + `computerUse` + `stylix` + `nautilus`, `allowUnfree = true`, shared `environment.systemPackages` (CLI tools, `obsidian`, `ffmpeg`, `tailscale`, `cachix`, `jj`, etc.; see `desktop/default.nix:42`). The two theming/file-manager features live here rather than on a host, because both desktop hosts want them and neither is host-specific.
-- `gaming/` — Steam bundle (`programs.steam` + compat) — imported by `NIXPC` alongside `gaming-tools`.
+- `gaming/` — Steam bundle (`programs.steam` + compat) plus `programs.gamemode` — imported by `NIXPC` alongside `gaming-tools`.
 - `programming/` — system-side dev tools (HM side is `features/programming`).
 
 ## Local Contracts

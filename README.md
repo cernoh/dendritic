@@ -73,7 +73,7 @@ export `flake.homeManagerModules.<name>`; host presets and the HM glue wire them
 | `programming` | Dev environment: git, direnv, tmux, zellij, gh, editors' companions |
 | `retrosmart-cursor` | Retrosmart `mac-ish` cursor theme, recolored with the sepia palette (`outline` = `text`, `fill` = `base`); built from a pinned source tree and set as the pointer cursor on both hosts |
 | `scheme` | The flake-wide sepia palette: roles, base16, ANSI, the Noctalia palette document, the greeter palette, the omp theme, and the host wallpaper. Every themed feature reads this |
-| `steam` | `programs.steam` + protontricks + compat packages |
+| `steam` | `programs.steam` + protontricks + compat packages, plus `protonup-qt` in `environment.systemPackages` |
 | `stylix` | GTK and Qt theming from the sepia palette through [stylix](https://nix-community.github.io/stylix/): GTK CSS + `adw-gtk3`, and a Kvantum theme. Only the `gtk` and `qt` targets are on. Enabled by the `desktop` bundle |
 | `usb-automount` | udev-triggered USB mounting under `/run/media/<user>` with mount/unmount notifications |
 | `wayland-base` | Qt Wayland platforms, Chromium/Electron ozone flags, Firefox Wayland, fuzzel |
@@ -92,6 +92,7 @@ modules/
   features/<app>/     opt-in feature modules (the table above)
   hosts/<HOST>/       host presets producing nixosConfigurations.<HOST>
   system/             cross-host system concerns: core, network, audio, drivers, home-manager glue
+    hardware-profiles/  the nixos-hardware registry + coverage matrix (no NixOS module of its own)
 ```
 
 Conventions:
@@ -157,6 +158,14 @@ hosts, and a weekly flake-lock bump.
   nothing and compiles both packages locally. The shell tracks the upstream
   `cachix` branch, which always points at the newest cached commit; the greeter
   tracks `main`, so a bump to a commit CI has not built yet costs one local build.
+- **`nixos-hardware` follows nixpkgs but has no tags, so the lock is the only
+  pin.** Upstream publishes no releases, so `nix flake update` moves the rev and
+  can change what an already-applied profile sets. After every bump, re-read the
+  upstream `common/` tree and re-check the rejected rows in
+  `modules/system/hardware-profiles/AGENTS.md` — a new `common-*` profile can
+  invalidate a rejection. The registry (`flake.nixosHardwareProfiles`) is the
+  only place a profile becomes applicable, so a bad upstream change reaches a
+  host only through a key that host already names.
 - **Asahi bootchain builds locally**: tpwrules/nixos-apple-silicon publish no
   binary cache for linux-asahi/uboot-asahi/m1n1 (`nixos-apple-silicon.cachix.org`
   covers everything else), so every `asahi` input bump rebuilds the ~4 heavy

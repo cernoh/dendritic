@@ -18,7 +18,8 @@
     "npm:pi-commandcode-provider",
     "npm:pi-lazy-loader",
     "npm:@valdo766hi/pi-lazy-skill-tool",
-    "../../.funes/agents/pi"
+    "../../.funes/agents/pi",
+    "npm:pi-cowboy"
   ],
   "lastChangelogVersion": "1.1.0",
   "pi-computer-use": {
@@ -39,6 +40,6 @@
     "showTerminalProgress": true
   },
   "defaultProvider": "opencode-go",
-  "defaultModel": "muse-spark-1.3-contributor",
-  "hideThinkingBlock": true
+  "defaultModel": "deepseek-v4.1-flash",
+  "hideThinkingBlock": false
 }

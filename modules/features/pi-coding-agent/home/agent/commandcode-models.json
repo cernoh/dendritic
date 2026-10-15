@@ -268,7 +268,7 @@
     {
       "id": "z-ai/glm-5.3-flash",
       "name": "GLM-5.3 Flash (CC)",
-      "api": "openai-responses",
+      "api": "openai-completions",
       "reasoning": true,
       "contextWindow": 1048576,
       "maxTokens": 131072
@@ -392,6 +392,14 @@
       "reasoning": true,
       "contextWindow": 1000000,
       "maxTokens": 131072
+    },
+    {
+      "id": "Qwen/Qwen3.8-Max-Prime",
+      "name": "Qwen 3.8 Max Prime (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 1000000,
+      "maxTokens": 65536
     },
     {
       "id": "Qwen/Qwen3.8-Max-0902",
@@ -626,12 +634,12 @@
       "maxTokens": 32768
     },
     {
-      "id": "inclusionai/ling-3.1-flash:free",
+      "id": "inclusionai/ling-3.1-flash",
       "name": "Ling 3.1 Flash (CC)",
       "api": "openai-completions",
-      "reasoning": true,
+      "reasoning": false,
       "contextWindow": 262144,
-      "maxTokens": 32768
+      "maxTokens": 65536
     },
     {
       "id": "meta/muse-spark-1.1",

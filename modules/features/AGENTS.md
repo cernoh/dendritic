@@ -50,8 +50,9 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 - `nix flake check --impure` covers all features through host `imports`.
 
 ## Child DOX Index
-- `computer-use/` — wlroots capture/injection tools plus the patched `cua-driver` runtime for the pi-computer-use extension → `modules/features/computer-use/AGENTS.md`
+- `computer-use/` — wlroots capture/injection tools, the patched `cua-driver` runtime, and the AT-SPI2 a11y bus for the pi-computer-use extension → `modules/features/computer-use/AGENTS.md`
 - `funes/` — pinned prebuilt `funes` binary plus its mandatory `hf` and `trufflehog` companions, no auto `funes add` → `modules/features/funes/AGENTS.md`
 - `noctalia/` — Noctalia shell feature, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper and its frame protocol, `mirai` Miracast CLI → `modules/features/noctalia/AGENTS.md`
+- `nixpc-desktop/` — NIXPC-only desktop bundle; owns the Brave-on-NVIDIA Vulkan-off contract and how to re-verify a browser flag change without a rebuild → `modules/features/nixpc-desktop/AGENTS.md`
 - `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent definitions, agent config, plugins → `modules/features/omp/AGENTS.md`
 - `wayfinder-dashboard/` — mobile Wayfinder frontier queue, project workspaces, Herdr/Pi launches, per-ticket terminal, pi slash commands → `modules/features/wayfinder-dashboard/AGENTS.md`

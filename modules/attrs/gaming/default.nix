@@ -13,6 +13,10 @@
     in
     {
       imports = modules;
+
+      # GameMode: lets games request the "performance" governor,
+      # renice, and I/O priority while running.
+      programs.gamemode.enable = true;
     }
   );
 }
