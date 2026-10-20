@@ -1,0 +1,6 @@
+{
+  "agent": {
+    "worktreeMaterialization": "copy-on-write",
+    "worktreeCheckoutType": "clean"
+  }
+}

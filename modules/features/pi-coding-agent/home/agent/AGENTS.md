@@ -107,6 +107,12 @@ writes at runtime lands inside a git-owned directory. Most of it is listed in
   rotating — check `git log --all -S<token>` before assuming that again.
 - **`auth.json` holds pi provider credentials.** Never read it into a prompt, a
   commit, or an artifact.
+- **`pi-sessions/messaging/` is ephemeral IPC, and a live `broker.sock` breaks the flake.**
+  Nix's git tree copy cannot hash a unix socket, so while the messaging broker is
+  running every `nix eval .#…`, `nix flake check`, and `nixos-rebuild` on this
+  checkout fails with `file '…broker.sock' has an unsupported type`. The directory
+  is ignored for that reason, not for secrecy: `broker.sock`, `broker.pid`, and
+  `broker.log` are all recreated by the running session.
 - A credential written here is **not** evidence it was ever exposed. Before
   rotating, prove reachability: `git log --all -S<token> --oneline` and
   `git grep <token>`. An untracked file that was never staged needs a gitignore

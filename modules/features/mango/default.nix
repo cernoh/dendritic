@@ -198,6 +198,12 @@
 
         window_rule = [
           "is_floating:1,app_id:firefox,title:^Picture-in-Picture$"
+          # Keep the cursor inside Warframe's window (it runs under Proton and
+          # does not drive the Wayland pointer-constraint protocol itself), so
+          # the mouse cannot escape to the other monitor mid-game.
+          "confine_pointer:1,title:.*[Ww]arframe.*"
+          "confine_pointer:1,app_id:steam_app_230410"
+          "confine_pointer:1,app_id:.*[Ww]arframe.*"
           "allow_csd:0,app_id:.*"
         ];
 

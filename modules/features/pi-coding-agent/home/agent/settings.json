@@ -43,7 +43,7 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4.1-flash",
+  "defaultProvider": "freeflow",
+  "defaultModel": "beam-free",
   "hideThinkingBlock": false
 }

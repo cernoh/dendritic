@@ -22,5 +22,14 @@ themes/
 *.log*
 *.pid
 pi-freeflow-upstream-health.json
+# Live catalog snapshot written by `refreshCatalog` (extension, daemon, or a
+# forced refresh). Runtime state like models-store.json — regenerated on the
+# next poll, never committed.
+pi-freeflow-catalog-cache.json
 # npm runtime
 npm/node_modules/
+# Ephemeral messaging IPC: broker.sock, broker.pid, broker.log, written by the
+# running pi session. A unix socket is an unsupported file type for Nix's git
+# tree copy, so a live socket makes every `nix eval .#…` and `nixos-rebuild` on
+# this checkout fail with "has an unsupported type".
+pi-sessions/messaging/

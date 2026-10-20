@@ -24,9 +24,9 @@ in
         nixpcConfiguration
         nixpcDesktop
         nvidiaDrivers
-        # smartmontools + smartd over the NVMe and the three SATA disks. The
-        # noctalia drive-health plugin needs `smartctl` present before its
-        # polkit collector will install; see system/disk-health.
+        # smartmontools + smartd over the NVMe and the three SATA disks, plus
+        # the noctalia drive-health plugin's root collector as a declared
+        # service/timer pair; see system/disk-health.
         diskHealth
         gaming
         flatpakNixpc
