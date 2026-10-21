@@ -1,0 +1,195 @@
+# Museum — the config half of the plugin.
+#
+# This file is the museum feature's share of the noctalia configuration: the
+# bar it draws, the drawer's widget instances, and the desktop wall. It lives
+# beside the code that implements it and is pulled into the main config by one
+# `[include]` line in the host settings:
+#
+#   [include]
+#   files = [ "<store path>/modules/features/noctalia/plugins/museum/config/museum.toml" ]
+#
+# The including file wins, so a key left in the host settings would silently
+# override this one — nothing museum-owned may be duplicated there. Edits here
+# need a rebuild (the config is generated), unlike the Luau beside it, which is
+# live through the out-of-store plugin symlink.
+#
+# Coordinates below are the artifact's 1920x1080 canvas (DP-2).
+
+# ---------------------------------------------------------------------------
+# The bar (PLAN phase 3)
+# ---------------------------------------------------------------------------
+# Geometry is the Phase 1 museum baseline: a 46 px walnut rail with the
+# radius ladder halved onto the museum's 6/4/3 steps, and a hairline border
+# (the border and shadow toggles are deliberately left at the shell defaults,
+# because a plaque on a wall casts a soft shadow — "no glows" means no bloom).
+#
+# The six lanes below are `cernoh/museum` entries, one per component family.
+# They replace workspaces, active_window, the g1/g2 capsule groups, media,
+# notifications, clipboard, network, bluetooth, volume, brightness and session.
+# Those built-ins still exist in the shell; the terminal and Mirai panels stay
+# reachable from their keybind and control-centre tile, not the bar.
+
+[bar.main]
+auto_hide = false
+background_opacity = 0.97
+border = "outline"
+border_width = 0.0
+capsule = false
+capsule_fill = "surface_variant"
+capsule_opacity = 1.0
+capsule_padding = 6.0
+capsule_thickness = 0.7599999904632568
+center = ["machine", "clock", "thermal"]
+concave_edge_corners = true
+contact_shadow = false
+enabled = true
+end = ["tray"]
+font_scale = 1.0
+font_weight = 500
+hover_highlight = true
+layer = "top"
+margin_edge = 0
+margin_ends = 100
+margin_opposite_edge = 0
+padding = 14
+panel_overlap = 1
+position = "top"
+radius = 6
+radius_bottom_left = 6
+radius_bottom_right = 6
+radius_top_left = 6
+radius_top_right = 6
+reserve_space = true
+scale = 1.0
+shadow = true
+show_on_workspace_switch = true
+smart_auto_hide = false
+start = ["launcher", "halls", "label"]
+thickness = 46
+widget_spacing = 8
+
+# ---------------------------------------------------------------------------
+# Bar widget instances
+# ---------------------------------------------------------------------------
+# `halls` follows the Mango tags and mirrors `[widget.workspaces]`
+# hide_when_empty; `label` truncates at the same 260 as the built-in
+# active_window; `machine` and `thermal` carry their own ledgers; `tray` folds
+# the exhibit plate, the tray plate, the wax seal and the audio plate into one
+# entry.
+
+[widget.halls]
+count = 0
+hide_when_empty = true
+type = "cernoh/museum:halls"
+
+[widget.label]
+max_length = 260
+type = "cernoh/museum:label"
+
+[widget.machine]
+show_gpu = true
+type = "cernoh/museum:machine"
+
+[widget.clock]
+date_format = "%a %d %b"
+time_format = "%H:%M"
+type = "cernoh/museum:clock"
+
+[widget.thermal]
+show_gauge = true
+type = "cernoh/museum:thermal"
+
+[widget.tray]
+show_audio = true
+show_media = true
+show_unread = true
+type = "cernoh/museum:tray"
+
+# ---------------------------------------------------------------------------
+# The desktop wall (PLAN phase 5)
+# ---------------------------------------------------------------------------
+# `widget_order` is authoritative: the four `sysmon` cards are gone, replaced by
+# one mounted instrument board at their footprint, and the clock, calendar and
+# oscillograph are restyled around it. The board, placard and month plate are
+# `cernoh/museum` entries; the oscillograph stays the shell's
+# `audio_visualizer`, because a plugin has no spectrum feed and the built-in
+# already draws a gradient (PLAN 5.4).
+
+[desktop_widgets]
+enabled = true
+schema_version = 2
+widget_order = ["instrument_board", "clock_placard", "month_plate", "oscillograph"]
+
+[desktop_widgets.grid]
+cell_size = 16
+major_interval = 4
+visible = true
+
+# 44,122 -> 544,428: the four sysmon tiles, now one walnut board.
+[desktop_widgets.widget.instrument_board]
+box_height = 306.0
+box_width = 500.0
+cx = 294.0
+cy = 275.0
+enabled = true
+output = "DP-2"
+placement_height = 1080.0
+placement_width = 1920.0
+rotation = 0.0
+type = "cernoh/museum:instrument"
+
+# 64,452 . 464x96: brass time, date, and a seconds level meter.
+[desktop_widgets.widget.clock_placard]
+box_height = 96.0
+box_width = 464.0
+cx = 296.0
+cy = 500.0
+enabled = true
+output = "DP-2"
+placement_height = 1080.0
+placement_width = 1920.0
+rotation = 0.0
+type = "cernoh/museum:placard"
+
+# 40,573 . 620x420: the drawer's month plate, today embossed in brass.
+[desktop_widgets.widget.month_plate]
+box_height = 420.0
+box_width = 620.0
+cx = 350.0
+cy = 783.0
+enabled = true
+output = "DP-2"
+placement_height = 1080.0
+placement_width = 1920.0
+rotation = 0.0
+type = "cernoh/museum:monthplate"
+
+# 983,964 . 270x80: 32 brass bands in a framed walnut well. `color_1` is the
+# one allowed hex (brass-lt, DESIGN section 3); `color_2` is the outline role,
+# so the gradient tracks a palette change on its dark end.
+[desktop_widgets.widget.oscillograph]
+box_height = 80.0
+box_width = 270.0
+cx = 1118.0
+cy = 1004.0
+enabled = true
+output = "DP-2"
+placement_height = 1080.0
+placement_width = 1920.0
+rotation = 0.0
+type = "audio_visualizer"
+
+[desktop_widgets.widget.oscillograph.settings]
+background = true
+background_color = "surface"
+background_opacity = 0.97
+background_padding = 8
+background_radius = 6
+bands = 32
+centered = true
+color_1 = "#e2c08a"
+color_2 = "outline"
+mirrored = true
+show_when_idle = true
+
+[bar.main.dead_zone]

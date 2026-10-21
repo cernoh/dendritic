@@ -142,6 +142,9 @@
 
       home.file.".local/share/noctalia/plugins/mirai".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/mirai";
+
+      home.file.".local/share/noctalia/plugins/museum".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/museum";
     }
   );
 }
