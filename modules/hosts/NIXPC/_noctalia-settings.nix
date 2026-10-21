@@ -47,24 +47,15 @@
       capsule_padding = 6.0;
       capsule_thickness = 0.75999999046325684;
       center = [
-        "group:g2"
+        "machine"
         "clock"
-        "group:g1"
+        "thermal"
       ];
       concave_edge_corners = true;
       contact_shadow = false;
       enabled = true;
       end = [
-        "media"
         "tray"
-        "notifications"
-        "clipboard"
-        "network"
-        "bluetooth"
-        "volume"
-        "brightness"
-        "battery"
-        "session"
       ];
       font_scale = 1.0;
       font_weight = 500;
@@ -88,44 +79,12 @@
       smart_auto_hide = false;
       start = [
         "launcher"
-        "cernoh/terminal:bar"
-        "cernoh/mirai:bar"
-        "wallpaper"
-        "workspaces"
-        "active_window"
+        "halls"
+        "label"
       ];
       thickness = 46;
       widget_spacing = 8;
       dead_zone = { };
-      capsule_group = [
-        {
-          accordion = true;
-          accordion_direction = "end";
-          enabled = true;
-          fill = "surface_variant";
-          id = "g1";
-          members = [
-            "temp"
-            "network_tx"
-            "network_rx"
-          ];
-          opacity = 1.0;
-          padding = 6.0;
-        }
-        {
-          accordion = false;
-          accordion_direction = "end";
-          enabled = true;
-          fill = "surface_variant";
-          id = "g2";
-          members = [
-            "ram"
-            "cpu"
-          ];
-          opacity = 1.0;
-          padding = 6.0;
-        }
-      ];
     };
   };
   battery = {
@@ -492,6 +451,7 @@
       "noctalia/bitwarden"
       "cernoh/terminal"
       "cernoh/mirai"
+      "cernoh/museum"
     ];
     source = [
       {
@@ -781,19 +741,42 @@
     unit = "metric";
   };
   widget = {
-    active_window = {
-      capsule = true;
-      icon_size = 14.0;
-      interactive = false;
-      max_length = 260.0;
-      min_length = 80.0;
-      title_scroll = "on_hover";
-      type = "active_window";
+    # ── museum bar (PLAN phase 3) ───────────────────────────────────────
+    # Replaces workspaces, active_window, the g1/g2 sysmon groups, media,
+    # notifications, clipboard, network, bluetooth, volume, brightness and
+    # session on the bar. Those built-ins still exist in the shell; the museum
+    # entries are the bar's render of them. The terminal and Mirai panels stay
+    # reachable from their keybind and control-centre tile, not the bar.
+    clock = {
+      type = "cernoh/museum:clock";
+      time_format = "%H:%M";
+      date_format = "%a %d %b";
     };
-    cpu = {
-      stat = "cpu_usage";
-      type = "sysmon";
+    halls = {
+      type = "cernoh/museum:halls";
+      hide_when_empty = true;
+      count = 0;
     };
+    label = {
+      type = "cernoh/museum:label";
+      max_length = 260;
+    };
+    machine = {
+      type = "cernoh/museum:machine";
+      show_gpu = true;
+    };
+    thermal = {
+      type = "cernoh/museum:thermal";
+      show_gauge = true;
+    };
+    tray = {
+      type = "cernoh/museum:tray";
+      show_media = true;
+      show_audio = true;
+      show_unread = true;
+    };
+
+    # Kept for the panels that read them; no longer placed on the bar.
     date = {
       format = "{:%a %d %b}";
       type = "clock";
@@ -814,40 +797,13 @@
       show_scroll_lock = false;
       type = "lock_keys";
     };
-    media = {
-      art_size = 16.0;
-      max_length = 220.0;
-      min_length = 80.0;
-      title_scroll = "none";
-      type = "media";
-    };
-    network_rx = {
-      stat = "net_rx";
-      type = "sysmon";
-    };
-    network_tx = {
-      stat = "net_tx";
-      type = "sysmon";
-    };
     output_volume = {
       device = "output";
       type = "volume";
     };
-    ram = {
-      stat = "ram_used";
-      type = "sysmon";
-    };
     spacer = {
       interactive = false;
       type = "spacer";
-    };
-    temp = {
-      stat = "cpu_temp";
-      type = "sysmon";
-    };
-    workspaces = {
-      hide_when_empty = true;
-      type = "workspaces";
     };
   };
 }

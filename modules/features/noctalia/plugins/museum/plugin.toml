@@ -1,0 +1,158 @@
+id = "cernoh/museum"
+name = "Museum"
+version = "0.2.0"
+plugin_api = 26
+author = "cernoh"
+license = "MIT"
+tags = ["theme", "reskin", "museum"]
+icon = "building-bank"
+description = "Museum-themed reskin of the noctalia shell (bar, drawer, desktop)."
+
+# Shared by the telemetry service (which reads the collector's file) and the
+# drawer. `system/disk-health` owns the collector; the museum only reads it.
+[[setting]]
+key = "drive_raw_path"
+type = "string"
+label_key = "settings.drive_raw_path.label"
+description_key = "settings.drive_raw_path.description"
+default = "/run/noctalia-drive-health/raw.json"
+
+[[service]]
+id = "palette"
+entry = "service.luau"
+
+# One service owns every live feed: the two Mango watches, the shell's system
+# monitor, drive health, MPRIS, volume, brightness and the unread count. The
+# six bar entries only render what it publishes.
+[[service]]
+id = "telemetry"
+entry = "telemetry.luau"
+
+# The catalogue drawer's feed: provenance, power profile, audio channels,
+# network registry, Bluetooth holdings and MPRIS, plus the drawer's requests.
+# The panel renders; this runtime fetches (see catalogue.luau).
+[[service]]
+id = "catalogue"
+entry = "catalogue.luau"
+
+# ── the six bar families (PLAN phase 3) ────────────────────────────────────
+# One entry per component family so the bar stays user-reconfigurable: a user
+# can drop `thermal` without losing `machine`.
+
+[[widget]]
+id = "halls"
+entry = "halls.luau"
+
+  [[widget.setting]]
+  key = "hide_when_empty"
+  type = "bool"
+  label_key = "settings.halls.hide_when_empty.label"
+  description_key = "settings.halls.hide_when_empty.description"
+  default = true
+
+  [[widget.setting]]
+  key = "count"
+  type = "int"
+  label_key = "settings.halls.count.label"
+  description_key = "settings.halls.count.description"
+  default = 0
+  min = 0
+  max = 12
+
+[[widget]]
+id = "label"
+entry = "label.luau"
+
+  [[widget.setting]]
+  key = "max_length"
+  type = "int"
+  label_key = "settings.label.max_length.label"
+  description_key = "settings.label.max_length.description"
+  default = 260
+  min = 20
+  max = 2000
+
+  [[widget.setting]]
+  key = "caption"
+  type = "string"
+  label_key = "settings.label.caption.label"
+  description_key = "settings.label.caption.description"
+  default = ""
+
+[[widget]]
+id = "machine"
+entry = "machine.luau"
+
+  [[widget.setting]]
+  key = "show_gpu"
+  type = "bool"
+  label_key = "settings.machine.show_gpu.label"
+  description_key = "settings.machine.show_gpu.description"
+  default = true
+
+[[widget]]
+id = "clock"
+entry = "clock.luau"
+
+  [[widget.setting]]
+  key = "time_format"
+  type = "string"
+  label_key = "settings.clock.time_format.label"
+  description_key = "settings.clock.time_format.description"
+  default = "%H:%M"
+
+  [[widget.setting]]
+  key = "date_format"
+  type = "string"
+  label_key = "settings.clock.date_format.label"
+  description_key = "settings.clock.date_format.description"
+  default = "%a %d %b"
+
+[[widget]]
+id = "thermal"
+entry = "thermal.luau"
+
+  [[widget.setting]]
+  key = "show_gauge"
+  type = "bool"
+  label_key = "settings.thermal.show_gauge.label"
+  description_key = "settings.thermal.show_gauge.description"
+  default = true
+
+[[widget]]
+id = "tray"
+entry = "tray.luau"
+
+  [[widget.setting]]
+  key = "show_media"
+  type = "bool"
+  label_key = "settings.tray.show_media.label"
+  description_key = "settings.tray.show_media.description"
+  default = true
+
+  [[widget.setting]]
+  key = "show_audio"
+  type = "bool"
+  label_key = "settings.tray.show_audio.label"
+  description_key = "settings.tray.show_audio.description"
+  default = true
+
+  [[widget.setting]]
+  key = "show_unread"
+  type = "bool"
+  label_key = "settings.tray.show_unread.label"
+  description_key = "settings.tray.show_unread.description"
+  default = true
+
+[[shortcut]]
+id = "toggle"
+entry = "shortcut.luau"
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 1100
+height = 720
+placement = "attached"
+keyboard_focus = "exclusive"
+dismiss_on_outside_click = true

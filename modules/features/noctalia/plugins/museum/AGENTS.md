@@ -165,12 +165,19 @@ The clock deserves the detail because PLAN §3.4 asks for a decision:
   (`src/shell/bar/widget.cpp:30-41 widgetForegroundOr`), so
   `[widget.clock] color = "primary"` gives the brass.
 - What config cannot give: a serif face (the bar font is global) and a
-  capsule of its own. **Decision for Phase 3: keep the built-in clock.** Write
-  a plugin clock only if the serif is judged load-bearing after a live render.
+  capsule of its own. **Decision taken in Phase 3 (implemented, overriding this
+  recon note): replace the built-in with a plugin `clock`.** The built-in can be
+  brass and two-line, but `[shell] font_family` is global, so the artifact's
+  serif placard — the loudest element on the bar — is the one thing the
+  built-in cannot carry. The plugin uses `DejaVu Serif` (installed; Cinzel / EB
+  Garamond are not) and was confirmed live against the artifact.
 
-So Phase 3's six widget entries become **five** (`halls`, `label`, `machine`,
-`thermal`, `exhibit`) plus bar config; `tray` collapses into capsule groups
-around the built-ins.
+So Phase 3 ships **six** entries as PLAN §6 specifies — `halls`, `label`,
+`machine`, `clock`, `thermal`, `tray` — not the five this recon first
+projected. `tray` is a plugin entry rather than capsule groups around the
+built-ins because a capsule group cannot draw a paper exhibit plate, a wax
+seal, or a plate around volume/brightness; it reads those five values from the
+telemetry service instead (see *Phase 3 — the bar* below).
 
 ### 0.6 — Glyph names: two names in use are missing, and one module rule is stale
 
@@ -258,6 +265,114 @@ is a lie the next session will believe.
 
 ---
 
+## Phase 3 — the bar (implemented)
+
+Six `[[widget]]` entries, one per component family, plus the NIXPC bar config.
+An instance is named in `[bar.main]` and defined as `[widget.<name>]` with
+`type = "cernoh/museum:<entry>"`; the shell resolves the name to the type
+(`widget_factory.cpp:118-126`), so a user can drop one family without losing
+the others.
+
+| Entry | Renders | Bar lane | Instance | Reads |
+|---|---|---|---|---|
+| `halls` | roman-numeral hall plates, active brass; `I II III` are mango tags | `start` | `halls` | `tags` |
+| `label` | `NOW VIEWING` paper slip carrying the focused title | `start` | `label` | `active` |
+| `machine` | `Plate` + ledger row: ram · cpu · gpu | `center` | `machine` | `stats` |
+| `clock` | two-line brass serif placard (time + date) | `center` | `clock` | (clock) |
+| `thermal` | `Plate` + ledger row: cpu · drv, plus the segmented degradation gauge | `center` | `thermal` | `stats`, `drives` |
+| `tray` | exhibit plate · tray plate · wax seal · audio plate · brass power | `end` | `tray` | `media`, `audio`, `unread` |
+
+`launcher` stays (recon 0.5). The terminal and Mirai bar glyphs are dropped from
+the lane but their panels stay reachable from `SUPER+SHIFT+T` and the
+control-centre tile — the museum bar has no room for a second status chip.
+
+### Data sources — `telemetry.luau` owns every read
+
+Noctalia 5.3.0 exposes no workspace, active-window, MPRIS, tray, notification
+count, volume, or brightness surface to a plugin (`plugin_api.h`, level 34).
+Mango does expose the first two, and the shell's own services own the rest, so
+one `[[service]]` publishes plain values on `noctalia.state`:
+
+| Key | Shape | Source |
+|---|---|---|
+| `tags` | `{ all_tags = { { monitor, tags = { index, is_active, is_urgent, client_count, layout } } } }` | `mmsg watch all-tags` (+ `get` seed) |
+| `active` | `{ id, title, appid, monitor }` or nil | `mmsg watch focusing-client` (re-emits on title change via `IPC_WATCH_ARRANGGE`) |
+| `stats` | `{ ramUsedMb, cpuUsage, gpuUsage, cpuTempC }` | `noctalia.systemStats()` — **PLAN 3.3: not a subprocess** |
+| `drives` | `{ tempC, degradedPct }` | `…/raw.json` schema 2; temp is the hottest drive, degradation the worst of `endurance_used.current_percent` / `100 - spare_available.current_percent` |
+| `media` | `{ status, title }` or nil | `playerctl metadata --format '{{status}}|{{title}}'` (no player → nil) |
+| `audio` | `{ volume, muted, brightness }` | `wpctl get-volume` every 2 s; sysfs backlight, else `ddcutil getvcp 10` every 40 s |
+| `unread` | number | `~/.local/state/noctalia/notification_history.json`, entries with `seen ~= true` |
+
+The explicit exception to PLAN 3.3 is the tray: the shell has no plugin API for
+those five values, so the tray reads them from the same sources the shell's own
+widgets read. Drive health is still *read, never re-collected*.
+
+`lib/mango.luau` resolves `MANGO_INSTANCE_SIGNATURE` from the environment (the
+noctalia user service has it) and falls back to the newest
+`$XDG_RUNTIME_DIR/mango-*.sock`. `runStream` takes a string only, so it is
+shell-quoted; `dispatch` uses the argv form. A hall click is **one**
+`mmsg dispatch viewcrossmon,<tag>,<monitor>` — focusing the bar's monitor and
+viewing the tag atomically, not `focusmon` then `view`.
+
+### Width discipline (PLAN 3.8)
+
+`lib/museum.luau` is the only place a width is chosen (`M.width`). A component
+reads its own cap by name; `museum.plate({ id = "machine", width = 999 })` is
+ignored on purpose and `tests/driver-museum.luau` asserts that. Worst case —
+every widget present, nine halls, 12 widgets, 11 gaps at `widget_spacing = 8`,
+both 100 px margin ends — is **1806 px of 1920**, asserted by
+`M.widthBudget()`. The live 1920 capture matches: nothing clips, and the tray's
+plates sit inside the cap.
+
+### Materials
+
+`lib/museum.luau` seeds `brassLt`/`paper3`/`patina` with `primary`/`outline`/
+`tertiary` and overwrites them at load from the palette document's `dark.museum`
+object (or `light.museum` in light mode). The plugin therefore carries **no hex
+of its own**, per the Phase 1 contract, and a shell on a non-custom palette
+degrades to the role rather than drawing nothing. `M.hexExceptions` is the
+resolved set; both the bar and drawer tests reject any other hex.
+
+The clock and wall label use `DejaVu Serif` (installed; the artifact's Cinzel /
+EB Garamond are not, and adding fonts is still open question 5). Italic is not
+available — `ui.label` has no style prop — so the wall label is upright serif.
+
+### Live verification (2026-10-21, NIXPC, noctalia 5.3.0)
+
+Tested from a path source at `/tmp/museum-dev` with the generated NIXPC config
+swapped in for the duration, then the user's config symlink restored.
+
+- The six entries render in the artifact's order with live values:
+  `ram 12.0G · cpu 35% · gpu 0%`; `cpu 65°C · drv 40°C`; gauge `37%`;
+  `vol 53% · bri 100%`; exhibit `(3) Meet the Gruutmans…`; clock `19:32`.
+- Changing the sample moved the numbers (`cpu 21% → 35%` across two captures),
+  so the values are live, not fixtures.
+- `mmsg dispatch viewcrossmon,2,DP-1` moved the brass from `I` to `II` and the
+  wall label from `NIXPC: dendritic` to `Steam`; clicking hall `II` at
+  `(172, 22)` did the same through `halls.luau`'s own dispatch (journal:
+  `museum halls: select 2 on DP-1`).
+- All six rendered with no `unknown prop`, `unknown color`, `missing glyph`, or
+  script error in the journal. Glyphs used: `search`, `server`, `music`,
+  `player-pause`, `notification`, `clipboard`, `wifi`, `bluetooth`, `power`.
+- Hot reload needed `plugins disable` + `enable` after an edit (as the module
+  contract warns).
+
+### Known gaps
+
+- **ASAHI is untouched.** Its `_noctalia-settings.nix` is still the hm-v3 shape
+  and its bar is 32 px; the museum bar is a NIXPC baseline (the artifacts are
+  NIXPC's three 1920×1080 outputs).
+- **The wax seal shows only when unread > 0** (artifact had 2). It is a disc
+  with the count and opens Notices.
+- **No tray-item embedding.** A plugin cannot render the shell's tray icons
+  inside its own tree, so the "tray plate" is four navigation glyphs
+  (notices · clipboard · network · bluetooth), not the StatusNotifier items.
+- **`ddcutil` brightness is polled, not pushed.** 40 s cadence; the volume and
+  media values are 2 s. A monitor preset that locks VCP 0x10 makes the readout
+  stale — the module contract's monitor-preset note applies.
+- **`ui.separator` is a fade**, so the `Ledger` leader is a 1 px `ui.box`
+  (`lib/museum.luau`), per recon 0.3.
+
 ## Ownership
 
 This is the **target shape** from PLAN §2.2 and the phase plan, not a listing of
@@ -267,16 +382,25 @@ family and the implementation may carry more files than this list.
 - `plugin.toml` — manifest. `plugin_api = 26`; one `[[panel]]` (attached,
   keyboard-exclusive, dismiss-on-outside-click → needs **≥ 10**), bar-widget
   entries, a `[[shortcut]]`, `[[service]]`s, and plugin/widget settings.
-- `bar.luau` — the bar widget entry (`barWidget.render(ui.*)`); Phase 3 replaces
-  it with one entry per family (`halls`, `label`, `machine`, `thermal`,
-  `exhibit`/`tray`).
+- `halls.luau`, `label.luau`, `machine.luau`, `clock.luau`, `thermal.luau`,
+  `tray.luau` — the six bar entries, each a thin wrapper over `lib/bar.luau`
+  (config read, state watch, vertical-bar guard, render).
+- `telemetry.luau` — the second `[[service]]`: owns every live feed (two Mango
+  watches, `noctalia.systemStats`, drive health, MPRIS, volume, brightness,
+  unread count) and publishes them on the plugin state channel. No bar entry
+  shells out.
 - `panel.luau` — the catalogue drawer (`panel.render(ui.*)`, `onOpen`,
   `onClose`, `onKey`, `onScroll`).
-- `service.luau` — background logic: drive-health, stats, timers. Owns every
-  read; the panel never shells out.
+- `service.luau` — drawer-side service stub (the palette feed); telemetry is
+  the bar's.
 - `shortcut.luau` — control-centre tile.
-- `lib/museum.luau` — `Plate`, `Ledger`, `Meter`, `Lever`, `Slip` (Phase 2).
-- `tests/*.luau` — plain `luau` assertions against a stub host (Phase 2.7).
+- `lib/museum.luau` — `Plate`, `Ledger`, `Meter`, `Lever`, `Slip` (Phase 2),
+  the token resolution, and the width table.
+- `lib/bar.luau` — the six bar families as pure `ui.*` builders.
+- `lib/mango.luau` — Mango IPC bridge (socket discovery, `watch`, `dispatch`,
+  `noctalia msg`).
+- `tests/*.luau` + `modules/features/noctalia/tests/run-museum-tests.sh` —
+  plain `luau` assertions against a stub host, assembled into one chunk.
 - `translations/en.json` — all user-visible strings.
 
 ## Local contracts
@@ -284,7 +408,16 @@ family and the implementation may carry more files than this list.
 - **Luau and TOML only** in this directory. No FFI exists; native work goes in
   a separate derivation the plugin spawns.
 - **Width discipline.** The bar must fit 1920 logical px with every widget
-  present. Cap plate widths in `lib/museum.luau`, not per instance.
+  present. `lib/museum.luau` owns the only width table (`M.width`); a component
+  reads its own cap by name and no instance passes a width. `M.widthBudget()`
+  is the worst case (nine halls, every widget): **1806 px** of 1920, asserted
+  by `tests/driver-bar.luau`.
+- **Every museum token comes from the palette document.** `lib/museum.luau`
+  seeds the three role-less materials with the nearest role and overwrites
+  them at load from `dark.museum` in
+  `~/.config/noctalia/palettes/<name>.json` (the Phase 1 contract in
+  `features/noctalia/AGENTS.md`). No hex literal lives in the plugin; a shell
+  on another palette source degrades to the role rather than failing.
 - **The panel reads; the service fetches.** `/run/noctalia-drive-health/raw.json`
   (schema 2) is read, never re-collected; the collector belongs to
   `system/disk-health`.
@@ -314,9 +447,9 @@ family and the implementation may carry more files than this list.
   `jq -e --arg g <name> 'has($g)' <noctalia>/share/noctalia/assets/fonts/tabler.json`
   or by checking the alias map first. Never introduce a name that only renders
   on one noctalia version.
-- Change the palette: roles only; the four museum hexes (`brass-lt`, `paper3`,
-  `patina`, and a true green ink if one is added) are the only allowed
-  literals, and they belong in the palette file first (PLAN 1.1).
+- Change the palette: roles only. The three museum materials (`brassLt`,
+  `paper3`, `patina`) live in `features/scheme` and are read back from
+  `dark.museum`; they are never Luau literals.
 
 ## Verification
 
@@ -329,9 +462,12 @@ family and the implementation may carry more files than this list.
   — cross-checks `plugin.toml` against the `getConfig` calls and rejects an
   unparseable chord.
 - Unit tests (Phase 2+):
-  `cd plugins/museum/tests && nix shell nixpkgs#luau --command luau museum.luau`
-  (bare `luau` resolves `require` from the working directory, so `require
-  "../lib/museum"` has no `.luau` extension).
+  `modules/features/noctalia/tests/run-museum-tests.sh` assembles the stub host,
+  the library modules and each driver into one chunk, then runs
+  `nix shell nixpkgs#luau --command luau`. The Luau CLI gives every `require`d
+  module its own environment, so a driver cannot `require` a module that calls
+  `ui`/`noctalia`; that is why the script concatenates. Add a driver to the
+  `run` list at the bottom.
 - Live: `noctalia msg plugins disable cernoh/museum && noctalia msg plugins
   enable cernoh/museum`, then `noctalia msg panel-toggle cernoh/museum:panel`,
   then `grim -o <connector>` (or `grim -g "x,y wxh"`) and read the image back.
