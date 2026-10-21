@@ -27,6 +27,14 @@ S.rec = {
   env = {},
   tr = {},
   clock = 0,
+  commands = {}, -- commandExists answers, absent = installed
+  panel = {}, -- panel.render / close / setWantsSecondTicks
+  shortcut = {}, -- shortcut.setLabel / setIcon
+  errors = {}, -- notifyError arguments
+  copied = {}, -- copyToClipboard arguments
+  outputs = {},
+  mounts = {},
+  disk = {},
 }
 
 function S.reset()
@@ -38,6 +46,10 @@ function S.reset()
   S.rec.async = {}
   S.rec.streams = {}
   S.rec.streamHandlers = {}
+  S.rec.panel = {}
+  S.rec.shortcut = {}
+  S.rec.errors = {}
+  S.rec.copied = {}
 end
 
 function S.set(key, value)
@@ -296,6 +308,29 @@ function noctalia.runStream(command, onLine)
   return true
 end
 
+-- The synchronous plugin API the drawer calls directly. The real host returns
+-- the shell's current outputs and mount table; the stub answers from recorded
+-- fixtures so a driver can swap them per case.
+function noctalia.outputs()
+  return S.rec.outputs
+end
+
+function noctalia.diskMounts()
+  return S.rec.mounts
+end
+
+function noctalia.diskStats(path)
+  return S.rec.disk[path]
+end
+
+function noctalia.copyToClipboard(text)
+  table.insert(S.rec.copied, text)
+end
+
+function noctalia.notifyError(title, body)
+  table.insert(S.rec.errors, { title = title, body = body })
+end
+
 noctalia.json = { decode = decode, encode = encodeValue }
 
 noctalia.string = {
@@ -366,8 +401,25 @@ S.barWidget = {
 
 S.noctalia = noctalia
 S.ui = ui
-S.panel = { render = function() end, close = function() end }
-S.shortcut = { setLabel = function() end, setIcon = function() end }
+S.panel = {
+  render = function(tree)
+    S.rec.panel.rendered = tree
+  end,
+  close = function()
+    S.rec.panel.closed = true
+  end,
+  setWantsSecondTicks = function(value)
+    S.rec.panel.secondTicks = value
+  end,
+}
+S.shortcut = {
+  setLabel = function(value)
+    S.rec.shortcut.label = value
+  end,
+  setIcon = function(value)
+    S.rec.shortcut.icon = value
+  end,
+}
 
 -- The Luau CLI's global table is frozen, so a test installs the host by
 -- assigning these to globals at its own top level:
@@ -435,6 +487,77 @@ function S.colors(tree, out)
     S.colors(child, out)
   end
   return out
+end
+
+-- ── host contract validation ──────────────────────────────────────────────
+-- `ui_tree_reconciler.cpp` accepts a fixed prop set per control, and treats a
+-- box as a leaf: an unknown prop is a loud skip, and a box with children drops
+-- them. A tree that only tags control names would pass while the live shell
+-- silently draws nothing, so this walks a tree against that contract. Copied
+-- from `knownProps` in src/ui/ui_tree_reconciler.cpp:459-535 (noctalia 5.3.0).
+
+S.controls = {
+  column = { width = true, height = true, flexGrow = true, opacity = true, visible = true, gap = true, padding = true, paddingH = true, paddingV = true, align = true, justify = true, fill = true, radius = true, border = true, borderWidth = true, minWidth = true, minHeight = true, onClick = true, onHover = true, tooltip = true },
+  row = { width = true, height = true, flexGrow = true, opacity = true, visible = true, gap = true, padding = true, paddingH = true, paddingV = true, align = true, justify = true, fill = true, radius = true, border = true, borderWidth = true, minWidth = true, minHeight = true, onClick = true, onHover = true, tooltip = true },
+  box = { width = true, height = true, flexGrow = true, opacity = true, visible = true, fill = true, radius = true, border = true, borderWidth = true, softness = true, onClick = true, onHover = true, tooltip = true },
+  label = { width = true, height = true, flexGrow = true, opacity = true, visible = true, text = true, fontSize = true, color = true, fontWeight = true, maxWidth = true, maxLines = true, textAlign = true, fontFamily = true, baseline = true },
+  glyph = { width = true, height = true, flexGrow = true, opacity = true, visible = true, name = true, size = true, color = true },
+  image = { width = true, height = true, flexGrow = true, opacity = true, visible = true, path = true, radius = true, fit = true, border = true, borderWidth = true, onClick = true, onHover = true, tooltip = true },
+  separator = { width = true, height = true, flexGrow = true, opacity = true, visible = true, thickness = true, color = true, spacing = true, orientation = true },
+  spacer = { width = true, height = true, flexGrow = true, opacity = true, visible = true },
+  progress = { width = true, height = true, flexGrow = true, opacity = true, visible = true, progress = true, fill = true, track = true, radius = true },
+  button = { width = true, height = true, flexGrow = true, opacity = true, visible = true, text = true, glyph = true, fontSize = true, glyphSize = true, variant = true, contentAlign = true, enabled = true, selected = true, onClick = true, onRightClick = true, tooltip = true, controlSize = true, onHover = true },
+  scroll = { width = true, height = true, flexGrow = true, opacity = true, visible = true, fill = true, radius = true, border = true, borderWidth = true, gap = true, padding = true, paddingH = true, paddingV = true, align = true, justify = true, stickToBottom = true, onScroll = true, scrollToBottomRev = true, revealKey = true },
+  graph = { width = true, height = true, flexGrow = true, opacity = true, visible = true, values = true, values2 = true, color = true, color2 = true, lineWidth = true, fillOpacity = true, onPointerMove = true, onPointerLeave = true },
+}
+
+local COLOR_PROPS = { "color", "fill", "border", "track", "color2" }
+
+-- A color prop is a role token with an optional /alpha, or a hex. Anything else
+-- (a museum token name, a gradient, a bare number) is an `unknown color` skip
+-- in the live shell.
+function S.isColor(value)
+  if type(value) ~= "string" then
+    return false
+  end
+  if string.match(value, "^#%x%x%x%x%x%x$") or string.match(value, "^#%x%x%x%x%x%x%x%x$") then
+    return true
+  end
+  local role, alpha = string.match(value, "^([%a_][%w_]*)/([%d%.]+)$")
+  if role ~= nil then
+    local number = tonumber(alpha)
+    return number ~= nil and number >= 0 and number <= 1
+  end
+  return string.match(value, "^[%a_][%w_]*$") ~= nil
+end
+
+function S.validate(tree, path)
+  path = path or "root"
+  assert(type(tree) == "table", "tree at " .. path .. " must be a table")
+  assert(type(tree.type) == "string", "node at " .. path .. " has no type")
+  local allowed = S.controls[tree.type]
+  assert(allowed ~= nil, "unknown control type '" .. tostring(tree.type) .. "' at " .. path)
+  assert(type(tree.props) == "table", "node at " .. path .. " has no props table")
+  for prop, value in pairs(tree.props) do
+    assert(prop == "key" or allowed[prop] == true,
+      "unknown prop '" .. tostring(prop) .. "' on " .. tree.type .. " at " .. path)
+    assert(value ~= nil, "nil prop '" .. tostring(prop) .. "' at " .. path)
+    if allowed[prop] ~= nil then
+      for _, colorProp in ipairs(COLOR_PROPS) do
+        if prop == colorProp then
+          assert(S.isColor(value),
+            "illegal color '" .. tostring(value) .. "' for " .. prop .. " at " .. path)
+        end
+      end
+    end
+  end
+  if tree.type == "box" then
+    assert(#(tree.children or {}) == 0, "a box cannot have children (dropped) at " .. path)
+  end
+  for index, child in ipairs(tree.children or {}) do
+    S.validate(child, path .. "/" .. tree.type .. "[" .. tostring(index) .. "]")
+  end
+  return tree
 end
 
 return S

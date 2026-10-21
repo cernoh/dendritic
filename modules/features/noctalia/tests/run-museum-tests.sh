@@ -83,8 +83,25 @@ run() {
   nix shell nixpkgs#luau --command luau "$out"
 }
 
-run driver-museum.luau
-run driver-mango.luau
-run driver-bar.luau
-run driver-panel.luau
-run driver-catalogue.luau
+# One optional argument filters by driver name, for iterating on one driver:
+#   run-museum-tests.sh museum
+filter=${1:-}
+ran=0
+for driver in \
+  driver-museum.luau \
+  driver-mango.luau \
+  driver-bar.luau \
+  driver-panel.luau \
+  driver-bodies.luau \
+  driver-catalogue.luau; do
+  if [ -z "$filter" ] || [[ "$driver" == *"$filter"* ]]; then
+    run "$driver"
+    ran=$((ran + 1))
+  fi
+done
+
+if [ "$ran" -eq 0 ]; then
+  echo "run-museum-tests.sh: no driver matches '$filter'" >&2
+  exit 1
+fi
+echo "museum suite: ok ($ran drivers)"
