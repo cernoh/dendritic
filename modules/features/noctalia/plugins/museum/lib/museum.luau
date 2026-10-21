@@ -316,10 +316,11 @@ function M.gauge(cfg)
   local value = math.clamp(cfg.value or 0, 0, 1)
   local segments = cfg.segments or 10
   local filled = math.floor(value * segments + 0.5)
+  local prefix = cfg.keyPrefix or "seg-"
   local boxes = {}
   for index = 1, segments do
     table.insert(boxes, ui.box({
-      key = "seg-" .. index,
+      key = prefix .. index,
       flexGrow = 1,
       height = cfg.height or 8,
       radius = 1,

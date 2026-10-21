@@ -9,7 +9,9 @@
 --   tags   { all_tags = { { monitor, tags = { { index, is_active,
 --            is_urgent, client_count, layout } } } } }  (mmsg all-tags)
 --   active { id, title, appid, monitor } | nil          (mmsg focusing-client)
---   stats  { ramUsedMb, cpuUsage, gpuUsage, cpuTempC }  (noctalia.systemStats)
+--   stats  { ramUsedMb, ramUsagePercent, ramTotalMb, swapUsedMb, swapTotalMb,
+--            cpuUsage, cpuTempC, gpuUsage, gpuTempC, vramUsedBytes,
+--            vramTotalBytes }                        (noctalia.systemStats)
 --   drives { tempC, degradedPct }                       (/run/…/raw.json, schema 2)
 --   media  { status, title } | nil                      (playerctl)
 --   audio  { volume, muted, brightness }                 (wpctl, sysfs/ddcutil)
@@ -82,11 +84,21 @@ local function pollStats()
     publish("stats", nil)
     return
   end
+  -- Every field the bar and the desktop board need, from one host sample
+  -- (PLAN 3.3). The VRAM pair is what lets the board draw a percentage and a
+  -- "0.9G" secondary without a second probe; absent sensors stay nil.
   publish("stats", {
     ramUsedMb = snapshot.ram and snapshot.ram.usedMb or nil,
+    ramUsagePercent = snapshot.ram and snapshot.ram.usagePercent or nil,
+    ramTotalMb = snapshot.ram and snapshot.ram.totalMb or nil,
+    swapUsedMb = snapshot.swap and snapshot.swap.usedMb or nil,
+    swapTotalMb = snapshot.swap and snapshot.swap.totalMb or nil,
     cpuUsage = snapshot.cpu and snapshot.cpu.usagePercent or nil,
-    gpuUsage = snapshot.gpu and snapshot.gpu.usagePercent or nil,
     cpuTempC = snapshot.cpu and snapshot.cpu.tempC or nil,
+    gpuUsage = snapshot.gpu and snapshot.gpu.usagePercent or nil,
+    gpuTempC = snapshot.gpu and snapshot.gpu.tempC or nil,
+    vramUsedBytes = snapshot.gpu and snapshot.gpu.vramUsedBytes or nil,
+    vramTotalBytes = snapshot.gpu and snapshot.gpu.vramTotalBytes or nil,
   })
 end
 

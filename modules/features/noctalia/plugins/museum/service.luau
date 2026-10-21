@@ -1,0 +1,1 @@
+-- museum service.luau (stub)

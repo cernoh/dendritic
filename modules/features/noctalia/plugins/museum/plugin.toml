@@ -1,6 +1,6 @@
 id = "cernoh/museum"
 name = "Museum"
-version = "0.2.0"
+version = "0.3.0"
 plugin_api = 26
 author = "cernoh"
 license = "MIT"
@@ -156,3 +156,22 @@ height = 720
 placement = "attached"
 keyboard_focus = "exclusive"
 dismiss_on_outside_click = true
+
+# ── the desktop tiles (PLAN phase 5) ────────────────────────────────────────
+# One entry per tile. The four `sysmon` cards are replaced by the single
+# `instrument` board at the same footprint; `placard` and `monthplate` restyle
+# the clock and calendar. The oscillograph stays the shell's own
+# `audio_visualizer`: a plugin has no spectrum feed, and the built-in already
+# draws the brass gradient inside a framed background (PLAN 5.4).
+
+[[desktop_widget]]
+id = "instrument"
+entry = "desktop-board.luau"
+
+[[desktop_widget]]
+id = "placard"
+entry = "desktop-clock.luau"
+
+[[desktop_widget]]
+id = "monthplate"
+entry = "desktop-month.luau"

@@ -173,6 +173,9 @@
   "key.ram": "ram",
   "key.cpu": "cpu",
   "key.gpu": "gpu",
+  "key.vram": "vram",
+  "key.load": "load",
+  "key.swap": "swap",
   "key.drv": "drv",
   "key.vol": "vol",
   "key.bri": "bri",
@@ -199,5 +202,7 @@
   "settings.tray.show_audio.label": "Show audio plate",
   "settings.tray.show_audio.description": "Volume and brightness readouts on the tray widget.",
   "settings.tray.show_unread.label": "Show wax seal",
-  "settings.tray.show_unread.description": "The unread-notification disc, hidden at zero."
+  "settings.tray.show_unread.description": "The unread-notification disc, hidden at zero.",
+  "desktop.accession": "No. 1988354527",
+  "desktop.month.noevents": "— no events scheduled."
 }

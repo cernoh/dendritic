@@ -389,13 +389,21 @@ family and the implementation may carry more files than this list.
   watches, `noctalia.systemStats`, drive health, MPRIS, volume, brightness,
   unread count) and publishes them on the plugin state channel. No bar entry
   shells out.
-- `panel.luau` — the catalogue drawer (`panel.render(ui.*)`, `onOpen`,
-  `onClose`, `onKey`, `onScroll`).
+- `panel.luau` — the catalogue drawer (`panel.render(ui.*)`, `onOpen(context)`,
+  `onClose`). A renderer only: it reads the `drawer` state key plus the
+  synchronous plugin API and posts work as requests (see Phase 4 below).
+- `catalogue.luau` — the drawer's `[[service]]`: owns every CLI read behind the
+  ten wings (provenance, power profile, audio channels, network registry,
+  Bluetooth holdings, MPRIS), publishes them as one `drawer` snapshot, and
+  executes the drawer's requests. No panel render path starts a process.
 - `service.luau` — drawer-side service stub (the palette feed); telemetry is
   the bar's.
 - `shortcut.luau` — control-centre tile.
 - `lib/museum.luau` — `Plate`, `Ledger`, `Meter`, `Lever`, `Slip` (Phase 2),
   the token resolution, and the width table.
+- `lib/drawer.luau` — the same five shapes at drawer scale (flex plates, a
+  worded stamp, index tabs, a readout) composed on `lib/museum.luau`'s
+  primitives and tokens. Bar geometry is width-capped; drawer geometry flexes.
 - `lib/bar.luau` — the six bar families as pure `ui.*` builders.
 - `lib/mango.luau` — Mango IPC bridge (socket discovery, `watch`, `dispatch`,
   `noctalia msg`).
@@ -474,3 +482,114 @@ family and the implementation may carry more files than this list.
 - Journal: `journalctl --user -t noctalia --since -2min` is where
   `ui tree: … has no prop …`, `unknown color`, `cannot have children`, and
   `missing glyph` appear. Check it after every render change.
+
+---
+
+## Phase 4 — the catalogue drawer
+
+Ten wings, one per tree of `artifacts/museum-control-panels.html`, rebuilt on
+the plugin API at drawer scale. This section is the contract the drawer works
+under; it outranks the plan where the live host disagreed.
+
+### 4.1 The panel renders, the service fetches
+
+`panel.luau` starts no process and reads no file. Everything it draws arrives
+one of two ways:
+
+- **`catalogue.luau`** publishes one state snapshot on `drawer`:
+  `maker, gpu, origin, substrate, frame, hostname, uptime, supplies[],
+  profile, audio{sink,source,apps[]}, wired, wireless, addresses{}, networks[],
+  bt{powered,discoverable,paired[],connected[]}, media{}`. It owns every
+  `runAsync`: `powerprofilesctl`, `wpctl`, `pactl`, `ip`, `nmcli`,
+  `bluetoothctl`, `playerctl`, `nvidia-smi`.
+- **The plugin API directly**, where the call is synchronous and has no command
+  behind it: `noctalia.systemStats()`, `diskMounts`/`diskStats`,
+  `noctalia.outputs()`, `getSetting` (`[location]`, `[calendar]`), and the
+  telemetry service's `unread` count.
+
+Controls post work on the plugin's request channel (`request` +
+`request_rev`, the same channel the terminal and Mirai plugins use): `profile`,
+`mute`, `link`, `wifi`, `bluetooth-power`, `bluetooth-discoverable`, `media`,
+`refresh`. `refresh` restarts the poll sweep rather than running it, because a
+sweep started inside a callback would blow the budget below.
+
+### 4.2 The poll is staged, because a callback has 25 ms of CPU
+
+`src/scripting/script_runtime.cpp` sets `kCallBudget` to 25 ms of worker CPU
+per callback. Process spawns are not free: a full sweep (fifteen spawns) in one
+callback crossed it once, live, on the `refresh` request
+(`script callback 'state watch callback' exceeded its CPU budget`). The service
+therefore ticks once a second and runs **one of five stages** per tick —
+provenance+supplies+power · audio · network · bluetooth · media — so every
+group is refreshed within five seconds and no single callback starts more than
+five processes. Keep a new probe inside an existing stage or give it one; do
+not add a sixth spawn to every tick.
+
+### 4.3 Retained controls keep the props they were last given
+
+The reconciler reuses native controls across renders, so a prop that is simply
+*omitted* on the next render keeps its old value. This bit the rail: the wing
+that lost the active state kept its brass fill, because inactive rows passed
+`fill = nil`. Anything that toggles must pass an explicit value on both
+branches:
+
+- rail rows: `fill = on and primary or walnut2`, `fontWeight = on and "bold" or "normal"`;
+- a display plate: `opacity = opacity or 1` (a lamp that lights again must clear 0.55);
+- `drawer.plate` already normalises `opacity` for this reason.
+
+The same rule is why `onOpen(context)` re-renders instead of patching: the
+whole tree is rebuilt each time, but only the props the tree names are
+cleared.
+
+### 4.4 Deep links: `panel-open … <wing id>`
+
+`onOpen(context)` treats its context as a wing id (`system`, `power`, `audio`,
+`display`, `network`, `bluetooth`, `weather`, `calendar`, `notices`, `media`),
+so `noctalia msg panel-open cernoh/museum:panel calendar` opens straight onto
+the month plate. This is also how the ten sections were screenshot-verified:
+
+```sh
+for s in system power audio display network bluetooth weather calendar notices media; do
+  noctalia msg panel-close cernoh/museum:panel
+  noctalia msg panel-open cernoh/museum:panel "$s"
+  sleep 2
+  grim -s 0.7 -o DP-1 /tmp/museum-$s.png
+done
+```
+
+### 4.5 Glyphs, leaders, and the honesty rule
+
+- The ten rail glyphs are the shell's own proven tab glyphs (`activity-heartbeat`,
+  `battery-charging-2`, `volume`, `device-desktop`, `wifi`, `bluetooth`,
+  `weather-cloud-sun`, `calendar-event`, `bell`, `disc`), not names that merely
+  resolve — see 0.6.
+- Ledger leaders are a **1 px `ui.box`**, not `ui.separator`: the separator is a
+  centre-peaked fade a plugin cannot turn off (0.3). `lib/drawer.luau` owns the
+  leader; `lib/museum.luau`'s bar ledger still uses a separator and should be
+  moved to a box the next time it is touched.
+- A section with no source says so in words, and every empty state is a stamped
+  slip: `UNLOCATED` (no weather station), `NO EVENTS` (calendar off), `EMPTY`
+  (empty register), `DARK` (no lamps), `EMPTY` (no paired holdings). The
+  oscillograph draws a flat baseline labelled `NO SIGNAL` until the plugin
+  publishes `bands`.
+- `nvidia-smi` segfaults on NIXPC. The probe is capped at three attempts, and
+  the medium falls back to the DRM driver (`/sys/class/drm/*/device/uevent` →
+  `NVIDIA GPU`). Never respawn a failing probe on every sweep.
+- Notices read `notifications` (a list) when a service publishes one; when it
+  does not, the empty slip names the telemetry service's `unread` count rather
+  than claiming the register is clear.
+
+### 4.6 Verification
+
+```sh
+modules/features/noctalia/tests/run-museum-tests.sh           # all drivers
+modules/features/noctalia/tests/run-museum-tests.sh panel     # one driver
+nix shell nixpkgs#luau --command luau-analyze plugins/museum/*.luau plugins/museum/lib/*.luau
+noctalia plugins lint modules/features/noctalia/plugins/museum
+```
+
+`driver-panel.luau` asserts the rail (ten wings, the active one brass), every
+section against a feed fixture, every control's posted request, the empty
+states, the three permitted hexes, and every prop against the host's
+known-prop sets. `driver-catalogue.luau` asserts the parsers, the argv of each
+request, the quiet republish, and the missing-tool path.
