@@ -18,6 +18,19 @@
 #   settings, so the museum baseline is a NIXPC value: the reference artifacts
 #   are this host's three 1920x1080 outputs.
 {
+  # The museum feature owns its own config, beside its code:
+  # modules/features/noctalia/plugins/museum/config/museum.toml carries the bar
+  # geometry and lanes, the six widget instances and the desktop wall. This
+  # file pulls it in the way noctalia's `[include]` is meant to be used, so the
+  # feature is one folder plus one link — never a second copy of its entries.
+  #
+  # The path is a store path, not the live plugin directory: `[include]` is
+  # resolved when the config is built (`checkConfig` runs `noctalia config
+  # validate` on the generated file), and an out-of-store target would not
+  # exist in the build sandbox. Editing museum.toml therefore needs a rebuild;
+  # editing the Luau beside it does not.
+  include.files = [ (toString ./../../features/noctalia/plugins/museum/config/museum.toml) ];
+
   accessibility = {
     high_contrast = false;
     ui_scale = 1.0;
@@ -36,56 +49,6 @@
   };
   bar = {
     order = [ "main" ];
-    main = {
-      auto_hide = false;
-      background_opacity = 0.97;
-      border = "outline";
-      border_width = 0.0;
-      capsule = false;
-      capsule_fill = "surface_variant";
-      capsule_opacity = 1.0;
-      capsule_padding = 6.0;
-      capsule_thickness = 0.75999999046325684;
-      center = [
-        "machine"
-        "clock"
-        "thermal"
-      ];
-      concave_edge_corners = true;
-      contact_shadow = false;
-      enabled = true;
-      end = [
-        "tray"
-      ];
-      font_scale = 1.0;
-      font_weight = 500;
-      hover_highlight = true;
-      layer = "top";
-      margin_edge = 0;
-      margin_ends = 100;
-      margin_opposite_edge = 0;
-      padding = 14;
-      panel_overlap = 1;
-      position = "top";
-      radius = 6;
-      radius_bottom_left = 6;
-      radius_bottom_right = 6;
-      radius_top_left = 6;
-      radius_top_right = 6;
-      reserve_space = true;
-      scale = 1.0;
-      shadow = true;
-      show_on_workspace_switch = true;
-      smart_auto_hide = false;
-      start = [
-        "launcher"
-        "halls"
-        "label"
-      ];
-      thickness = 46;
-      widget_spacing = 8;
-      dead_zone = { };
-    };
   };
   battery = {
     warning_threshold = 10;
@@ -133,97 +96,6 @@
         type = "session";
       }
     ];
-  };
-  # The museum desktop wall (PLAN phase 5). `widget_order` is authoritative:
-  # the four `sysmon` cards are gone, replaced by one mounted instrument board
-  # at their footprint, and the clock, calendar and oscillograph are restyled
-  # around it. Coordinates are the artifact's 1920×1080 canvas (DP-2). The
-  # board, placard and month plate are `cernoh/museum` entries; the
-  # oscillograph stays the shell's `audio_visualizer`, because a plugin has no
-  # spectrum feed and the built-in already draws a gradient (PLAN 5.4).
-  desktop_widgets = {
-    enabled = true;
-    schema_version = 2;
-    widget_order = [
-      "instrument_board"
-      "clock_placard"
-      "month_plate"
-      "oscillograph"
-    ];
-    grid = {
-      cell_size = 16;
-      major_interval = 4;
-      visible = true;
-    };
-    widget = {
-      # 44,122 → 544,428: the four sysmon tiles, now one walnut board.
-      instrument_board = {
-        box_height = 306.0;
-        box_width = 500.0;
-        cx = 294.0;
-        cy = 275.0;
-        enabled = true;
-        output = "DP-2";
-        placement_height = 1080.0;
-        placement_width = 1920.0;
-        rotation = 0.0;
-        type = "cernoh/museum:instrument";
-      };
-      # 64,452 · 464×96: brass time, date, and a seconds level meter.
-      clock_placard = {
-        box_height = 96.0;
-        box_width = 464.0;
-        cx = 296.0;
-        cy = 500.0;
-        enabled = true;
-        output = "DP-2";
-        placement_height = 1080.0;
-        placement_width = 1920.0;
-        rotation = 0.0;
-        type = "cernoh/museum:placard";
-      };
-      # 40,573 · 620×420: the drawer's month plate, today embossed in brass.
-      month_plate = {
-        box_height = 420.0;
-        box_width = 620.0;
-        cx = 350.0;
-        cy = 783.0;
-        enabled = true;
-        output = "DP-2";
-        placement_height = 1080.0;
-        placement_width = 1920.0;
-        rotation = 0.0;
-        type = "cernoh/museum:monthplate";
-      };
-      # 983,964 · 270×80: 32 brass bands in a framed walnut well. `color_1`
-      # is the one allowed hex (brass-lt, DESIGN §3); `color_2` is the outline
-      # role, so the gradient tracks a palette change on its dark end.
-      oscillograph = {
-        box_height = 80.0;
-        box_width = 270.0;
-        cx = 1118.0;
-        cy = 1004.0;
-        enabled = true;
-        output = "DP-2";
-        placement_height = 1080.0;
-        placement_width = 1920.0;
-        rotation = 0.0;
-        type = "audio_visualizer";
-        settings = {
-          background = true;
-          background_color = "surface";
-          background_opacity = 0.97;
-          background_padding = 8;
-          background_radius = 6;
-          bands = 32;
-          centered = true;
-          color_1 = "#e2c08a";
-          color_2 = "outline";
-          mirrored = true;
-          show_when_idle = true;
-        };
-      };
-    };
   };
   dock = {
     active_monitor_only = false;
@@ -823,42 +695,6 @@
     unit = "metric";
   };
   widget = {
-    # ── museum bar (PLAN phase 3) ───────────────────────────────────────
-    # Replaces workspaces, active_window, the g1/g2 sysmon groups, media,
-    # notifications, clipboard, network, bluetooth, volume, brightness and
-    # session on the bar. Those built-ins still exist in the shell; the museum
-    # entries are the bar's render of them. The terminal and Mirai panels stay
-    # reachable from their keybind and control-centre tile, not the bar.
-    clock = {
-      type = "cernoh/museum:clock";
-      time_format = "%H:%M";
-      date_format = "%a %d %b";
-    };
-    halls = {
-      type = "cernoh/museum:halls";
-      hide_when_empty = true;
-      count = 0;
-    };
-    label = {
-      type = "cernoh/museum:label";
-      max_length = 260;
-    };
-    machine = {
-      type = "cernoh/museum:machine";
-      show_gpu = true;
-    };
-    thermal = {
-      type = "cernoh/museum:thermal";
-      show_gauge = true;
-    };
-    tray = {
-      type = "cernoh/museum:tray";
-      show_media = true;
-      show_audio = true;
-      show_unread = true;
-    };
-
-    # Kept for the panels that read them; no longer placed on the bar.
     date = {
       format = "{:%a %d %b}";
       type = "clock";
