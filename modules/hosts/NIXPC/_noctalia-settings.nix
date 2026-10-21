@@ -12,6 +12,11 @@
 #   the previous `~/Pictures/Wallpapers` form. The export value is kept.
 # - brightness.enable_ddcutil: the export has false. This host has no internal
 #   panel, so the DisplayPort monitors need DDC/CI (issue #168).
+# - shell + bar.main: the museum baseline, Phase 1 of the museum reskin
+#   (`docs/PLAN.md` in the museum repo). Shape and weight are shell-wide; the
+#   bar geometry is the museum rail. Both hosts keep their own noctalia
+#   settings, so the museum baseline is a NIXPC value: the reference artifacts
+#   are this host's three 1920x1080 outputs.
 {
   accessibility = {
     high_contrast = false;
@@ -33,7 +38,7 @@
     order = [ "main" ];
     main = {
       auto_hide = false;
-      background_opacity = 1.0;
+      background_opacity = 0.97;
       border = "outline";
       border_width = 0.0;
       capsule = false;
@@ -71,11 +76,11 @@
       padding = 14;
       panel_overlap = 1;
       position = "top";
-      radius = 12;
-      radius_bottom_left = 12;
-      radius_bottom_right = 12;
-      radius_top_left = 12;
-      radius_top_right = 12;
+      radius = 6;
+      radius_bottom_left = 6;
+      radius_bottom_right = 6;
+      radius_top_left = 6;
+      radius_top_right = 6;
       reserve_space = true;
       scale = 1.0;
       shadow = true;
@@ -89,8 +94,8 @@
         "workspaces"
         "active_window"
       ];
-      thickness = 34;
-      widget_spacing = 6;
+      thickness = 46;
+      widget_spacing = 8;
       dead_zone = { };
       capsule_group = [
         {
@@ -504,6 +509,13 @@
     ];
   };
   shell = {
+    # Museum baseline (Phase 1 of the museum reskin). The border and shadow
+    # toggles below keep the shell's defaults on purpose and are called out
+    # here so the baseline is explicit rather than inherited: a hairline is the
+    # museum's depth cue, and a floating surface casts a soft black shadow like
+    # a plaque on a wall. What moves is the radius ladder - halved (12 -> 6)
+    # so core surfaces land on the museum's 6/4/3 steps - and the text face,
+    # which is the print serif.
     app_icon_colorize = false;
     avatar_path = "";
     button_borders = true;
@@ -514,11 +526,11 @@
     clipboard_history_max_entries = 100;
     clipboard_image_action_command = "";
     clipboard_keep_from_closed_apps = true;
-    corner_radius_scale = 1.0;
+    corner_radius_scale = 0.5;
     date_format = "%A, %x";
     disable_mipmaps = false;
     external_ip_enabled = false;
-    font_family = "sans-serif";
+    font_family = "Source Serif 4";
     input_borders = true;
     launch_apps_as_systemd_services = false;
     launch_apps_custom_command = "";

@@ -8,6 +8,7 @@
 #   self.scheme.rgb.<role>       # "r g b" decimal, for KDL
 #   self.scheme.base16.<slot>    # 16 editor slots, "#rrggbb" (nvf)
 #   self.scheme.ansiNormal.<name> / ansiBright.<name>   # terminal colors
+#   self.scheme.museum           # museum-only roles (hex); no M3 stand-in
 #   self.scheme.noctalia         # Noctalia palette document
 #   self.scheme.greeter          # greeter.toml [appearance.palette]
 #   self.scheme.omp              # omp theme token map
@@ -70,9 +71,24 @@ let
     onSelection = "f7f2e8";
   };
 
+  # Museum-only roles. The museum reskin (docs/DESIGN.md §3 in the museum repo)
+  # maps every material onto a role above except three, which have no M3 stand-in
+  # and are therefore values rather than mappings:
+  #   brassLt  the lit edge of brass (a stacked highlight box is the fake)
+  #   paper3   rule lines inside an accession slip
+  #   patina   secondary readout colour (temperatures)
+  # They ride in the noctalia palette document as `dark.museum`, so the museum
+  # skin resolves every token from one file and carries no hex in Luau.
+  museumPalette = {
+    brassLt = "e2c08a";
+    paper3 = "c8b58d";
+    patina = "7d9a8e";
+  };
+
   # Prefix every value of a bare-hex attrset.
   hexOf = lib.mapAttrs (_: value: "#${value}");
   hex = hexOf palette;
+  museum = hexOf museumPalette;
 
   hexDigit = {
     "0" = 0;
@@ -164,6 +180,12 @@ let
       mShadow = hex.shadow;
       mHover = hex.hover;
       mOnHover = hex.onHover;
+
+      # Museum-only roles, read by the museum plugin as `dark.museum.<name>`.
+      # Noctalia reads the m* keys it knows and ignores the rest
+      # (`readPaletteJson` in src/theme/theme_service.cpp), so this object is a
+      # passenger in the palette document: one file, every museum token.
+      museum = museum;
 
       terminal = {
         background = hex.base;
@@ -376,6 +398,7 @@ in
 
     inherit
       palette
+      museum
       hex
       base16
       ansiNormal
