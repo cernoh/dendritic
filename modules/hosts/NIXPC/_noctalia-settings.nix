@@ -134,13 +134,95 @@
       }
     ];
   };
+  # The museum desktop wall (PLAN phase 5). `widget_order` is authoritative:
+  # the four `sysmon` cards are gone, replaced by one mounted instrument board
+  # at their footprint, and the clock, calendar and oscillograph are restyled
+  # around it. Coordinates are the artifact's 1920×1080 canvas (DP-2). The
+  # board, placard and month plate are `cernoh/museum` entries; the
+  # oscillograph stays the shell's `audio_visualizer`, because a plugin has no
+  # spectrum feed and the built-in already draws a gradient (PLAN 5.4).
   desktop_widgets = {
     enabled = true;
     schema_version = 2;
+    widget_order = [
+      "instrument_board"
+      "clock_placard"
+      "month_plate"
+      "oscillograph"
+    ];
     grid = {
       cell_size = 16;
       major_interval = 4;
       visible = true;
+    };
+    widget = {
+      # 44,122 → 544,428: the four sysmon tiles, now one walnut board.
+      instrument_board = {
+        box_height = 306.0;
+        box_width = 500.0;
+        cx = 294.0;
+        cy = 275.0;
+        enabled = true;
+        output = "DP-2";
+        placement_height = 1080.0;
+        placement_width = 1920.0;
+        rotation = 0.0;
+        type = "cernoh/museum:instrument";
+      };
+      # 64,452 · 464×96: brass time, date, and a seconds level meter.
+      clock_placard = {
+        box_height = 96.0;
+        box_width = 464.0;
+        cx = 296.0;
+        cy = 500.0;
+        enabled = true;
+        output = "DP-2";
+        placement_height = 1080.0;
+        placement_width = 1920.0;
+        rotation = 0.0;
+        type = "cernoh/museum:placard";
+      };
+      # 40,573 · 620×420: the drawer's month plate, today embossed in brass.
+      month_plate = {
+        box_height = 420.0;
+        box_width = 620.0;
+        cx = 350.0;
+        cy = 783.0;
+        enabled = true;
+        output = "DP-2";
+        placement_height = 1080.0;
+        placement_width = 1920.0;
+        rotation = 0.0;
+        type = "cernoh/museum:monthplate";
+      };
+      # 983,964 · 270×80: 32 brass bands in a framed walnut well. `color_1`
+      # is the one allowed hex (brass-lt, DESIGN §3); `color_2` is the outline
+      # role, so the gradient tracks a palette change on its dark end.
+      oscillograph = {
+        box_height = 80.0;
+        box_width = 270.0;
+        cx = 1118.0;
+        cy = 1004.0;
+        enabled = true;
+        output = "DP-2";
+        placement_height = 1080.0;
+        placement_width = 1920.0;
+        rotation = 0.0;
+        type = "audio_visualizer";
+        settings = {
+          background = true;
+          background_color = "surface";
+          background_opacity = 0.97;
+          background_padding = 8;
+          background_radius = 6;
+          bands = 32;
+          centered = true;
+          color_1 = "#e2c08a";
+          color_2 = "outline";
+          mirrored = true;
+          show_when_idle = true;
+        };
+      };
     };
   };
   dock = {

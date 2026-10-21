@@ -137,7 +137,7 @@ assert(timeLabel.props.text == "15:25", "time")
 local dateLabel = stub.find(clock, function(node)
   return node.props ~= nil and node.props.key == "clock-date"
 end)
-assert(dateLabel.props.text == "WEDNESDAY 21 OCTOBER", "date in small caps")
+assert(dateLabel.props.text == "Wednesday 21 October", "date")
 local meter = stub.find(clock, function(node)
   return node.props ~= nil and node.props.key == "clock-meter"
 end)

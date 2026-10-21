@@ -223,14 +223,14 @@ function D.clock(cfg)
     }),
     ui.label({
       key = "clock-date",
-      text = upper(cfg.date or ""),
+      text = cfg.date or "",
       fontSize = 10,
       color = T.paperDim,
       textAlign = "center",
       maxWidth = 436,
       maxLines = 1,
     }),
-    ui.row({ key = "clock-meter", gap = 2, align = "center", width = 260, flexGrow = 1 }, meter),
+    ui.row({ key = "clock-meter", gap = 2, align = "center", width = 260 }, meter),
   })
 end
 

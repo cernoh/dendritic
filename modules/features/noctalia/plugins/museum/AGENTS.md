@@ -593,3 +593,77 @@ section against a feed fixture, every control's posted request, the empty
 states, the three permitted hexes, and every prop against the host's
 known-prop sets. `driver-catalogue.luau` asserts the parsers, the argv of each
 request, the quiet republish, and the missing-tool path.
+
+---
+
+## Desktop tiles (PLAN phase 5)
+
+Phase 5 replaces the four `sysmon` cards with one mounted instrument board and
+restyles the three other desktop widgets. The live layout is **host config**,
+not plugin state: `desktop_widgets.widget_order` and one
+`[desktop_widgets.widget.<id>]` table per tile in
+`modules/hosts/NIXPC/_noctalia-settings.nix`. `widget_order` is authoritative,
+so a widget table that is not named there is ignored. Coordinates are the
+artifact's 1920×1080 canvas on DP-2 (`museum-reskin-before-after.html` §04/§05).
+
+| Tile | Type | Footprint (cx, cy · w×h) | Entry |
+|---|---|---|---|
+| Instrument board | `cernoh/museum:instrument` | 294,275 · 500×306 | `desktop-board.luau` |
+| Clock placard | `cernoh/museum:placard` | 296,500 · 464×96 | `desktop-clock.luau` |
+| Month plate | `cernoh/museum:monthplate` | 350,783 · 620×420 | `desktop-month.luau` |
+| Oscillograph | `audio_visualizer` (built-in) | 1118,1004 · 270×80 | — |
+
+### The four Tier-A decisions
+
+1. **No needle dials.** `ui.*` has no arc or rotation primitive, and the Phase 6
+   gate was not passed. Each instrument is a name in small caps, a numeral in
+   brass, a secondary readout in patina and a 16-segment `Meter` — the same
+   shape as the bar's fuel gauge, at desktop scale. `lib/desktop.luau` owns the
+   500×306 board geometry; `museum.gauge` gained `keyPrefix` so the four meters
+   do not collide on `seg-1`.
+2. **The clock is a plugin placard, not the built-in clock.** The built-in
+   digital clock is one label, so it cannot show the date on a second line or
+   the level meter; its analog face is a real dial but not the artifact's
+   placard. The plugin tile draws time · date · a 20-segment meter whose fill is
+   the current minute's seconds. `os.date` in Luau does not implement `%e`
+   (space-padded day); the entry uses `%d` and strips the leading zero.
+3. **The month plate is the drawer's VIII at desktop scale.** Monday-first whole
+   weeks, today embossed in brass, the two chevrons move the displayed month,
+   and the wall text names the shell's calendar state (`calendar.enabled` is
+   false on this host) rather than promising events the plugin cannot read.
+4. **The oscillograph stays the built-in `audio_visualizer`.** The plugin API
+   exposes no spectrum feed, so a plugin cannot draw real bands; rebuilding it
+   would be a fake. The built-in already supports the material the artifact
+   wants: a `color_1`/`color_2` gradient (brass-lt → outline; the one allowed
+   hex, DESIGN §3), 32 bands, and a `background` well for the frame.
+
+The board's data is the **telemetry service's** `stats` key, extended in phase 5
+with `ramUsagePercent`, `swapUsedMb`/`swapTotalMb`, `gpuTempC` and
+`vramUsedBytes`/`vramTotalBytes` from the same `noctalia.systemStats()` sample.
+The tile never calls the probe itself: one service owns the feed (PLAN 3.3).
+
+### 5.5 — `sysmon` is gone
+
+The NIXPC desktop block now names only the four tiles above. There is no
+`sysmon` table, no `gpu_usage` / `gpu_vram` / `ram_pct` stat pair, and no
+`clock`/`calendar`/`audio_visualizer` instance left in the old styling.
+
+### Verification
+
+```sh
+modules/features/noctalia/tests/run-desktop-tests.sh
+nix shell nixpkgs#luau --command luau-analyze plugins/museum/*.luau plugins/museum/lib/*.luau
+noctalia plugins lint modules/features/noctalia/plugins/museum
+```
+
+`run-desktop-tests.sh` concatenates the stub host, `lib/museum.luau`,
+`lib/desktop.luau`, the driver and the three entry scripts, then asserts the
+board geometry, all four readings (including the absent-probe em dash), the
+unique segment keys, the placard's twenty segments at half a minute, whole
+calendar weeks, and that each entry renders through `desktopWidget`.
+
+Live check (used for the phase-5 capture): the shell reads the four tables from
+a temporary `~/.config/noctalia/zz-*.toml`, `noctalia msg config-reload` picks
+it up without a rebuild, and the plugin source is the same out-of-store copy the
+bar uses. Remove the `zz-*` layer when the declarative config is rebuilt; a
+stale layer would shadow the host settings.
