@@ -42,13 +42,14 @@
       dendritic.mango = import ./_mango-settings.nix;
 
       # Build parallelism: 8 vCPU (Blizzard-M2 + Avalanche-M2, no SMT), 7.3 GiB
-      # RAM, ~15 GiB of swap (zram + /swapfile below). `cores = 0` is the load-
+      # RAM, and zswap-backed 12 GiB disk swap (`/swapfile` below). `cores = 0` is
+      # the load-
       # bearing half — it hands a single heavy derivation the whole box, which
       # is exactly what the Asahi kernel build needs now that the distributed-
       # builds link is gone and the Mac owns every derivation it installs.
       # `max-jobs = 4` rides the same shape system/core/nix-settings.nix picks
-      # for every host, and swap is what absorbs the RAM overshoot that a
-      # 4x8 process table implies.
+      # for every host, and swap is what absorbs the RAM overshoot that a 4x8
+      # process table implies.
       #
       # These used to be `mkForce 1`/`mkForce 1` (issue #108): earlyoom kept
       # SIGTERM'ing the biggest rustc, so the box was pinned to a single job
@@ -90,25 +91,24 @@
 
       # earlyoom retired (issue #108 follow-up). It aborted the rebuild it was
       # meant to protect: even at -m5/-s5 it SIGTERM'd a 4.7 GiB `pi-natives`
-      # rustc on a 7.3 GiB box. zramSwap at 100% plus the 8 GiB /swapfile below
-      # is the memory policy now; past that the kernel reclaims. Forced, not
-      # defaulted, so an input bump cannot quietly turn the daemon back on.
+      # rustc on a 7.3 GiB box. zswap + the 12 GiB /swapfile below is the memory
+      # policy now; past that the kernel reclaims. Forced, not defaulted, so an
+      # input bump cannot quietly turn the daemon back on.
       services.earlyoom.enable = lib.mkForce false;
 
-      # Swap is the memory policy now that earlyoom is gone (issue #108): zram
-      # at 100% (7.3 GiB) plus an 8 GiB /swapfile on nvme0n1p5 (24G free, 158G
-      # total) gives ~15 GiB, enough for an LTO-fat rustc plus the nix daemon at
-      # max-jobs = 4. The kernel creates /swapfile at first activation if
-      # missing. See the earlyoom note above for why the daemon no longer backs
-      # this up.
+      # Asahi memory policy: zswap (zstd + zsmalloc, pool cap 50%) with a 12 GiB
+      # /swapfile on nvme0n1p5. The SSD's bandwidth makes disk eviction cheap,
+      # while zswap keeps an SSD fallback that zram-only setups lose once a
+      # compressed RAM device fills.
+      #
+      # The kernel creates /swapfile at first activation if missing.
       swapDevices = [
         {
           device = "/swapfile";
-          size = 8192;
+          size = 12288;
         }
       ];
-      # zram bumped to 100% (7.3 GiB) for headroom alongside the disk swap.
-      zramSwap.memoryPercent = lib.mkForce 100;
+      zramSwap.enable = lib.mkForce false;
 
       # The Mac's existing login is "da" (carried over from hm-v3); unlike
       # NIXPC it must NOT default to "davr", or switch would create a second,
@@ -120,9 +120,18 @@
       # 25.05 default from system/core (issue #63).
       system.stateVersion = "25.11";
 
-      # Carried over from the Mac's previous configuration.nix: without it
-      # the built-in display's notch region misbehaves under appledrm.
-      boot.kernelParams = [ "appledrm.show_notch=1" ];
+      # Carried over from the Mac's previous configuration.nix: without it the
+      # built-in display's notch region misbehaves under appledrm.
+      #
+      # zswap policy follows Asahi's current recommendation and Fedora Asahi's
+      # shipped defaults.
+      boot.kernelParams = [
+        "appledrm.show_notch=1"
+        "zswap.enabled=1"
+        "zswap.compressor=zstd"
+        "zswap.zpool=zsmalloc"
+        "zswap.max_pool_percent=50"
+      ];
 
       # 477M ESP + 65M Asahi Image.efi / 26M initrd per generation → 6 gens
       # already occupies 352M and blocks switch with ENOSPC (2026-09-06).
