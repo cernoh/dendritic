@@ -118,6 +118,7 @@ relevant child AGENTS.md
     - `modules/features/funes/` — pinned prebuilt `funes` binary plus its mandatory `hf` and `trufflehog` companions, no auto `funes add` → `modules/features/funes/AGENTS.md`
     - `modules/features/noctalia/` — Noctalia shell, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper, `mirai` CLI → `modules/features/noctalia/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, agent definitions, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
+    - `modules/features/pi-bolt/` — Pi-Bolt release pin, the Bun ELF patch rules (interpreter yes, rpath never), version skew against `pkgs.pi-coding-agent` → `modules/features/pi-bolt/AGENTS.md`
     - `modules/features/wayfinder-dashboard/` — mobile Wayfinder queue, project spaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`
