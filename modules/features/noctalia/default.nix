@@ -120,6 +120,13 @@
         # `theme.source = "custom"` and `theme.custom_palette = "sepia"`.
         customPalettes.${self.scheme.name} = self.scheme.noctalia;
 
+        # The second palette: paper stock and ink, for the launcher-as-notebook
+        # experiment (museum repo, artifacts/museum-launcher-notebook-plan.html).
+        # Both documents land in ~/.config/noctalia/palettes/ and neither
+        # overwrites the other, so switching is `theme.custom_palette` plus the
+        # shape keys below — nothing is rebuilt and nothing is deleted.
+        customPalettes.notebook = self.scheme.notebook;
+
         # Host wallpaper, from the same feature. The store path is identical
         # on every host, and it merges with each host's own `wallpaper` block
         # (directory, transitions). A run-time pick in the shell writes

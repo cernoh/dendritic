@@ -440,7 +440,7 @@
     clipboard_history_max_entries = 100;
     clipboard_image_action_command = "";
     clipboard_keep_from_closed_apps = true;
-    corner_radius_scale = 0.5;
+    corner_radius_scale = 0.0;
     date_format = "%A, %x";
     disable_mipmaps = false;
     external_ip_enabled = false;
@@ -454,7 +454,7 @@
     password_style = "default";
     polkit_agent = false;
     popup_borders = true;
-    popup_shadows = true;
+    popup_shadows = false;
     screen_time_enabled = false;
     settings_show_advanced = true;
     settings_window_translucent = true;
@@ -648,7 +648,18 @@
   theme = {
     builtin = "Noctalia";
     community_palette = "Oxocarbon";
-    custom_palette = "sepia";
+    # Notebook palette (features/scheme: `notebook`). Paper stock and ink, with
+    # margin red as `primary` — which is also the launcher's selected-row fill,
+    # so the selection reads as a marker stroke. sepia.json is still generated
+    # and still valid: `custom_palette = "sepia"` plus `mode = "dark"`,
+    # `corner_radius_scale = 0.5`, `popup_shadows = true` reverts the whole
+    # change with no rebuild of anything else.
+    #
+    # `mode` stays "dark" on purpose even though the surfaces are light: it also
+    # drives the exported app/GTK themes, and flipping every app to light mode
+    # is a separate decision from skinning this shell. The palette document
+    # omits `light`, so the shell reuses these roles either way.
+    custom_palette = "notebook";
     mode = "dark";
     pure_black_dark = false;
     shell_mode = "follow";
