@@ -116,7 +116,7 @@ relevant child AGENTS.md
   - `modules/features/` — opt-in feature modules (import = enable, HM vs NixOS, out-of-store symlinks) → `modules/features/AGENTS.md`
     - `modules/features/computer-use/` — wlroots capture/injection tools, patched `cua-driver`, AT-SPI2 a11y bus → `modules/features/computer-use/AGENTS.md`
     - `modules/features/funes/` — pinned prebuilt `funes` binary plus its mandatory `hf` and `trufflehog` companions, no auto `funes add` → `modules/features/funes/AGENTS.md`
-    - `modules/features/noctalia/` — Noctalia shell, `cernoh/terminal` and `cernoh/mirai` plugins, `ghostty-term` helper, `mirai` CLI → `modules/features/noctalia/AGENTS.md`
+    - `modules/features/noctalia/` — Noctalia shell, the `cernoh/terminal` plugin, `ghostty-term` helper → `modules/features/noctalia/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, agent definitions, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
     - `modules/features/pi-bolt/` — Pi-Bolt release pin, the Bun ELF patch rules (interpreter yes, rpath never), version skew against `pkgs.pi-coding-agent` → `modules/features/pi-bolt/AGENTS.md`
     - `modules/features/wayfinder-dashboard/` — mobile Wayfinder queue, project spaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`

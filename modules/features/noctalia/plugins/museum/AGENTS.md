@@ -1,7 +1,7 @@
 # Museum plugin — `cernoh/museum`
 
 A museum-themed reskin of the noctalia shell, built as an in-repo plugin
-following the `cernoh/terminal` and `cernoh/mirai` pattern. Design and plan
+following the `cernoh/terminal` pattern. Design and plan
 live in the museum repo (`docs/DESIGN.md`, `docs/PLAN.md`); the rendered
 artifacts under `artifacts/` are the acceptance target.
 
@@ -282,9 +282,9 @@ the others.
 | `thermal` | `Plate` + ledger row: cpu · drv, plus the segmented degradation gauge | `center` | `thermal` | `stats`, `drives` |
 | `tray` | exhibit plate · tray plate · wax seal · audio plate · brass power | `end` | `tray` | `media`, `audio`, `unread` |
 
-`launcher` stays (recon 0.5). The terminal and Mirai bar glyphs are dropped from
-the lane but their panels stay reachable from `SUPER+SHIFT+T` and the
-control-centre tile — the museum bar has no room for a second status chip.
+`launcher` stays (recon 0.5). The terminal's bar glyph is dropped from the lane
+but the panel stays reachable from `SUPER+SHIFT+T` and the control-centre tile —
+the museum bar has no room for a second status chip.
 
 ### Data sources — `telemetry.luau` owns every read
 
@@ -509,7 +509,7 @@ one of two ways:
   telemetry service's `unread` count.
 
 Controls post work on the plugin's request channel (`request` +
-`request_rev`, the same channel the terminal and Mirai plugins use): `profile`,
+`request_rev`, the same channel the terminal plugin uses): `profile`,
 `mute`, `link`, `wifi`, `bluetooth-power`, `bluetooth-discoverable`, `media`,
 `refresh`. `refresh` restarts the poll sweep rather than running it, because a
 sweep started inside a callback would blow the budget below.

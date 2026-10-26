@@ -342,23 +342,6 @@
         "type": "github"
       }
     },
-    "mirai": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1781633632,
-        "narHash": "sha256-uXMiECkUEAnt3J9ODTAGI0cVPAP7w3hwJ9THjatzUq0=",
-        "owner": "Leriart",
-        "repo": "Mirai",
-        "rev": "1e7148b392107eec748b0213ef65c23f62fdfc1e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Leriart",
-        "repo": "Mirai",
-        "rev": "1e7148b392107eec748b0213ef65c23f62fdfc1e",
-        "type": "github"
-      }
-    },
     "mnw": {
       "locked": {
         "lastModified": 1784154424,
@@ -624,7 +607,6 @@
         "home-manager": "home-manager",
         "import-tree": "import-tree",
         "mangowm": "mangowm",
-        "mirai": "mirai",
         "nix-flatpak": "nix-flatpak",
         "nixos-hardware": "nixos-hardware",
         "nixpkgs": "nixpkgs",

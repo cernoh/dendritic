@@ -404,7 +404,6 @@
     enabled = [
       "noctalia/bitwarden"
       "cernoh/terminal"
-      "cernoh/mirai"
       "cernoh/museum"
     ];
     source = [

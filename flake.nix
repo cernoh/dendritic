@@ -67,14 +67,6 @@
       url = "github:tjarvstrand/dojjo/v0.2.2";
       flake = false;
     };
-    # Pinned rev, flake = false: consumed as a plain source tree by the Mirai
-    # Miracast package in modules/features/noctalia/_mirai.pkg.nix. The input is
-    # not followed by nixpkgs because it carries none — only the source tree
-    # crosses the boundary. Upstream publishes no tags, so the rev is pinned.
-    mirai = {
-      url = "github:Leriart/Mirai/1e7148b392107eec748b0213ef65c23f62fdfc1e";
-      flake = false;
-    };
     # Pinned tag (v2.0.1), flake = false: consumed as a plain source tree by the
     # cursor build in modules/features/retrosmart-cursor/_retrosmart-cursor.pkg.nix.
     # URL form, not git+https, on purpose: this host's Nix cannot fetch a
