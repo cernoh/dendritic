@@ -39,7 +39,6 @@ in
         ghostty
         programming
         noctaliaGreeter
-        stability
         watt
         timeSync
         tailscale
