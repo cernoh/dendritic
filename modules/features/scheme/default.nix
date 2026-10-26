@@ -235,47 +235,44 @@ let
   #
   # The role mapping is shared by both palettes, so a second skin can never
   # drift from the first: only the hexes differ.
-  noctaliaRoles =
-    hexes: museumRoles:
-    {
-      mPrimary = hexes.primary;
-      mOnPrimary = hexes.onPrimary;
-      mSecondary = hexes.secondary;
-      mOnSecondary = hexes.onSecondary;
-      mTertiary = hexes.tertiary;
-      mOnTertiary = hexes.onTertiary;
-      mError = hexes.error;
-      mOnError = hexes.onError;
-      mSurface = hexes.base;
-      mOnSurface = hexes.text;
-      mSurfaceVariant = hexes.surfaceVariant;
-      mOnSurfaceVariant = hexes.textMuted;
-      mOutline = hexes.outline;
-      mShadow = hexes.shadow;
-      mHover = hexes.hover;
-      mOnHover = hexes.onHover;
+  noctaliaRoles = hexes: museumRoles: {
+    mPrimary = hexes.primary;
+    mOnPrimary = hexes.onPrimary;
+    mSecondary = hexes.secondary;
+    mOnSecondary = hexes.onSecondary;
+    mTertiary = hexes.tertiary;
+    mOnTertiary = hexes.onTertiary;
+    mError = hexes.error;
+    mOnError = hexes.onError;
+    mSurface = hexes.base;
+    mOnSurface = hexes.text;
+    mSurfaceVariant = hexes.surfaceVariant;
+    mOnSurfaceVariant = hexes.textMuted;
+    mOutline = hexes.outline;
+    mShadow = hexes.shadow;
+    mHover = hexes.hover;
+    mOnHover = hexes.onHover;
 
-      # Museum-only roles, read by the museum plugin as `dark.museum.<name>`.
-      # Noctalia reads the m* keys it knows and ignores the rest
-      # (`readPaletteJson` in src/theme/theme_service.cpp), so this object is a
-      # passenger in the palette document: one file, every museum token.
-      museum = museumRoles;
-    };
+    # Museum-only roles, read by the museum plugin as `dark.museum.<name>`.
+    # Noctalia reads the m* keys it knows and ignores the rest
+    # (`readPaletteJson` in src/theme/theme_service.cpp), so this object is a
+    # passenger in the palette document: one file, every museum token.
+    museum = museumRoles;
+  };
 
   # A terminal stays a dark desk in both palettes: paper is for reading, a
   # terminal is not paper. The background is always sepia's `base`; only the
   # foreground tone changes, so ink-on-stock never leaks into a shell.
-  terminalBlock =
-    foreground: {
-      background = hex.base;
-      foreground = foreground;
-      cursor = hex.primary;
-      cursorText = hex.onPrimary;
-      selectionBg = hex.selection;
-      selectionFg = hex.onSelection;
-      normal = ansiNormal;
-      bright = ansiBright;
-    };
+  terminalBlock = foreground: {
+    background = hex.base;
+    foreground = foreground;
+    cursor = hex.primary;
+    cursorText = hex.onPrimary;
+    selectionBg = hex.selection;
+    selectionFg = hex.onSelection;
+    normal = ansiNormal;
+    bright = ansiBright;
+  };
 
   noctalia = {
     dark = (noctaliaRoles hex museum) // {
