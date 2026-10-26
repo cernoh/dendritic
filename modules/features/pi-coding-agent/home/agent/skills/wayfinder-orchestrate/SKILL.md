@@ -1,7 +1,6 @@
 ---
 name: wayfinder-orchestrate
 description: "Drive a wayfinder map to done: fan its tickets out to herdr agents in isolated worktrees, watch for stalls, land PRs that close their issues, and route every human decision through one deferred-answers log."
-disable-model-invocation: true
 ---
 
 Wayfinder charts the map; this skill walks it. Invoked with a map, you become the **orchestrator**: every frontier ticket gets claimed and driven in its own herdr pane on its own worktree, you hold the watch (stalls, model switches, resolutions, newly unblocked tickets), implementation tickets land as PRs that close their issues, and every question that needs a human parks in one deferred log with you as the conduit. You never answer for the human, and you never leave a ticket claimed-but-silent.
