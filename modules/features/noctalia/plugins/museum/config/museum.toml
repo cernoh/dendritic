@@ -43,7 +43,7 @@ center = ["machine", "clock", "thermal"]
 concave_edge_corners = true
 contact_shadow = false
 enabled = true
-end = ["tray"]
+end = ["tray", "sys_tray"]
 font_scale = 1.0
 font_weight = 500
 hover_highlight = true
@@ -114,6 +114,9 @@ type = "cernoh/museum:tray"
 # `cernoh/museum` entries; the oscillograph stays the shell's
 # `audio_visualizer`, because a plugin has no spectrum feed and the built-in
 # already draws a gradient (PLAN 5.4).
+
+[widget.sys_tray]
+type = "tray"
 
 [desktop_widgets]
 enabled = true

@@ -364,9 +364,10 @@ swapped in for the duration, then the user's config symlink restored.
   NIXPC's three 1920×1080 outputs).
 - **The wax seal shows only when unread > 0** (artifact had 2). It is a disc
   with the count and opens Notices.
-- **No tray-item embedding.** A plugin cannot render the shell's tray icons
-  inside its own tree, so the "tray plate" is four navigation glyphs
-  (notices · clipboard · network · bluetooth), not the StatusNotifier items.
+- **Tray items (issue #8, closed).** StatusNotifierItem icons cannot be
+  rendered inside the plugin tree, so the museum tray plate stays four
+  navigation glyphs and the shell's built-in `tray` widget is added as
+  `sys_tray` on the bar end (one-line Tier A fallback).
 - **`ddcutil` brightness is polled, not pushed.** 40 s cadence; the volume and
   media values are 2 s. A monitor preset that locks VCP 0x10 makes the readout
   stale — the module contract's monitor-preset note applies.
