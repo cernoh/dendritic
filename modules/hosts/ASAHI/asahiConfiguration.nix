@@ -42,14 +42,13 @@
       dendritic.mango = import ./_mango-settings.nix;
 
       # Build parallelism: 8 vCPU (Blizzard-M2 + Avalanche-M2, no SMT), 7.3 GiB
-      # RAM, and zswap-backed 12 GiB disk swap (`/swapfile` below). `cores = 0` is
-      # the load-
-      # bearing half — it hands a single heavy derivation the whole box, which
-      # is exactly what the Asahi kernel build needs now that the distributed-
-      # builds link is gone and the Mac owns every derivation it installs.
-      # `max-jobs = 4` rides the same shape system/core/nix-settings.nix picks
-      # for every host, and swap is what absorbs the RAM overshoot that a 4x8
-      # process table implies.
+      # RAM, and zswap-backed 12 GiB disk swap (`/swapfile` below). `cores = 0`
+      # is the load-bearing half — it hands a single heavy derivation the whole
+      # box, which is exactly what the Asahi kernel build needs now that the
+      # distributed-builds link is gone and the Mac owns every derivation it
+      # installs. `max-jobs = 4` rides the same shape
+      # system/core/nix-settings.nix picks for every host, and swap is what
+      # absorbs the RAM overshoot that a 4x8 process table implies.
       #
       # These used to be `mkForce 1`/`mkForce 1` (issue #108): earlyoom kept
       # SIGTERM'ing the biggest rustc, so the box was pinned to a single job
@@ -96,18 +95,23 @@
       # input bump cannot quietly turn the daemon back on.
       services.earlyoom.enable = lib.mkForce false;
 
-      # Asahi memory policy: zswap (zstd + zsmalloc, pool cap 50%) with a 12 GiB
-      # /swapfile on nvme0n1p5. The SSD's bandwidth makes disk eviction cheap,
-      # while zswap keeps an SSD fallback that zram-only setups lose once a
-      # compressed RAM device fills.
-      #
-      # The kernel creates /swapfile at first activation if missing.
+      # Asahi memory policy, per Fedora Asahi's zram→zswap PSA (Nov 2024): zram
+      # is broken next to physical swap, and the shipped zram + 8 GiB swapfile
+      # pair OOM-killed with the disk swap still untouched. So the box now
+      # compresses in front of the swapfile instead — zswap with zstd and
+      # zsmalloc behind a 50% pool cap (`boot.kernelParams` below) — over 12 GiB
+      # of disk swap on nvme0n1p5. The SSD's bandwidth makes eviction cheap, and
+      # the pool cap keeps compressed RAM from crowding the working set. The
+      # kernel creates /swapfile at first activation if missing.
       swapDevices = [
         {
           device = "/swapfile";
           size = 12288;
         }
       ];
+      # zram is off, not merely unset: a second compressed-swap layer on top of
+      # zswap adds RAM pressure instead of absorbing it. Forced, like earlyoom
+      # above, so an input bump cannot quietly turn it back on.
       zramSwap.enable = lib.mkForce false;
 
       # The Mac's existing login is "da" (carried over from hm-v3); unlike
