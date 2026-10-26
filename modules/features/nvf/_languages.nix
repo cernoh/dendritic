@@ -41,8 +41,7 @@
     };
 
     sql = {
-      enable = true;
-      extraDiagnostics.enable = true;
+      enable = false;
     };
     typst = {
       enable = true;
