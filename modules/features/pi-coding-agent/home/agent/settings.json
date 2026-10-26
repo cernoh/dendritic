@@ -46,7 +46,7 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "defaultProvider": "freeflow",
-  "defaultModel": "mimo-v2.6-flash-free",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "deepseek-v4.1-flash",
   "hideThinkingBlock": false
 }

@@ -76,7 +76,20 @@
       lsp.servers = [ "gopls" ];
     };
     clang.enable = true;
-    java.enable = true;
+    java = {
+      enable = true;
+      # nvf's `jls` package (Java debug adapter) cannot build: its pinned
+      # maven-deps hash is stale. nvf follows our nixpkgs, and this nixpkgs'
+      # maven/openjdk now resolve a different .m2 tree than the one upstream
+      # hashed (notashelf/nvf @ 557d2eb, the current main, still carries the
+      # old value). jls reaches the closure only through this DAP preset —
+      # java completion/diagnostics come from jdt-language-server in nixpkgs
+      # and are unaffected — so dropping the DAP drops the broken package.
+      # The tree this host resolves is
+      # sha256-2HEZClbtiFAWuR8aIgaW1nMl05aI/tShnQFBptamfKQ=: re-enable once
+      # nvf ships it (or vendor a jls derivation with that hash).
+      dap.enable = false;
+    };
     markdown = {
       enable = true;
       extensions.render-markdown-nvim.enable = true;

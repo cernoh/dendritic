@@ -18,7 +18,8 @@
     "tokens": true,
     "cost": true,
     "extensionStatuses": true,
-    "capitalizeProviderName": true
+    "capitalizeProviderName": true,
+    "nerdIconSpacing": true
   },
   "telemetry": {
     "enabled": true,
