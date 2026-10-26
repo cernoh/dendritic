@@ -11,3 +11,10 @@ node_modules/
 .pi/
 # pi-coding-agent runtime (tracked config is modules/features/pi-coding-agent/home/agent/)
 # declarative files there are settings.json, open-tui.json, npm/package.json, skills/ symlinks
+# Regenerated at runtime and multi-megabyte: the pi-sessions SQLite index (25 MB
+# once committed a binary diff into unrelated commits), the jiti transpile cache,
+# and the tool-call audit log.
+modules/features/pi-coding-agent/home/agent/cache/
+modules/features/pi-coding-agent/home/agent/pi-sessions/index.sqlite
+modules/features/pi-coding-agent/home/agent/pi-sessions/index.sqlite.lock.sqlite
+modules/features/pi-coding-agent/home/agent/toolcall-audit.jsonl

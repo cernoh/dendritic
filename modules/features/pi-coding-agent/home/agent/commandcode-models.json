@@ -226,6 +226,14 @@
       "maxTokens": 65536
     },
     {
+      "id": "moonshotai/Kimi-K3.1-Pro",
+      "name": "Kimi K3.1 Pro (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 1048576,
+      "maxTokens": 65536
+    },
+    {
       "id": "moonshotai/Kimi-K3",
       "name": "Kimi K3 (CC)",
       "api": "openai-responses",
@@ -330,14 +338,6 @@
       "maxTokens": 65536
     },
     {
-      "id": "minimax/minimax-m3.1-flash:free",
-      "name": "MiniMax M3.1 Flash (CC)",
-      "api": "openai-completions",
-      "reasoning": false,
-      "contextWindow": 1000000,
-      "maxTokens": 65536
-    },
-    {
       "id": "MiniMaxAI/MiniMax-M3",
       "name": "MiniMax M3 (CC)",
       "api": "openai-responses",
@@ -362,6 +362,14 @@
       "maxTokens": 65536
     },
     {
+      "id": "ornith/ornith-1.5-122b",
+      "name": "Ornith 1.5 122B (CC)",
+      "api": "openai-completions",
+      "reasoning": false,
+      "contextWindow": 262144,
+      "maxTokens": 65536
+    },
+    {
       "id": "xiaomi/mimo-v2.6-pro",
       "name": "MiMo V2.6 Pro (CC)",
       "api": "openai-responses",
@@ -383,22 +391,6 @@
       "api": "openai-responses",
       "reasoning": false,
       "contextWindow": 1048576,
-      "maxTokens": 65536
-    },
-    {
-      "id": "xiaomi/mimo-v2.5-pro",
-      "name": "MiMo V2.5 Pro (CC)",
-      "api": "openai-responses",
-      "reasoning": false,
-      "contextWindow": 1000000,
-      "maxTokens": 65536
-    },
-    {
-      "id": "xiaomi/mimo-v2.5",
-      "name": "MiMo V2.5 (CC)",
-      "api": "openai-responses",
-      "reasoning": false,
-      "contextWindow": 1000000,
       "maxTokens": 65536
     },
     {

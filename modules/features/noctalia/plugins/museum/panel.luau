@@ -128,8 +128,8 @@ end
 
 -- Work is posted, never run here. A request is a plain value plus a revision
 -- counter: two identical requests in a row must both run, and a bare value
--- comparison would swallow the second (the terminal and Mirai plugins share
--- this channel for the same reason).
+-- comparison would swallow the second (the terminal plugin shares this channel
+-- for the same reason).
 local function request(kind, payload)
   noctalia.state.set("request", { kind = kind, payload = payload })
   noctalia.state.set("request_rev", (tonumber(noctalia.state.get("request_rev")) or 0) + 1)

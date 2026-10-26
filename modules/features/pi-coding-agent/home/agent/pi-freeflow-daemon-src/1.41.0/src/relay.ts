@@ -31,8 +31,8 @@ const ROLL_NOTIFY_MS = 5 * 60 * 1_000;
  * per attempt. Relay leg only - the direct-to-upstream
  * fallback keeps the built-in global dispatcher. headersTimeout
  * reaps wedged tunnels, bodyTimeout 0 disables per-chunk kill
- * (the 300s total backstop still bounds a turn), connections 50
- * caps burst spray.
+ * (bodies stream unbounded — a wedged leg is cut by stream-pipe's
+ * body-stall watchdog instead), connections 50 caps burst spray.
  *
  * Compat: an npm undici Agent is rejected as a `dispatcher`
  * by an older-major global fetch bundled in Node
@@ -75,6 +75,18 @@ export function _setHedgeGraceForTest(ms: number): () => void {
 }
 /** Test-only: reset roll-notify throttle */
 export function _resetRollNotifyForTest(): void { lastRollNotify = 0; }
+/********************************************************
+ * Relay attempt header-wait deadline (config default).
+ * Bounded only to the header wait; the streaming body must never be
+ * killed by a fixed wall-clock ceiling (see buildAttempt).
+ ********************************************************/
+let attemptHeaderTimeoutMs = UPSTREAM_HEADER_TIMEOUT_MS;
+/** Test-only: override the relay attempt header deadline; returns a restore function. */
+export function _setAttemptHeaderTimeoutForTest(ms: number): () => void {
+	const prev = attemptHeaderTimeoutMs;
+	attemptHeaderTimeoutMs = ms;
+	return () => { attemptHeaderTimeoutMs = prev; };
+}
 
 /**
  * Determine if an HTTP status code indicates a temporary relay or upstream error
@@ -153,12 +165,18 @@ export interface RelayAffinity {
  *        and `onServed` reports which relay actually produced the response —
  *        `null` for the direct fallback — so the caller does not have to infer
  *        the issuer from mutable global state.
+ * @param onAttemptFailure Observation hook: called once for every attempt this
+ *        turn abandons in favour of another (each roll branch, plus the header
+ *        deadline and network faults). `attempt` is 1-based and monotonic across
+ *        candidates and hedges; `status` is the HTTP status when headers arrived.
+ *        A throwing hook is swallowed — observation must never break a roll.
  */
 export async function relayFetch(
 	url: string,
 	opts: RequestInit = {},
 	reqId?: string,
 	affinity: RelayAffinity = {},
+	onAttemptFailure?: (info: { attempt: number; status?: number; reason: string }) => void,
 ): Promise<Response> {
 	const rid = reqId || randomUUID().slice(0, 8);
 	const relayState = getActiveRelayState();
@@ -186,6 +204,25 @@ export async function relayFetch(
 	const disabledRelays: string[] = [];
 	/** Bare-500 roll-once cap: one extra attempt per relayFetch turn. */
 	let sawBare500 = false;
+	/** True only while every candidate that produced a response answered 429. */
+	let rateLimitOnly = true;
+	/**
+	 * Abandoned candidates in roll order, 1-based — the numbering the failure
+	 * hook reports. A candidate rejected before any fetch consumes a number
+	 * too: the roll abandoned it just the same.
+	 */
+	let attemptNo = 0;
+	const reportAbandoned = (reason: string, status?: number): void => {
+		attemptNo += 1;
+		if (!onAttemptFailure) return;
+		try {
+			onAttemptFailure(status === undefined
+				? { attempt: attemptNo, reason }
+				: { attempt: attemptNo, status, reason });
+		} catch {
+			// Observation is best-effort; never let it disturb the roll.
+		}
+	};
 	const u = new URL(url);
 	const relayTarget = `${u.protocol}//${u.host}`;
 	const relayPath = `${u.pathname}${u.search}`;
@@ -218,6 +255,7 @@ export async function relayFetch(
 	for (let i = 0; i < candidates.length; i++) {
 		if (hedgeSkipNext) {
 			hedgeSkipNext = false;
+			rateLimitOnly = false;
 			continue;
 		}
 		let targetUrl = candidates[i];
@@ -233,6 +271,7 @@ export async function relayFetch(
 					{ upstream: url },
 					rid,
 				);
+				reportAbandoned("invalid-relay-url");
 				continue;
 			}
 			// Per-candidate wiring: relay-target headers, per-relay auth, and a
@@ -260,12 +299,28 @@ export async function relayFetch(
 				// window, combined with the caller's signal so either can fire.
 				// A hung relay then trips only its own timeout (roll) instead of
 				// vetoing the pool; a genuine client cancel (caller signal
-				// aborted) still propagates to both hedged attempts.
-				const attemptTimeout = AbortSignal.timeout(UPSTREAM_HEADER_TIMEOUT_MS);
+				// aborted) still propagates to both hedged attempts. The timer
+				// is disarmed the moment the fetch settles: the deadline bounds
+				// the header WAIT only, never the streaming body (an
+				// AbortSignal.timeout would keep hanging over the body and kill
+				// a healthy turn past five minutes mid-generation).
+				const headerDeadlineCtl = new AbortController();
+				let headerTimer: NodeJS.Timeout | undefined;
+				let headerDeadlineDisarmed = false;
+				const disarmHeaderTimeout = (): void => {
+					if (headerDeadlineDisarmed) return;
+					headerDeadlineDisarmed = true;
+					clearTimeout(headerTimer);
+					headerTimer = undefined;
+				};
+				headerTimer = setTimeout(() => {
+					disarmHeaderTimeout();
+					headerDeadlineCtl.abort();
+				}, attemptHeaderTimeoutMs);
 				const attemptSignal = opts.signal
-					? AbortSignal.any([opts.signal, attemptTimeout, hedgeCtl.signal])
-					: AbortSignal.any([attemptTimeout, hedgeCtl.signal]);
-				return { headers: attemptHeaders, signal: attemptSignal };
+					? AbortSignal.any([opts.signal, headerDeadlineCtl.signal, hedgeCtl.signal])
+					: AbortSignal.any([headerDeadlineCtl.signal, hedgeCtl.signal]);
+				return { headers: attemptHeaders, signal: attemptSignal, disarmHeaderTimeout };
 			};
 
 			// Hedged failover: an attempt with no response headers within
@@ -286,14 +341,26 @@ export async function relayFetch(
 			if (!canHedge) {
 				const soloCtl = new AbortController();
 				const solo = buildAttempt(targetUrl, soloCtl);
-				res = await fetch(targetUrl, { ...opts, headers: solo.headers, signal: solo.signal, ...relayLegInit() } as unknown as RequestInit);
+				try {
+					res = await fetch(targetUrl, { ...opts, headers: solo.headers, signal: solo.signal, ...relayLegInit() } as unknown as RequestInit);
+				} finally {
+					solo.disarmHeaderTimeout();
+				}
 			} else {
 				const primaryUrl = targetUrl;
 				const nextUrl = candidates[i + 1];
 				const nextCheck = validateRelayUrl(nextUrl);
 				const hedgeCtlA = new AbortController();
 				const first = buildAttempt(primaryUrl, hedgeCtlA);
-				const fetchA = fetch(primaryUrl, { ...opts, headers: first.headers, signal: first.signal, ...relayLegInit() } as unknown as RequestInit);
+				// Disarm a settled leg's header deadline: once the fetch resolves
+				// with headers (or rejects) the attempt's abort window is closed,
+				// so a streaming body is never killed past the fixed ceiling.
+				// Wrapping here covers both the staged promise reader and the
+				// hedge race below.
+				const fetchA = fetch(primaryUrl, { ...opts, headers: first.headers, signal: first.signal, ...relayLegInit() } as unknown as RequestInit).then(
+					(r: Response) => { first.disarmHeaderTimeout(); return r; },
+					(e: unknown) => { first.disarmHeaderTimeout(); throw e; },
+				);
 				const stalled = await new Promise<boolean>((resolve) => {
 					const graceTimer = setTimeout(() => resolve(true), HEDGE_GRACE_MS);
 					fetchA.then(
@@ -308,7 +375,10 @@ export async function relayFetch(
 					const hedgeCtlB = new AbortController();
 					const second = buildAttempt(nextUrl, hedgeCtlB);
 					const hedgeStart = Date.now();
-					const fetchB = fetch(nextUrl, { ...opts, headers: second.headers, signal: second.signal, ...relayLegInit() } as unknown as RequestInit);
+					const fetchB = fetch(nextUrl, { ...opts, headers: second.headers, signal: second.signal, ...relayLegInit() } as unknown as RequestInit).then(
+						(r: Response) => { second.disarmHeaderTimeout(); return r; },
+						(e: unknown) => { second.disarmHeaderTimeout(); throw e; },
+					);
 					// Swallow the loser path so the deliberate abort never
 					// surfaces as an unhandled rejection or a direct fallback.
 					fetchA.catch(() => {});
@@ -352,6 +422,11 @@ export async function relayFetch(
 							throw hedgeErr;
 						}
 						markRelayFailure(nextUrl, 0, (hedgeErr as Error)?.message || String(hedgeErr));
+						// Both legs of this race were abandoned; the outer catch
+						// reports the primary one, this reports the hedge leg.
+						reportAbandoned(
+							(hedgeErr as Error)?.name === "AbortError" ? "header-timeout" : "network-error",
+						);
 						hedgeSkipNext = true;
 						throw hedgeErr;
 					}
@@ -379,12 +454,14 @@ export async function relayFetch(
 						ui.notify(`relay ${shortRelayLabel(targetUrl)} hit HTTP 504 — rolled to next relay`, "warning");
 					}
 				}
+				reportAbandoned("gateway-timeout", 504);
 				continue;
 			}
 			// Relay payload cap hit (413: request exceeds host payload limit):
 			// Not a relay health signal, so no failure marking — try the next
 			// relay (a different host may accept it), else the direct fallback.
 			if (res.status === 413) {
+				rateLimitOnly = false;
 				lastResponse?.body?.cancel().catch(() => {});
 				lastResponse = res;
 				lastResponseRelay = targetUrl;
@@ -402,6 +479,7 @@ export async function relayFetch(
 						ui.notify(`relay ${shortRelayLabel(targetUrl)} hit payload limit — trying next path`, "warning");
 					}
 				}
+				reportAbandoned("payload-too-large", 413);
 				continue;
 			}
 
@@ -418,6 +496,7 @@ export async function relayFetch(
 					!res.headers.get("content-type")?.includes("json"));
 
 			if (isRelayEdge404) {
+				rateLimitOnly = false;
 				markRelayFailure(targetUrl, 404, "Deployment or route not found on relay host");
 				lastResponse?.body?.cancel().catch(() => {});
 				lastResponse = res;
@@ -436,6 +515,7 @@ export async function relayFetch(
 						ui.notify(`relay ${shortRelayLabel(targetUrl)} failed (HTTP 404) — rolled to next relay`, "warning");
 					}
 				}
+				reportAbandoned("relay-edge-404", 404);
 				continue;
 			}
 			// Relay deployment disabled (402 DEPLOYMENT_DISABLED from Vercel):
@@ -454,6 +534,7 @@ export async function relayFetch(
 					disabledBody = null;
 				}
 				if (isRelayDeploymentDisabled(res, disabledBody)) {
+					rateLimitOnly = false;
 					markRelayFailure(targetUrl, 402, "Deployment disabled (DEPLOYMENT_DISABLED) on relay host");
 					disabledRelays.push(targetUrl);
 					lastResponse?.body?.cancel().catch(() => {});
@@ -473,6 +554,7 @@ export async function relayFetch(
 							ui.notify(`relay ${shortRelayLabel(targetUrl)} failed (HTTP 402) — rolled to next relay`, "warning");
 						}
 					}
+					reportAbandoned("deployment-disabled", 402);
 					continue;
 				}
 			}
@@ -481,12 +563,30 @@ export async function relayFetch(
 				lastResponse?.body?.cancel().catch(() => {});
 				lastResponse = res;
 				lastResponseRelay = targetUrl;
+				if (res.status === 429) {
+					// A 429 is a transient per-relay rate limit, not a terminal
+					// verdict: the request is already moving to the next candidate.
+					// Keep the per-relay rotation silent (no warning toast, no
+					// per-relay WARN line) so the host never flashes "rate limited"
+					// while a sibling relay serves. A pool-wide 429 burst alert may
+					// still fire from markRelayFailure; the final verdict is logged
+					// once when the pool and direct fallback cannot serve the turn.
+					log(
+						"info",
+						`relay ${targetUrl} rate-limited in ${elapsed}s — auto-rotating to next relay`,
+						{ upstream: url, status: 429 },
+						rid,
+					);
+					reportAbandoned("rate-limited", 429);
+					continue;
+				}
 				log(
 					"warn",
 					`relay ${targetUrl} returned HTTP ${res.status} in ${elapsed}s — rolling to next relay`,
 					{ upstream: url, status: res.status },
 					rid,
 				);
+				rateLimitOnly = false;
 				const now = Date.now();
 				if (now - lastRollNotify > ROLL_NOTIFY_MS) {
 					lastRollNotify = now;
@@ -495,6 +595,7 @@ export async function relayFetch(
 						ui.notify(`relay ${shortRelayLabel(targetUrl)} failed (HTTP ${res.status}) — rolled to next relay`, "warning");
 					}
 				}
+				reportAbandoned("retriable-status", res.status);
 				continue;
 			}
 
@@ -502,6 +603,7 @@ export async function relayFetch(
 			// relay-fault signal (413 precedent: roll without health penalty), so
 			// retry once on the next candidate instead of surfacing.
 			if (res.status === 500) {
+				rateLimitOnly = false;
 				if (!sawBare500) {
 					sawBare500 = true;
 					lastResponse?.body?.cancel().catch(() => {});
@@ -513,6 +615,7 @@ export async function relayFetch(
 						{ upstream: url, status: 500 },
 						rid,
 					);
+					reportAbandoned("server-error", 500);
 					continue;
 				}
 				// Second 500 of the turn: the cap is spent and this is the
@@ -552,6 +655,7 @@ export async function relayFetch(
 			// below instead of cooling a healthy relay. Non-401/403 client errors
 			// keep their non-penalizing terminal path below too.
 			if (res.status === 403 || (res.status === 401 && (await isRelayAuthRejection(res)))) {
+				rateLimitOnly = false;
 				const authRejected = res.status === 401;
 				markRelayFailure(
 					targetUrl,
@@ -584,6 +688,7 @@ export async function relayFetch(
 						);
 					}
 				}
+				reportAbandoned(authRejected ? "relay-auth-rejected" : "relay-forbidden", res.status);
 				continue;
 			}
 			// SUCCESS or non-retriable client error (e.g. 200, 404):
@@ -643,9 +748,10 @@ export async function relayFetch(
 			}
 			const elapsed = ((Date.now() - attemptStart) / 1000).toFixed(1);
 			lastError = err;
+			rateLimitOnly = false;
 			const errMsg =
 				(err as Error)?.name === "AbortError"
-					? `relay header timeout (${Math.round(UPSTREAM_HEADER_TIMEOUT_MS / 1000)}s exceeded)`
+					? `relay header timeout (${Math.round(attemptHeaderTimeoutMs / 1000)}s exceeded)`
 					: (err as Error)?.message || String(err);
 			markRelayFailure(targetUrl, 0, errMsg);
 			log(
@@ -654,6 +760,7 @@ export async function relayFetch(
 				{ upstream: url, error: errMsg },
 				rid,
 			);
+			reportAbandoned((err as Error)?.name === "AbortError" ? "header-timeout" : "network-error");
 			continue;
 		}
 	}
@@ -661,10 +768,21 @@ export async function relayFetch(
 	// Full fallback: attempt direct fetch to upstream
 	const directStart = Date.now();
 	try {
-		log("warn", "relays bypassed/exhausted — attempting direct fetch to upstream", {
-			upstream: url,
-			sizeKB: bodySizeKB,
-		}, rid);
+		// A pool that only produced 429s is still in the middle of a transient
+		// rate-limit episode; trying direct is recovery, not a warning-worthy
+		// failure. Other exhaustion causes keep their WARN.
+		const exhaustedByRateLimit = lastResponse?.status === 429 && rateLimitOnly;
+		log(
+			exhaustedByRateLimit ? "info" : "warn",
+			exhaustedByRateLimit
+				? "all relays rate-limited — trying direct upstream"
+				: "relays bypassed/exhausted — attempting direct fetch to upstream",
+			{
+				upstream: url,
+				sizeKB: bodySizeKB,
+			},
+			rid,
+		);
 
 		const directHeaders = new Headers(opts.headers);
 		directHeaders.delete("x-relay-target");

@@ -83,6 +83,15 @@ in
         # NIXPC only: ASAHI does not run agents.
         wayfinder-dashboard
         ({ services.wayfinder-dashboard.tailscaleServe.enable = true; })
+        # Pi-Bolt: the same Pi coding agent compiled ahead of time to one
+        # native executable. It reads the very same ~/.pi/agent tree that
+        # `pi-coding-agent` (from attrs/programming) owns, so settings,
+        # extensions, skills and the sepia theme are shared rather than
+        # duplicated. NIXPC only, for the same reason as wayfinder-dashboard
+        # and herdr-web: ASAHI does not run coding agents. The pinned x64
+        # build needs AVX2; see features/pi-bolt/AGENTS.md for the pin, the
+        # variant table, and why the binary must not be re-patched.
+        pi-bolt
       ]
       ++ hardwareProfiles;
   };

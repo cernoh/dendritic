@@ -85,10 +85,80 @@ let
     patina = "7d9a8e";
   };
 
+  # ── notebook: the second palette ──────────────────────────────────────────
+  # Paper stock and ink, for the launcher-as-notebook experiment. This is a
+  # SECOND palette, never an edit to `sepia`: `theme.custom_palette` picks one
+  # or the other, so switching costs one line in either direction and sepia's
+  # every mapping (docs/DESIGN.md, the reference artifacts) stays valid.
+  #
+  # Design record: museum repo, artifacts/museum-launcher-notebook-plan.html.
+  #
+  # Two things are deliberate, not inherited:
+  #   * `base` stays sepia's dark desk. A sheet reads as paper because it sits
+  #     on something dark; a light background behind a light sheet kills it.
+  #   * `surface` is the sheet, so every plate, panel and launcher row becomes
+  #     stock. That is the point of the palette, not a side effect.
+  # `primary` is margin red because noctalia fills the launcher's selected row
+  # with `ColorRole::Primary` (src/shell/launcher/launcher_panel.cpp), so the
+  # accent colour IS the selection highlight. Brass cannot survive on paper.
+  #
+  # Contrast, computed against the sheet #a3947e: ink 5.6:1, pencil 3.9:1,
+  # paper-on-margin-red 8.0:1. The pencil is under 4.5:1 on purpose — it is
+  # subtitle text, and pushing it any darker collapses the hierarchy into ink.
+  notebookPalette = {
+    crust = "141008";
+    mantle = "1a140e";
+    base = "1e1813";
+    surface = "a3947e";
+    surfaceVariant = "8f8270";
+    surfaceHighlight = "b9ac95";
+    overlay = "8f8270";
+    border = "7a6550";
+    outline = "7a6550";
+
+    text = "241c12";
+    textMuted = "4b3c2c";
+    textDim = "6d5b44";
+
+    primary = "7d2f20";
+    onPrimary = "efe6d4";
+    primaryContainer = "9c4430";
+    onPrimaryContainer = "f4ead4";
+
+    secondary = "5b4a37";
+    onSecondary = "efe6d4";
+
+    tertiary = "6b5a44";
+    onTertiary = "efe6d4";
+
+    error = "8f2b18";
+    onError = "efe6d4";
+    warning = "9a6b1e";
+    success = "4f6b3a";
+    info = "3f5a72";
+
+    shadow = "0f0c09";
+    hover = "8f8270";
+    onHover = "241c12";
+    selection = "7d2f20";
+    onSelection = "efe6d4";
+  };
+
+  # The museum's three no-role values, retuned for stock: brass-lt becomes a
+  # lit ink edge, paper3 a pencil rule, patina a cooler readout so temperatures
+  # never read as ink.
+  notebookMuseumPalette = {
+    brassLt = "c8b79a";
+    paper3 = "8a7758";
+    patina = "3f6b63";
+  };
+
   # Prefix every value of a bare-hex attrset.
   hexOf = lib.mapAttrs (_: value: "#${value}");
   hex = hexOf palette;
   museum = hexOf museumPalette;
+  notebookHex = hexOf notebookPalette;
+  notebookMuseum = hexOf notebookMuseumPalette;
 
   hexDigit = {
     "0" = 0;
@@ -162,41 +232,57 @@ let
   # with the community-palette reader, which rejects a document without a
   # `dark` object and falls back to the builtin palette. `light` is omitted,
   # so the shell reuses the dark variant in both modes.
+  #
+  # The role mapping is shared by both palettes, so a second skin can never
+  # drift from the first: only the hexes differ.
+  noctaliaRoles = hexes: museumRoles: {
+    mPrimary = hexes.primary;
+    mOnPrimary = hexes.onPrimary;
+    mSecondary = hexes.secondary;
+    mOnSecondary = hexes.onSecondary;
+    mTertiary = hexes.tertiary;
+    mOnTertiary = hexes.onTertiary;
+    mError = hexes.error;
+    mOnError = hexes.onError;
+    mSurface = hexes.base;
+    mOnSurface = hexes.text;
+    mSurfaceVariant = hexes.surfaceVariant;
+    mOnSurfaceVariant = hexes.textMuted;
+    mOutline = hexes.outline;
+    mShadow = hexes.shadow;
+    mHover = hexes.hover;
+    mOnHover = hexes.onHover;
+
+    # Museum-only roles, read by the museum plugin as `dark.museum.<name>`.
+    # Noctalia reads the m* keys it knows and ignores the rest
+    # (`readPaletteJson` in src/theme/theme_service.cpp), so this object is a
+    # passenger in the palette document: one file, every museum token.
+    museum = museumRoles;
+  };
+
+  # A terminal stays a dark desk in both palettes: paper is for reading, a
+  # terminal is not paper. The background is always sepia's `base`; only the
+  # foreground tone changes, so ink-on-stock never leaks into a shell.
+  terminalBlock = foreground: {
+    background = hex.base;
+    foreground = foreground;
+    cursor = hex.primary;
+    cursorText = hex.onPrimary;
+    selectionBg = hex.selection;
+    selectionFg = hex.onSelection;
+    normal = ansiNormal;
+    bright = ansiBright;
+  };
+
   noctalia = {
-    dark = {
-      mPrimary = hex.primary;
-      mOnPrimary = hex.onPrimary;
-      mSecondary = hex.secondary;
-      mOnSecondary = hex.onSecondary;
-      mTertiary = hex.tertiary;
-      mOnTertiary = hex.onTertiary;
-      mError = hex.error;
-      mOnError = hex.onError;
-      mSurface = hex.base;
-      mOnSurface = hex.text;
-      mSurfaceVariant = hex.surfaceVariant;
-      mOnSurfaceVariant = hex.textMuted;
-      mOutline = hex.outline;
-      mShadow = hex.shadow;
-      mHover = hex.hover;
-      mOnHover = hex.onHover;
+    dark = (noctaliaRoles hex museum) // {
+      terminal = terminalBlock hex.text;
+    };
+  };
 
-      # Museum-only roles, read by the museum plugin as `dark.museum.<name>`.
-      # Noctalia reads the m* keys it knows and ignores the rest
-      # (`readPaletteJson` in src/theme/theme_service.cpp), so this object is a
-      # passenger in the palette document: one file, every museum token.
-      museum = museum;
-
-      terminal = {
-        background = hex.base;
-        foreground = hex.text;
-        cursor = hex.primary;
-        cursorText = hex.onPrimary;
-        selectionBg = hex.selection;
-        selectionFg = hex.onSelection;
-        normal = ansiNormal;
-        bright = ansiBright;
-      };
+  notebook = {
+    dark = (noctaliaRoles notebookHex notebookMuseum) // {
+      terminal = terminalBlock notebookHex.surfaceHighlight;
     };
   };
 
@@ -399,11 +485,15 @@ in
     inherit
       palette
       museum
+      notebookPalette
+      notebookMuseumPalette
       hex
+      notebookHex
       base16
       ansiNormal
       ansiBright
       noctalia
+      notebook
       omp
       pi
       html

@@ -311,9 +311,9 @@
           "SUPER+SHIFT,minus,resizewin,0,-50"
           "SUPER+SHIFT,equal,resizewin,0,50"
           "SUPER,N,switch_layout"
-          "SUPER+SHIFT,S,spawn_shell,grimshot copy area || grim -g \"$(slurp)\" - | wl-copy"
-          "CTRL,Print,spawn_shell,grimshot copy screen || grim - | wl-copy"
-          ''ALT,Print,spawn_shell,grimshot copy window || grim -g "$(swaymsg -t get_tree | jq -r '.. | select(.focused?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"')" - | wl-copy''
+          "SUPER+SHIFT,S,spawn_shell,noctalia msg screenshot-region"
+          "CTRL,Print,spawn_shell,noctalia msg screenshot-fullscreen"
+          "ALT,Print,spawn_shell,noctalia msg screenshot-window"
           "SUPER,Escape,setoption,allow_shortcuts_inhibit,0"
           "SUPER+SHIFT,E,quit"
           "CTRL+ALT,Delete,quit"
