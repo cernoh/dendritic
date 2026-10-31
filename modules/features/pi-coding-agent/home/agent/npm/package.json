@@ -2,23 +2,23 @@
   "name": "pi-extensions",
   "private": true,
   "dependencies": {
-    "@amaster.ai/pi-computer-use": "^0.1.32",
+    "@amaster.ai/pi-computer-use": "^0.1.33",
     "@andrewjacop/pi-herdr": "^0.6.0",
     "@ff-labs/pi-fff": "^0.11.0",
     "@juicesharp/rpiv-todo": "^2.15.0",
-    "@krtclcdy/tersio": "^2.25.14",
+    "@krtclcdy/tersio": "^2.25.16",
     "@valdo766hi/pi-lazy-skill-tool": "^0.3.1",
     "bigpowers": "^2.88.16",
     "pi-agent-browser-native": "^0.9.6",
     "pi-background-tasks": "^2.6.9",
-    "pi-commandcode-provider": "^0.7.10",
-    "pi-cowboy": "^0.22.2",
-    "pi-freeflow": "^1.42.1",
+    "pi-commandcode-provider": "^0.7.11",
+    "pi-cowboy": "^0.23.2",
+    "pi-freeflow": "^1.43.0",
     "pi-lazy-loader": "^0.1.0",
-    "pi-open-tui": "^0.3.12",
+    "pi-open-tui": "^0.3.13",
     "pi-sessions": "^0.22.0",
-    "pi-subagents": "^0.83.0",
+    "pi-subagents": "^0.84.0",
     "pi-tool-discipline": "^0.2.0",
-    "pi-web-access": "^0.45.0"
+    "pi-web-access": "^0.46.0"
   }
 }

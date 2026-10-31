@@ -48,10 +48,20 @@ coding agent compiled to native code, as a second front end over the SAME
   build run from its folder)"). Currency is a `pinnedVersion` + hash bump in
   `_pi-bolt.pkg.nix` (recipe in that file's header), plus the variant table
   when the machine class changes.
-- **One deliberate divergence in the shared extension set.** `pi-bolt doctor`
-  reports that it SKIPS `~/.pi/agent/extensions/herdr-agent-state.ts`: Pi-Bolt
-  carries its own built-in Herdr support and reports in that extension's place.
-  That is expected — do not "fix" it by deleting the built-in.
+- **Pi-Bolt does not report its own herdr state, and that is deliberate.**
+  Pi-Bolt carries a built-in herdr reporter that identifies as
+  `("pi-bolt","pi-bolt")`, but herdr grants pane lifecycle authority only to a
+  hard-coded source/agent allowlist that this pair is not on, so a running
+  Pi-Bolt pane was screen-scraped into `blocked`. `settings.json` therefore sets
+  `"extensions": ["-builtin:herdr"]`, and
+  `features/pi-coding-agent/home/agent/extensions/herdr-pi-bolt-state.ts` reports
+  under herdr's own `("herdr:pi","pi")` identity with
+  `resume_argv = ["pi-bolt","--session",…]` instead. Do not re-enable the
+  builtin next to that extension: herdr keeps one hook authority per pane and
+  the last report wins, so the two flap state and label. `pi-bolt doctor` naming
+  the builtin as `turned off` and `herdr-agent-state.ts` as `skipped` is the
+  expected shape. Details: `features/pi-coding-agent/home/agent/AGENTS.md`
+  ("Herdr agent state under Pi-Bolt").
 - **Variant follows the CPU, not the platform.** `x64` (the default on
   x86_64-linux) needs AVX2 and SSE4.2 and dies with "Illegal instruction"
   without them; `x64-baseline` runs anywhere with SSE4.2; `arm64` covers
@@ -78,6 +88,12 @@ coding agent compiled to native code, as a second front end over the SAME
 - Runtime, against the shared config: `pi-bolt --version`, `pi-bolt list`,
   `pi-bolt doctor` (the last names every extension it loads or skips, so it is
   the fastest way to see the shared tree working).
+- Herdr reporting: `node
+  ~/.pi/agent/extensions/herdr-pi-bolt-state.check.mjs`, then inside a herdr pane
+  `herdr agent list` must show the Pi-Bolt pane as agent `pi` with
+  `screen_detection_skipped: true`, and `herdr pane get <pane>` must carry an
+  `agent_session` from `herdr:pi`. `~/.config/herdr/session.json` keeps the
+  matching `agent_resume.argv` (`pi-bolt --session …`).
 
 ## Child DOX Index
 - none
