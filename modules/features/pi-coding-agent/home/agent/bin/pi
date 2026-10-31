@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+# pi — PATH shim that routes Herdr agent panes to Pi-Bolt.
+#
+# WHY THIS EXISTS
+# ---------------
+# Herdr launches an agent of kind `pi` by typing that kind's *canonical
+# executable* — the literal word `pi` — into a pane's shell, then waiting for
+# Pi's own detection manifest to see it interactive-ready:
+#
+#     herdr agent start <name> --kind pi --pane <id> [-- <agent-args>]
+#
+# The kind → executable table is hard-coded in the herdr binary (0.9.5 has no
+# config key, no `[agents.pi]` section, and no per-kind command override; see
+# `herdr agent start --help` — "Supported agent kind and canonical
+# executable"). So the ONLY interception point is PATH resolution inside that
+# pane, which is what this file is.
+#
+# Two callers, two markers, one gate:
+#
+#   PI_HERDR_SESSION set      pi-herdr's own spawn: it seeds every pi child
+#                             pane's environment with the session path via
+#                             `pane split --env`, and nothing else sets it.
+#   PI_HERDR_PI_BOLT=1        explicit opt-in for a hand-driven agent pane,
+#                             e.g. the per-tab background-agent recipe in
+#                             AGENTS.md:
+#                               herdr pane split --env PI_HERDR_PI_BOLT=1
+#                               herdr agent start <name> --kind pi --pane <id>
+#   neither                   passthrough — the user's shell, scripts,
+#                             `pi update`, and every other pane keep the real
+#                             pi.
+#
+# Children get Pi-Bolt for the reason Pi-Bolt exists: the compiled-in
+# `builtin:codemode`, `builtin:tool-search`, `builtin:mcp`, `builtin:usage`
+# and `builtin:llama.cpp`, plus `-builtin:herdr` handing Herdr reporting to
+# `extensions/herdr-pi-bolt-state.ts` (which reports Herdr's own
+# `("herdr:pi","pi")` identity, so Herdr accepts the child's state and its
+# `pi-bolt --session …` resume command). A plain-pi child silently lacks all
+# of that, which is the whole reason this shim exists.
+#
+# Not a trap: `exec` replaces this shell, so `process.execPath`, `pi update`,
+# `pi doctor` and every self-locating code path see the real binary exactly as
+# before. The shim is transparent for the passthrough branch.
+#
+# ESCAPE HATCHES
+#   PI_HERDR_PLAIN_PI=1   force the real pi even where the gate would fire
+#   /run/current-system/sw/bin/pi   absolute path, never shadowed
+#   pi-bolt                         always available by its own name
+#
+# Self-check: ~/.pi/agent/bin/pi --self-check
+set -u
+
+REAL_PI=/run/current-system/sw/bin/pi
+BOLT_PI=/run/current-system/sw/bin/pi-bolt
+
+if [ "${1:-}" = "--self-check" ]; then
+  printf 'shim      %s\n' "$0"
+  printf 'real pi   %s\n' "$(readlink -f "$REAL_PI")"
+  printf 'pi-bolt   %s\n' "$(readlink -f "$BOLT_PI")"
+  printf 'resolves  %s\n' "$(command -v pi)"
+  plain=$(PI_HERDR_SESSION= PI_HERDR_PI_BOLT= "$REAL_PI" --version 2>&1 | head -1)
+  printf 'real pi --version    %s\n' "$plain"
+  fleet=$(PI_HERDR_SESSION=/tmp/self-check "$0" --version 2>&1 | head -1)
+  printf 'pi-herdr child runs  %s\n' "$fleet"
+  optin=$(PI_HERDR_PI_BOLT=1 "$0" --version 2>&1 | head -1)
+  printf 'opted-in pane runs   %s\n' "$optin"
+  case $fleet in
+    *[Bb]olt*) ;;
+    *) echo "FAIL: a pi-herdr child did not resolve to Pi-Bolt" >&2; exit 1 ;;
+  esac
+  case $optin in
+    *[Bb]olt*) ;;
+    *) echo "FAIL: an opted-in agent pane did not resolve to Pi-Bolt" >&2; exit 1 ;;
+  esac
+  exit 0
+fi
+
+if [ -n "${PI_HERDR_PLAIN_PI:-}" ]; then
+  exec "$REAL_PI" "$@"
+fi
+
+if [ -n "${PI_HERDR_SESSION:-}" ] || [ "${PI_HERDR_PI_BOLT:-}" = 1 ]; then
+  exec "$BOLT_PI" "$@"
+fi
+
+exec "$REAL_PI" "$@"

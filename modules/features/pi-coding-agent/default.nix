@@ -29,6 +29,22 @@
           home.file.".pi".source =
             config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/pi-coding-agent/home";
 
+          # Herdr resolves an agent kind to ONE hard-coded canonical
+          # executable (`herdr agent start --kind pi` types the literal word
+          # `pi` into a pane's shell; 0.9.5 has no config key or per-kind
+          # command override). So the only place a Pi-Herdr fleet child can be
+          # routed to Pi-Bolt is PATH resolution inside that pane — and Herdr
+          # panes carry the session PATH, which starts at ~/.local/bin.
+          # `agent/bin/pi` is the shim (gated on PI_HERDR_SESSION /
+          # PI_HERDR_PI_BOLT, see its header); this link puts it first.
+          # Declared here so a fresh checkout reproduces it instead of
+          # silently falling back to plain pi children. A store copy, not
+          # another out-of-store link: a dangling `~/.local/bin/pi` would
+          # break `pi` outright, and the flake source copy only carries
+          # tracked files — so forgetting to `git add` it fails the build
+          # instead. Changing the shim therefore needs a switch.
+          home.file.".local/bin/pi".source = ./home/agent/bin/pi;
+
           # pi TUI theme, from features/scheme (see `self.scheme.pi`). Pi needs
           # all 53 color tokens and falls back to its built-in `dark` theme for
           # any missing one, so the map lives in the scheme rather than next to

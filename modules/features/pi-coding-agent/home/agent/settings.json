@@ -25,7 +25,10 @@
       ]
     }
   ],
-  "lastChangelogVersion": "1.3.0",
+  "extensions": [
+    "-builtin:herdr"
+  ],
+  "lastChangelogVersion": "1.4.0",
   "pi-computer-use": {
     "mode": "path",
     "binaryPath": "${HOME}/.local/share/cua-driver/cua-driver"
