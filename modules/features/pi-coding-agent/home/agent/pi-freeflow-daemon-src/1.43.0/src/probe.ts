@@ -1,0 +1,174 @@
+import {
+ OPENCODE_API_URL,
+ OPENCODE_OPENAI_COMPAT_PATH,
+ OPENCODE_OPENAI_COMPAT_URL,
+ opencodeHeaders,
+} from "./config.ts";
+import {
+ enforceOpencodeFingerprint,
+} from "./opencode-fingerprint.ts";
+
+/**
+ * Relay reachability probe: verifies a deployed relay answers requests
+ * by issuing a minimal round trip through it and timing the response.
+ */
+
+interface RelayProbeResult {
+ ok: boolean;
+ status: number;
+ latencyMs: number;
+ error?: string;
+}
+
+interface RelayProbeOptions {
+ /**
+  * Probe mode:
+  * - "models" (default): GET /v1/models (reachability probe)
+ * - "chat": POST /inference/openai/v1/chat/completions (verifies free tier inference & spoofing)
+  */
+ endpoint?: "models" | "chat";
+ /** Model to use for chat probe (defaults to "nemotron-3.5-lightning-free") */
+ model?: string;
+ /** Timeout in milliseconds (defaults to 5000) */
+ timeoutMs?: number;
+ /**
+  * Number of retry attempts when the probe returns !ok or throws.
+  * Defaults to 0 (single attempt). Useful post-deploy for edge DNS propagation.
+  */
+ retries?: number;
+ /** Delay between retries in milliseconds (defaults to 2000). */
+ retryDelayMs?: number;
+ /** Optional progress callback before each retry */
+ onRetry?: (attempt: number, maxRetries: number, lastResult: RelayProbeResult) => void;
+ /**
+  * Plain-lane opt-out (chat endpoint only, default false): probe the plain
+  * `/inference/v1/chat/completions` fallback instead of the default
+  * `/inference/openai/v1/chat/completions` compat lane. The models endpoint
+  * ignores this flag.
+  */
+ openaiCompat?: boolean;
+}
+
+/**
+ * Probe a relay endpoint to confirm it is reachable.
+ *
+ * Sends a minimal request to `<url>/v1/models` carrying the x-relay-target /
+ * x-relay-path headers the relay expects, timing the round trip. Never
+ * throws: network failures, timeouts, and non-2xx statuses are all reported
+ * on the returned result instead.
+ *
+ * The path mirrors the proxy's real relay contract (`relayFetch` in relay.ts):
+ * `x-relay-target` is the upstream origin and `x-relay-path` the full path
+ * including the `/zen` prefix — the workers only allow the exact origins
+ * `https://opencode.ai` / `https://api.kilo.ai` and forward `target + path`.
+ * @param auth Optional per-relay shared secret; sent as x-relay-auth so
+ *   deployed relays (which enforce it) answer the probe instead of 401.
+ */
+async function probeRelayOnce(
+ url: string,
+ auth?: string,
+ opts?: RelayProbeOptions,
+): Promise<RelayProbeResult> {
+ const cleanUrl = url.trim().replace(/\/+$/, "");
+ const isDirectOpenCode =
+  cleanUrl === "https://opencode.ai" ||
+  cleanUrl === "opencode" ||
+  cleanUrl === "direct";
+ const isChat = opts?.endpoint === "chat";
+ const timeout = opts?.timeoutMs ?? (isChat ? 15_000 : 5_000);
+ const start = Date.now();
+
+ try {
+  const headers: Record<string, string> = {
+   ...opencodeHeaders(),
+   ...(auth ? { "x-relay-auth": auth } : {}),
+  };
+
+  let fetchUrl: string;
+  let method = "GET";
+  let body: string | undefined;
+
+  if (isDirectOpenCode) {
+   if (isChat) {
+    // Live default: the openai-compat lane; openaiCompat:false forces the
+    // plain /v1 lane (fallback coverage). Usage accounting rides the body on
+    // both via enforceOpencodeFingerprint; the lanes differ by path only.
+    const plain = opts?.openaiCompat === false;
+    fetchUrl = plain ? `${OPENCODE_API_URL}/chat/completions` : OPENCODE_OPENAI_COMPAT_URL;
+    method = "POST";
+    headers["content-type"] = "application/json";
+    const probePayload: Record<string, unknown> = {
+     model: opts?.model || "nemotron-3.5-lightning-free",
+     max_tokens: 1,
+     stream: true,
+     messages: [{ role: "user", content: "ping" }],
+    };
+    // The proxy's own enforcement, not a subset of it: a probe that skipped the
+    // env block would answer 429 for a lane that actually serves traffic.
+    enforceOpencodeFingerprint(probePayload, "/v1/chat/completions");
+    body = JSON.stringify(probePayload);
+    } else {
+    fetchUrl = `${OPENCODE_API_URL}/models`;
+    }
+  } else {
+   if (isChat) {
+    const plain = opts?.openaiCompat === false;
+    fetchUrl = plain ? `${cleanUrl}/inference/v1/chat/completions` : `${cleanUrl}${OPENCODE_OPENAI_COMPAT_PATH}`;
+    method = "POST";
+    headers["content-type"] = "application/json";
+    headers["x-relay-target"] = "https://opencode.ai";
+    headers["x-relay-path"] = plain ? "/inference/v1/chat/completions" : OPENCODE_OPENAI_COMPAT_PATH;
+    const probePayload: Record<string, unknown> = {
+     model: opts?.model || "nemotron-3.5-lightning-free",
+     max_tokens: 1,
+     stream: true,
+     messages: [{ role: "user", content: "ping" }],
+    };
+    enforceOpencodeFingerprint(probePayload, "/v1/chat/completions");
+    body = JSON.stringify(probePayload);
+   } else {
+    fetchUrl = `${cleanUrl}/v1/models`;
+    headers["x-relay-target"] = "https://opencode.ai";
+    headers["x-relay-path"] = "/inference/v1/models";
+   }
+  }
+
+  const res = await fetch(fetchUrl, {
+   method,
+   headers,
+   body,
+   signal: AbortSignal.timeout(timeout),
+  });
+  return { ok: res.ok, status: res.status, latencyMs: Date.now() - start };
+ } catch (e) {
+  return {
+   ok: false,
+   status: 0,
+   latencyMs: Date.now() - start,
+   error: (e as Error)?.message || String(e),
+  };
+ }
+}
+
+export async function probeRelay(
+ url: string,
+ auth?: string,
+ opts?: RelayProbeOptions,
+): Promise<RelayProbeResult> {
+ const retries = Math.max(0, opts?.retries ?? 0);
+ const retryDelay = Math.max(10, opts?.retryDelayMs ?? 2000);
+
+ for (let attempt = 0; attempt <= retries; attempt++) {
+  if (attempt > 0) {
+   const { promise, resolve } = Promise.withResolvers<void>();
+   setTimeout(resolve, retryDelay);
+   await promise;
+  }
+  const result = await probeRelayOnce(url, auth, opts);
+  if (result.ok || attempt === retries) {
+   return result;
+  }
+  opts?.onRetry?.(attempt + 1, retries, result);
+ }
+ return { ok: false, status: 0, latencyMs: 0, error: "Probe failed" };
+}
