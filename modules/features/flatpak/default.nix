@@ -15,12 +15,25 @@ let
     "com.obsproject.Studio"
     "org.vinegarhq.Sober"
   ];
+
+  # Every id here must be carried for aarch64 by the remote — that is the whole
+  # admission test, because `flatpak remote-info` refusing the ref is exactly
+  # what aborts activation. Stremio passes: Flathub serves
+  # `com.stremio.Stremio` for both aarch64 and x86_64 (`arches` in
+  # https://flathub.org/api/v2/summary/com.stremio.Stremio), and
+  # `flatpak remote-ls flathub --arch=aarch64` lists it. Sober is absent on
+  # purpose, not by oversight: Flathub publishes it x86_64-only and upstream has
+  # no ARM64 build yet (vinegarhq/sober#1221, and the FAQ says so outright), so
+  # adding it here would fail every ASAHI activation.
+  asahiAppIds = [
+    "com.stremio.Stremio"
+  ];
 in
 {
   flake.flatpakPackages = {
     common = [ ];
     nixpc = nixpcAppIds;
-    asahi = [ ];
+    asahi = asahiAppIds;
   };
 
   flake.nixosModules.flatpakCommon = {
@@ -75,7 +88,14 @@ in
       );
     };
 
-  flake.nixosModules.flatpakAsahi = {
-    imports = [ self.nixosModules.flatpakCommon ];
-  };
+  flake.nixosModules.flatpakAsahi =
+    { lib, pkgs, ... }:
+    {
+      imports = [ self.nixosModules.flatpakCommon ];
+
+      # The arch gate keeps this list inert if the aspect is ever imported on an
+      # x86_64 host, mirroring flatpakNixpc's isx86_64 guard. It is not what
+      # makes the ids installable — the remote's own arch matrix does that.
+      services.flatpak.packages = lib.optionals pkgs.stdenv.hostPlatform.isAarch64 asahiAppIds;
+    };
 }
