@@ -15,7 +15,7 @@
 # executable"). So the ONLY interception point is PATH resolution inside that
 # pane, which is what this file is.
 #
-# Two callers, two markers, one gate:
+# Three callers, three markers, one gate:
 #
 #   PI_HERDR_SESSION set      pi-herdr's own spawn: it seeds every pi child
 #                             pane's environment with the session path via
@@ -25,6 +25,20 @@
 #                             AGENTS.md:
 #                               herdr pane split --env PI_HERDR_PI_BOLT=1
 #                               herdr agent start <name> --kind pi --pane <id>
+#   cowboy worktree           pi-cowboy launches every agent the same way
+#                             (`herdr agent start --kind pi`), so its children
+#                             reach this shim too. They cannot use cowboy's own
+#                             `harness_type: "pi-bolt"`: that harness preps the
+#                             pane with a bash shell function and a `typeset -f`
+#                             proof, while herdr panes run $SHELL — fish here —
+#                             which rejects it ("command substitutions not
+#                             allowed in command position") and the spawn dies
+#                             with "the pi launcher never landed". Its `pig`
+#                             harness and its per-agent `env` file take the same
+#                             bash-only path. So cowboy stays on harness `pi` and
+#                             this gate does the routing: a pane whose cwd is a
+#                             cowboy worktree (`<root>/cow-<slug>-<id>`) is a
+#                             cowboy child.
 #   neither                   passthrough — the user's shell, scripts,
 #                             `pi update`, and every other pane keep the real
 #                             pi.
@@ -52,6 +66,12 @@ set -u
 REAL_PI=/run/current-system/sw/bin/pi
 BOLT_PI=/run/current-system/sw/bin/pi-bolt
 
+# This file's own absolute path: the self-check changes directory, so `$0`
+# (bare `pi` when found through PATH) must be resolved once, up front.
+SELF=$0
+[ -x "$SELF" ] || SELF=$(command -v pi 2>/dev/null || echo "$0")
+SELF=$(readlink -f "$SELF" 2>/dev/null || echo "$SELF")
+
 if [ "${1:-}" = "--self-check" ]; then
   printf 'shim      %s\n' "$0"
   printf 'real pi   %s\n' "$(readlink -f "$REAL_PI")"
@@ -63,6 +83,13 @@ if [ "${1:-}" = "--self-check" ]; then
   printf 'pi-herdr child runs  %s\n' "$fleet"
   optin=$(PI_HERDR_PI_BOLT=1 "$0" --version 2>&1 | head -1)
   printf 'opted-in pane runs   %s\n' "$optin"
+  tmp=$(mktemp -d)
+  mkdir -p "$tmp/.wt/cow-self-check-0000" "$tmp/plain-dir"
+  cowboy=$(cd "$tmp/.wt/cow-self-check-0000" && HERDR_PANE_ID=w0:p0 "$SELF" --version 2>&1 | head -1)
+  printf 'cowboy child runs    %s\n' "$cowboy"
+  notcow=$(cd "$tmp/plain-dir" && HERDR_PANE_ID=w0:p0 "$SELF" --version 2>&1 | head -1)
+  printf 'non-cowboy pane runs %s\n' "$notcow"
+  rm -rf "$tmp"
   case $fleet in
     *[Bb]olt*) ;;
     *) echo "FAIL: a pi-herdr child did not resolve to Pi-Bolt" >&2; exit 1 ;;
@@ -70,6 +97,13 @@ if [ "${1:-}" = "--self-check" ]; then
   case $optin in
     *[Bb]olt*) ;;
     *) echo "FAIL: an opted-in agent pane did not resolve to Pi-Bolt" >&2; exit 1 ;;
+  esac
+  case $cowboy in
+    *[Bb]olt*) ;;
+    *) echo "FAIL: a cowboy child did not resolve to Pi-Bolt" >&2; exit 1 ;;
+  esac
+  case $notcow in
+    *[Bb]olt*) echo "FAIL: cow- routing leaked into an ordinary pane" >&2; exit 1 ;;
   esac
   exit 0
 fi
@@ -80,6 +114,18 @@ fi
 
 if [ -n "${PI_HERDR_SESSION:-}" ] || [ "${PI_HERDR_PI_BOLT:-}" = 1 ]; then
   exec "$BOLT_PI" "$@"
+fi
+
+# Cowboy child: a herdr pane whose cwd is one of pi-cowboy's `cow-*` worktrees.
+# See "Three callers" above for why cowboy's own pi-bolt harness cannot be used.
+if [ -n "${HERDR_PANE_ID:-}" ]; then
+  case "${PWD##*/}" in
+    cow-*)
+      case "$PWD" in
+        */.wt/* | */worktrees/*) exec "$BOLT_PI" "$@" ;;
+      esac
+      ;;
+  esac
 fi
 
 exec "$REAL_PI" "$@"
