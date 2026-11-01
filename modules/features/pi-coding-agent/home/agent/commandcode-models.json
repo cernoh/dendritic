@@ -666,6 +666,14 @@
       "maxTokens": 32768
     },
     {
+      "id": "inclusionai/ling-3.1-flash-1019:free",
+      "name": "Ling 3.1 Flash 1019 (CC)",
+      "api": "openai-completions",
+      "reasoning": false,
+      "contextWindow": 1000000,
+      "maxTokens": 65536
+    },
+    {
       "id": "meta/muse-spark-1.1",
       "name": "Muse Spark 1.1 (CC)",
       "api": "openai-responses",
