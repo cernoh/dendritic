@@ -62,10 +62,15 @@ stays usable by hand. Self-check:
 
 ## Extension version pins
 
-`pkgs.pi-coding-agent` is the runtime (`pi` 1.2.0). Extensions may only use pi
+`pkgs.pi-coding-agent` is the runtime (`pi` 1.4.0). Extensions may only use pi
 APIs that exist in it, so `npm/package.json` holds the install set and its
 ranges:
 
+- `cc-my-pi` — Claude-Code-style rendering bundle, replacing `pi-open-tui`. It
+declares its own `pi` manifest (two extension entries plus
+`cc-my-pi-dark.json`), bundles `pi-tasks` and `pi-paster` (so a standalone
+`npm:@tintinweb/pi-tasks` must never be added), and its first load auto-runs a
+setup wizard that writes `settings.json`. 1.4.3 verified loading on pi 1.4.0.
 - `pi-agent-browser-native` — unpin OK since 0.87.0 provides
   `ctx.sessionManager.buildSessionProjection()`; 0.9.6 installed and working.
 - `@krtclcdy/tersio` — the package ships its OpenCode plugin entry at
@@ -134,10 +139,10 @@ adaptive routing, no `lazy-skill.json` — defaults are the config.
 `pi-agent-browser-native`, `pi-herdr`, `pi-sessions`, `pi-computer-use`,
 `rpiv-todo`, `pi-memory`, `bigpowers`, `pi-lazy-skill-tool`), providers (`pi-freeflow`,
 `pi-commandcode-provider`, `pi-background-tasks`), `before_agent_start` prompt
-hooks (`pi-tool-discipline`, `ponytail`), or session-start TUI panels
-(`pi-open-tui`) — all disqualified by the loader's own caveats (tools invisible
-to the LLM until activation, missed startup events). The loose extensions in
-`extensions/` are likewise hook-driven (`html-artifacts-channel` =
+hooks (`pi-tool-discipline`, `ponytail`), or session-start UI panels and
+session commands (`cc-my-pi`) — all disqualified by the loader's own caveats
+(tools invisible to the LLM until activation, missed startup events). The loose
+extensions in `extensions/` are likewise hook-driven (`html-artifacts-channel` =
 `before_agent_start`, `herdr-*` = `session_start`), so `lazy.json` has no
 targets either. Do not add `lazy: true` to a package without re-running this
 audit against its whole `node_modules` tree, not just its entry file.
