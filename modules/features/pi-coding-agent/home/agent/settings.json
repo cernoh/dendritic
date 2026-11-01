@@ -1,13 +1,12 @@
 {
   "packages": [
     "npm:pi-freeflow",
-    "npm:pi-open-tui",
+    "npm:cc-my-pi",
     "npm:pi-tool-discipline",
     "npm:@ff-labs/pi-fff",
     "npm:pi-web-access",
     "npm:pi-background-tasks",
     "npm:@juicesharp/rpiv-todo",
-    "npm:bigpowers",
     "npm:pi-subagents",
     "npm:pi-agent-browser-native",
     "npm:@andrewjacop/pi-herdr",
@@ -24,9 +23,6 @@
         "!extensions/server.ts"
       ]
     }
-  ],
-  "extensions": [
-    "-builtin:herdr"
   ],
   "lastChangelogVersion": "1.4.0",
   "pi-computer-use": {
@@ -46,6 +42,7 @@
     "+codemode"
   ],
   "theme": "sepia",
+  "quietStartup": true,
   "terminal": {
     "showTerminalProgress": true
   },
