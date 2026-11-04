@@ -1,0 +1,55 @@
+{
+  "routes": {
+    "failover": {
+      "name": "OpenCode Go Off-Peak Failover",
+      "reasoning": true,
+      "input": ["text"],
+      "contextWindow": 1000000,
+      "maxTokens": 128000,
+      "sortBy": "config",
+      "targets": [
+        {
+          "provider": "opencode-go",
+          "modelId": "beam-free",
+          "label": "Beam Free"
+        },
+        {
+          "provider": "opencode-go",
+          "modelId": "deepseek-v4-pro",
+          "label": "DeepSeek V4 Pro (off-peak only)"
+        },
+        {
+          "provider": "opencode-go",
+          "modelId": "gpt-6-luna",
+          "label": "GPT 6 Luna"
+        }
+      ],
+      "policyRules": [
+        {
+          "name": "exclude-deepseek-during-utc-peak-01-04",
+          "priority": 1,
+          "type": "exclude-target",
+          "provider": "opencode-go",
+          "modelId": "deepseek-v4-pro",
+          "condition": {
+            "afterTime": "01:00",
+            "beforeTime": "04:00",
+            "daysOfWeek": [1, 2, 3, 4, 5]
+          }
+        },
+        {
+          "name": "exclude-deepseek-during-utc-peak-06-10",
+          "priority": 1,
+          "type": "exclude-target",
+          "provider": "opencode-go",
+          "modelId": "deepseek-v4-pro",
+          "condition": {
+            "afterTime": "06:00",
+            "beforeTime": "10:00",
+            "daysOfWeek": [1, 2, 3, 4, 5]
+          }
+        }
+      ]
+    }
+  }
+}

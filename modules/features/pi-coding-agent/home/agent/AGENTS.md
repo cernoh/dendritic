@@ -171,7 +171,7 @@ declares its own `pi` manifest (two extension entries plus
 `npm:@tintinweb/pi-tasks` must never be added), and its first load auto-runs a
 setup wizard that writes `settings.json`. 1.4.3 verified loading on pi 1.4.0.
 - `pi-agent-browser-native` — unpin OK since 0.87.0 provides
-  `ctx.sessionManager.buildSessionProjection()`; 0.9.6 installed and working.
+  `ctx.sessionManager.buildSessionProjection()`; currently resolves to 0.9.16.
 - `@krtclcdy/tersio` — the package ships its OpenCode plugin entry at
   `extensions/server.ts` (default export is a Plugin object, not a pi factory),
   and pi's conventional discovery loads every top-level `extensions/*.ts`, so
@@ -201,6 +201,9 @@ runtime comes from nix.
 writes at runtime lands inside a git-owned directory. Most of it is listed in
 `.gitignore`; two entries are credentials and must stay listed.
 
+- `extensions/auto-router.routes.json` is durable routing configuration. The
+  router's decisions, events, budget stats, latency, and ratings files are
+  runtime state and are ignored individually; do not ignore the routes file.
 - **`pi-freeflow-relay-state.json` carries a LIVE secret.** `relays[].auth` is a
   256-bit token the `pi-freeflow` provider presents to the deployed Cloudflare
   worker (`relay-*.zoiny.workers.dev`). It is written the moment a relay is added
@@ -284,6 +287,86 @@ extensions in `extensions/` are likewise hook-driven (`html-artifacts-channel` =
 `before_agent_start`, `herdr-*` = `session_start`), so `lazy.json` has no
 targets either. Do not add `lazy: true` to a package without re-running this
 audit against its whole `node_modules` tree, not just its entry file.
+
+## pi-vision-tool — `describe_image` for text-only sessions
+
+`pi-vision-tool` adds one tool, `describe_image`: an image plus a free-text
+prompt goes to a vision model, the text answer comes back as a tool result, so a
+session model without eyes (DeepSeek, most open models) can still read a
+screenshot. The **calling** model picks the cost/quality knob per call
+(`compress`, `reasoning`, prompt) — there is no per-use configuration.
+
+**The vision model is opencode Go's cheapest image-capable one:
+`opencode-go/mimo-v2.6-flash`** — $0.14 input / $0.28 output, $0.0028 cached
+read, $60 monthly allowance on Go (≈150k requests a month at the estimate
+table's token mix, the highest allowance of any vision model on the plan).
+Ordering among models the tool can actually reach: `mimo-v2.6-flash` and
+`mimo-v2.5` ($0.14/$0.28) < `glm-5.3-flash` ($0.15/$0.50) <
+`deepseek-v4.1-flash` and `minimax-m3.1-flash` ($0.15/$0.60). Reach for
+`glm-5.3-flash` when a screenshot read needs more eyes — ~5% more per call.
+
+Cheaper *listed* prices are traps, not options: `muse-spark-1.2/1.3-contributor`
+($0.10/$0.20), `gpt-6-luna`, `claude-haiku-5-5`, `grok-4.7` are served only over
+the responses/messages APIs, `qwen3.8-flash` ($0.15/$0.47) only over messages,
+and the tool hard-codes `POST {baseUrl}/chat/completions` with an OpenAI body —
+it has no provider layer to translate for. That `/chat/completions` is also why
+config lives in `~/.pi/agent/vision-tool.json` (tracked, like `settings.json`;
+`/vision config …` writes it) and is pointed at a provider whose models pi's
+own registry already marks `input: ["text", "image"]`.
+
+**Two opencode quirks break it out of the box**, and
+`npm/patches/pi-vision-tool.mjs` fixes both — wired as `postinstall` +
+`npm run patch:check`, same pattern as the lazy-skill-tool patch, because
+`node_modules` is untracked and every install restores pristine 1.3.7. Follow
+any `npm install` with `npm run patch:check`: a dependency-adding run has been
+observed to finish without the root postinstall, leaving both patch scripts
+unapplied.
+
+- opencode's edge refuses a request with no conversation header —
+  `400 MissingSessionID`, "cannot be routed efficiently". Pi's own provider sends
+  `x-opencode-session`; the tool's raw `fetch` did not, so every call died before
+  the model was reached. The patch adds one id per process (= per pi session,
+  which is the granularity the router wants).
+- `reasoning_effort` accepts only `none|low|medium|high`, and the tool sends pi's
+  level name verbatim, so the default level `off` came back
+  `400 Param Incorrect`. The patch maps `off → none` for opencode providers:
+  same intent, no reasoning tokens.
+
+Verify end to end (≈$0.0002 of allowance, nothing written to a session):
+
+```sh
+pi -nc -ns -np --no-mcp --no-session --mode json \
+  --model opencode-go/deepseek-v4.1-flash \
+  -p "Call describe_image with image_path=<png>, compress=true, prompt='…'" \
+  | grep -o '\"toolName\":\"describe_image\"'
+```
+
+A tool execution plus no `Vision tool error` means header, auth lookup and
+answer all worked. `pi -ne -e <pkgdir>` isolates the extension from the rest of
+the load set when the question is the extension itself. `sharp` compression does
+work — its prebuilt `@img/sharp-linux-x64` optional deps install fine even though
+npm's allowScripts policy blocks sharp's own install script; pass
+`compress: false` when a pixel-level read matters, `reasoning: "medium"` for UI
+layout questions.
+
+## pi-auto-router — OpenCode Go off-peak failover
+
+The default model is `auto-router/failover`: Beam Free first at all times;
+DeepSeek V4 Pro is the second target during Go Off-Peak, then GPT 6 Luna. During
+weekday UTC peak windows the DeepSeek target is excluded, leaving Beam Free then
+GPT 6 Luna. Auto-router failover only retries retryable errors before
+substantive output begins.
+
+`pi-auto-router` policy times use the Pi process's local clock. The earlier
+`extensions/auto-router-utc.ts` package entry sets `TZ=UTC` before the router
+loads so the published OpenCode Go schedule stays correct through UK daylight
+saving. This affects local-time handling in Pi and its child processes.
+
+The package's stock `exclude-provider` cannot exclude one model when all route
+targets share `opencode-go`; `npm/patches/pi-auto-router.mjs` adds
+`exclude-target` policy rules for that case. The postinstall and
+`npm run patch:check` keep the patch applied. The five auto-router analytics
+files are ignored runtime output; keep `auto-router.routes.json` tracked.
 
 ## Herdr background agents
 

@@ -1,0 +1,19 @@
+{
+  "toolBackground": "outlines",
+  "groupToolCalls": true,
+  "groupToolCallsAcrossTurns": true,
+  "showCompactToolStatusDots": true,
+  "extraToolOutputExpanded": true,
+  "toolBranchColorMode": "theme",
+  "toolBranchRgbGray": 72,
+  "imagePasterEnabled": true,
+  "queueSteerEnabled": true,
+  "copyAlwaysFull": true,
+  "spinnerEnabled": true,
+  "liveToolPreview": true,
+  "readOutputMode": "preview",
+  "bashOutputMode": "opencode",
+  "claudeHeaderEnabled": true,
+  "statuslineCtxStyle": "claude",
+  "ccMyPiSetupDone": true
+}
