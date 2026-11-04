@@ -58,6 +58,18 @@ stays usable by hand. Self-check:
   `tokenBudget` must cover a verbose model: 64 tokens returns an empty title
   (current setting: 512).
 - `/name` pauses automatic retitling, same as `pi-sessions`; `/title` resumes it.
+- **Titles come from a local model.** `agents/title-generator.md` names
+  `pi-titler/Qwen3-1.7B-Q4_K_M`, served by the standalone flake at
+  `~/config/dendritic/pi-titler` (`nix run ./pi-titler`, `127.0.0.1:8080`).
+  `models.json` declares it as a plain OpenAI-compatible provider — not through
+  pi's built-in `llama.cpp` provider, which answers `provider_not_found` here in
+  every configuration tried, so `--model llama.cpp/…` never resolves. Without
+  the server the model is unavailable and `resolveModel` falls through to the
+  session's own model, so a title is never lost — it is just paid for again.
+  The model id is the router preset's section name, so renaming it in
+  `pi-titler/flake.nix` is a three-file change (`flake.nix`, `models.json`, the
+  agent's `model:` line). The server must stay resident: a title blocked on a
+  cold load eats its own 15 s timeout.
 - Self-check: `node ~/.pi/agent/extensions/herdr-title-sync.check.mjs`
 
 ## Herdr agent state under Pi-Bolt
@@ -222,9 +234,9 @@ node_modules). It must stay eager: it hooks
 `session_start`/`context`/`before_provider_request`. Default adaptive routing, no
 `lazy-skill.json` — defaults are the config.
 
-**Local patch, pi 1.4.0 skew (2026-10-30).** Two 1.4 divergences broke
-`/skill:<name>` (and `/lazy-skill`, which forwards to it): pi wraps its skill
-catalog in `<skills>…</skills>` joined by a single newline, so the extension's
+**Local patch, pi 1.4.0 skew.** Two 1.4 divergences broke `/skill:<name>` (and
+`/lazy-skill`, which forwards to it): pi wraps its skill catalog in
+`<skills>…</skills>` joined by a single newline, so the extension's
 exact-anchor `formatSkillsForPrompt()` rewrite always misses
 (`failure: "missing"`) and the compact catalog never applies; and
 `command.sourceInfo.baseDir` is now the resource root (`~/.pi/agent`) rather than
@@ -233,17 +245,31 @@ that failure, the only published snapshot stayed the command-registry one from
 `session_start`, whose wrong `baseDir` made `guardSkillContext` reject every
 `/skill:` block by swapping the whole message for
 `[SKILL_UNREADABLE] Skill instructions are unreadable.` (`skill` tool calls kept
-working — they read `filePath` and never compare block text.) Two edits under
+working — they read `filePath` and never compare block text.)
+
+The guard compares the block against
+`References are relative to ${skill.baseDir}.\n\n${body}`, so the snapshot's
+`baseDir` must equal the skill's **own directory** — pi writes the block that
+way. Two edits under
 `npm/node_modules/@valdo766hi/pi-lazy-skill-tool/src/` fix it: `index.ts`
-publishes the snapshot even when the prompt rewrite fails, and
-`slash-command.ts` takes a skill command's `baseDir` from `dirname(path)`. Both
-live in gitignored `node_modules` (`npm/.gitignore` is `*`), so any
-`npm install` erases them — re-apply or drop the package once upstream supports
-1.4 and the catalog can be compacted again. Verify with
-`pi-bolt -p "/skill:wayfinder reply with the first 8 words"`: the reply must
-quote the skill body, not report the instructions as unreadable. A clean session
-without tools (`--no-tools`) never showed the bug — it takes pi's append path
-instead of the anchored replace, so it is not a valid check.
+publishes the snapshot before the failure return, and `slash-command.ts` sets
+`const baseDir = dirname(sourcePath)` **unconditionally**. An earlier version of
+that second edit kept an `if (command.sourceInfo.baseDir)` override, which
+silently restored the resource root and made the fix look applied while
+`/skill:` stayed broken — do not reintroduce it.
+
+`npm/patches/pi-lazy-skill-tool.mjs` holds both edits and is wired as
+`postinstall`, so the `npm install` / `pi update --extensions` that erases them
+(`npm/.gitignore` is `*`, node_modules is not tracked) also re-applies them.
+`npm run patch:check` exits nonzero when either is missing, and a missing
+upstream anchor warns instead of silently half-patching — re-read the failure
+and update the script when upstream changes shape. Drop the patch and the
+script once upstream supports 1.4 and the catalog can be compacted again.
+
+Verify with `pi-bolt -p "/skill:wayfinder reply with the first 8 words"`: the
+reply must quote the skill body, not report the instructions as unreadable. A
+clean session without tools (`--no-tools`) never showed the bug — it takes pi's
+append path instead of the anchored replace, so it is not a valid check.
 
 `pi-lazy-loader` is installed but defers **nothing**. Whole-package audit
 2026-10-06: every installed package registers LLM-callable tools
