@@ -15,6 +15,12 @@ pi-freeflow-relay-state.json
 # Ephemeral herdsman state: peers, mailboxes, supervision snapshots, lock
 # dirs. config.json next to it is real config and stays tracked.
 pi-herdsman/runtime/
+# pi-auto-router analytics and routing state (the routes file itself is config).
+extensions/auto-router.decisions.jsonl
+extensions/auto-router.events.jsonl
+extensions/auto-router.stats.json
+extensions/auto-router.latency.json
+extensions/auto-router.ratings.json
 # Written on every switch by home.activation.piTheme from features/scheme.
 themes/
 # `*.log*`, not `*.log`: a rotated log is `….log.1`, which `*.log` never matched,

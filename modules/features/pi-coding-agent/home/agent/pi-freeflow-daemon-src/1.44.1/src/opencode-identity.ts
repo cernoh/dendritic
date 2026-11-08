@@ -1,116 +1,14 @@
 /**
- * Configuration and path resolution for pi-freeflow
+ * OpenCode client identity: User-Agent, semver parsing, project/session hashing,
+ * and header composition for upstream requests.
  */
 
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
-import { homedir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-
-// Package version — stale-daemon detection in the shared-port reuse path.
-let PKG_VERSION = "0.0.0";
-try {
- const pkgPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../package.json");
- const raw: unknown = JSON.parse(readFileSync(pkgPath, "utf8"));
- if (raw && typeof raw === "object" && "version" in raw) {
-  const v = raw.version;
-  if (typeof v === "string" && v) PKG_VERSION = v;
- }
-} catch { }
-export { PKG_VERSION };
-
-// ── Upstream endpoints ──────────────────────────────────────────────
-export const UPSTREAM_OPENCODE = "https://opencode.ai/inference";
-export const KILO_CHAT_URL = "https://api.kilo.ai/api/gateway/chat/completions";
-export const KILO_RESPONSES_URL = "https://api.kilo.ai/api/gateway/responses";
-export const OPENCODE_API_URL = `${UPSTREAM_OPENCODE}/v1`;
-/**
- * OpenAI-compat Zen lane — the DEFAULT lane for chat completions.
- * Live truth (v1 1.19.4 MITM, SG): the official CLI addresses the free tier
- * here (`POST https://opencode.ai/inference/openai/v1/chat/completions`),
- * not on the plain /v1 chat path. Same gateway, same Bearer public
- * credential, but the path carries the extra `/openai` segment and the body
- * carries `stream_options: { include_usage: true }`.
- * The plain `/inference/v1/chat/completions` path stays as the fallback when
- * the compat lane answers 404/405. Relay probes address the compat lane via
- * OPENCODE_OPENAI_COMPAT_PATH (the x-relay-path the workers forward as
- * target + path).
- */
-export const OPENCODE_OPENAI_COMPAT_URL = `${UPSTREAM_OPENCODE}/openai/v1/chat/completions`;
-export const OPENCODE_OPENAI_COMPAT_PATH = "/inference/openai/v1/chat/completions";
-
-/**
- * Origin (scheme + host) of the OpenCode gateway. UPSTREAM_OPENCODE above is
- * the origin plus the `/inference` base path; joining a `/inference/...`
- * upstream path onto it would double the base (`/inference/inference/...`),
- * so callers that already hold an upstream-rooted path join it here instead.
- */
-export const OPENCODE_ORIGIN = "https://opencode.ai";
-
-/**
- * Default-lane upstream path for a request path. Chat completions ride
- * the openai-compat lane (live CLI truth); every other path (responses,
- * messages, models) keeps its plain mapping. The plain chat path stays as
- * the fallback when the compat lane answers 404/405.
- *
- * Accepts EITHER form because production `validatePath` resolves the local
- * `/v1/...` path against the `/inference` base, so `target.pathname` already
- * arrives upstream-rooted (`/inference/v1/chat/completions`): a leading
- * `/inference` base is normalized off before mapping, and an already-compat
- * or unknown path passes through untouched instead of being sliced blindly.
- * Idempotent: feeding its own output back returns it unchanged.
- */
-export function zenUpstreamPathFor(localOrUpstreamPathname: string): string {
- const local = localOrUpstreamPathname.startsWith("/inference/")
-  ? localOrUpstreamPathname.slice("/inference".length)
-  : localOrUpstreamPathname;
- if (local === "/v1/chat/completions") return OPENCODE_OPENAI_COMPAT_PATH;
- if (local.startsWith("/v1/")) return `/inference${local}`;
- return localOrUpstreamPathname;
-}
-
-/** Full upstream URL for a local request path on the default Zen lane. */
-export function zenUpstreamUrlFor(localPathname: string): string {
- return `${OPENCODE_ORIGIN}${zenUpstreamPathFor(localPathname)}`;
-}
-// Cline serves chat completions only — responses-path requests are translated
-// to chat upstream and back (see tool-translation.ts). Direct-only: Cline
-// traffic never rides the relay pool and carries a per-user bearer token
-// supplied at call time (never stored here).
-export const CLINE_API_BASE = "https://api.cline.bot/api/v1";
-export const CLINE_CHAT_URL = `${CLINE_API_BASE}/chat/completions`;
-// OVHcloud AI Endpoints serves OpenAI-compatible chat completions with no
-// credential at all (probed keyless 2026-10-13: no Authorization header,
-// 200). Direct-only: OVH has no Zen-style per-IP gate to route around, so
-// it never rides the relay pool and is deliberately absent from the deployed
-// relay allowlist (src/deploy.ts), which keeps the relay surface at exactly
-// two upstreams. Chat-only: OVH's responses endpoint rejects every array
-// input shape with 422 "input: data did not match any variant of untagged
-// enum ResponseInput" and accepts only a bare string (probed 2026-10-13), so
-// a responses-path caller is translated to chat upstream and back.
-export const OVH_API_BASE = "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1";
-export const OVH_CHAT_URL = `${OVH_API_BASE}/chat/completions`;
-
-// ── Network & Server defaults ───────────────────────────────────────
-export const DEFAULT_PORT = 28180;
-export const HOST = "127.0.0.1";
-
-export function resolvePort(): number {
- const envPort = process.env.PI_FREEFLOW_PORT;
- if (envPort) {
-  const parsed = Number(envPort);
-  // Integers only: 28180.5 is finite and in range but net.Server.listen
-  // rejects it with an uncatchable ERR_SOCKET_BAD_PORT.
-  if (Number.isInteger(parsed) && parsed > 0 && parsed <= 65535) {
-   return parsed;
-  }
- }
- return DEFAULT_PORT;
-}
-
-export const PORT = resolvePort();
+import { resolveUpdateCachePath } from "./config-paths.ts";
 
 // ── OpenCode client headers ─────────────────────────────────────────
 // Live UA layer, grounded in reference/opencode:
@@ -132,6 +30,14 @@ export const OPENCODE_VERSION_TTL_MS = 6 * 60 * 60 * 1_000;
 export const OPENCODE_USER_AGENT_ENV = "PI_FREEFLOW_OPENCODE_USER_AGENT";
 /** Owned UA probe cache file (sibling of the update-check cache). */
 export const OPENCODE_VERSION_CACHE_ENV = "PI_FREEFLOW_OPENCODE_VERSION_CACHE";
+/** Opt-in 4-token UA: "1" emits opencode/latest/<live>/cli (2.x allowed); "channel/client" customizes. Unset → default 3-token shape. */
+export const OPENCODE_UA_V2_ENV = "PI_FREEFLOW_OPENCODE_UA_V2";
+/** Opt-in project variant: "cwd" hashes cwd via sha1; unset/any other → "global". Default byte-identical. */
+export const OPENCODE_PROJECT_ENV = "PI_FREEFLOW_OPENCODE_PROJECT";
+/** Working directory for the project header when PROJECT=cwd; ignored on every other variant. */
+export const OPENCODE_CWD_ENV = "PI_FREEFLOW_OPENCODE_CWD";
+/** Opt-in extra header allowlist (comma-separated, e.g. b3,traceparent,accept); default allowlist unchanged. */
+export const OPENCODE_EXTRA_HEADERS_ENV = "PI_FREEFLOW_OPENCODE_EXTRA_HEADERS";
 
 export const OPENCODE_CLIENT = "cli";
 
@@ -146,10 +52,12 @@ function compareVersionParts(a: string, b: string): number {
  return 0;
 }
 
+const OPENCODE_SEMVER_RE = /^\d+\.\d+\.\d+$/;
+
 /** True when `version` is a strict `major.minor.patch` at or above the floor. */
 export function isSupportedOpenCodeVersion(version: unknown): boolean {
  if (typeof version !== "string") return false;
- if (!/^\d+\.\d+\.\d+$/.test(version)) return false;
+ if (!OPENCODE_SEMVER_RE.test(version)) return false;
  return compareVersionParts(version, OPENCODE_VERSION_FLOOR) >= 0;
 }
 
@@ -168,6 +76,8 @@ export const OPENCODE_BINARY_VERSION_TTL_MS = 60_000;
 /** Where an observed live OpenCode version came from. */
 export type OpenCodeVersionSource = "registry" | "binary";
 
+const OPENCODE_BINARY_SEMVER_RE = /(\d+\.\d+\.\d+)/;
+
 /**
  * Parse `opencode --version` output into a bare semver, else null.
  * Accepts the shapes the CLIs print (`2.2.0`, `v2.2.0`, `opencode-ai 1.19.4`)
@@ -176,7 +86,7 @@ export type OpenCodeVersionSource = "registry" | "binary";
  */
 export function parseOpenCodeBinaryVersion(output: unknown): string | null {
  if (typeof output !== "string") return null;
- const match = output.match(/(\d+\.\d+\.\d+)/);
+ const match = output.match(OPENCODE_BINARY_SEMVER_RE);
  if (!match) return null;
  const version: string | undefined = match[1];
  if (version === undefined || !isSupportedOpenCodeVersion(version)) return null;
@@ -327,9 +237,18 @@ function currentOpenCodeVersion(): string {
 
 /**
  * Synchronous UA getter — the single User-Agent implementation every lane
- * sends (offline-safe by construction). Always the verbatim CLI full shape.
+ * sends (offline-safe by construction). Default the verbatim CLI full shape.
+ * With PI_FREEFLOW_OPENCODE_UA_V2=1, the 4-token latest/cli shape with the
+ * live version (2.x allowed); "channel/client" customizes both tokens.
  */
 export function getOpenCodeUserAgent(): string {
+ const v2raw = process.env[OPENCODE_UA_V2_ENV];
+ const v2 = typeof v2raw === "string" ? v2raw.trim() : "";
+ if (v2.length > 0) {
+  if (v2 === "1") return buildOpenCodeUserAgent(getLiveOpenCodeVersion(), { channel: "latest", client: OPENCODE_CLIENT });
+  const parts = v2.split("/").map((p) => p.trim()).filter((p) => p.length > 0);
+  if (parts.length === 2) return buildOpenCodeUserAgent(getLiveOpenCodeVersion(), { channel: parts[0], client: parts[1] });
+ }
  return buildOpenCodeUserAgent(currentOpenCodeVersion());
 }
 
@@ -357,6 +276,7 @@ export async function refreshOpenCodeUserAgent(fetchImpl: typeof fetch = fetch):
   return getOpenCodeUserAgent();
  } catch { return getOpenCodeUserAgent(); }
 }
+
 /**
  * Live version already fetched in-process, else the installed binary, else
  * the pinned fallback. The installed 2.x line surfaces here (and in logs)
@@ -367,6 +287,7 @@ export function getLiveOpenCodeVersion(): string {
  if (liveOpenCodeVersion) return liveOpenCodeVersion;
  return probeInstalledOpenCodeVersion() ?? OPENCODE_VERSION_FALLBACK;
 }
+
 /**
  * Where the live version came from: `registry` when refresh populated it,
  * `binary` when it reflects the installed binary, null on the pure fallback.
@@ -378,15 +299,20 @@ export function getOpenCodeVersionSource(): OpenCodeVersionSource | null {
 }
 
 /**
- * Build the OpenCode User-Agent string: always the verbatim CLI full shape
+ * Build the OpenCode User-Agent string: default the verbatim CLI full shape
  * (`opencode/<version> ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.4`).
- * The legacy bare and channel shapes are gone with the A/B profiles.
+ * With both channel+client, the 4-token CLI shape
+ * (`opencode/<channel>/<version>/<client> ai-sdk/... runtime/...`).
+ * The legacy bare shape is gone with the A/B profiles.
  */
-export function buildOpenCodeUserAgent(version: string): string {
+export function buildOpenCodeUserAgent(version: string, opts?: { channel?: string; client?: string }): string {
+ if (typeof opts?.channel === "string" && opts.channel.length > 0 && typeof opts?.client === "string" && opts.client.length > 0) {
+  return `opencode/${opts.channel}/${version}/${opts.client} ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.4`;
+ }
  return `opencode/${version} ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.4`;
 }
 
-const STABLE_SESSION_RE = /^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$/;
+const STABLE_SESSION_RE = /^ses_[0-9a-f]{12}[0-9A-Za-z]{13,14}$/;
 const STABLE_SESSION_CAP = 1000;
 const stableSessionCache = new Map<string, string>();
 const TIME48_MASK = (1n << 48n) - 1n;
@@ -431,8 +357,10 @@ export function _stableSessionCacheSizeForTest(): number { return stableSessionC
 
 /** Test-only: whether a key is currently memoized (proves LRU eviction). */
 export function _stableSessionHasKeyForTest(key: string): boolean { return stableSessionCache.has(key); }
+
 /** The literal `global` project the CLI sends outside a repo. */
 export const OPENCODE_PROJECT_GLOBAL = "global";
+
 /** sha1 hex digest of a working directory (what the CLI sends as the project). */
 export function openCodeProjectForCwd(cwd: string): string {
  return createHash("sha1").update(cwd).digest("hex");
@@ -480,11 +408,20 @@ export function createOpenCodeRequestId(): string {
 }
 
 /**
- * Live project header: the CLI sends `global` outside a repo and the sha1 of
- * the working directory inside one. Without a cwd to hash, `global` is the
- * truthful value — never the fixed pin above.
+ * Live project header: legacy cwd hash preserved, env only overrides. Unset
+ * PI_FREEFLOW_OPENCODE_PROJECT keeps today's behavior (cwd → sha1, else
+ * `global`), so the wire default (no cwd threaded) stays `global` and
+ * existing callers/tests are unchanged. "global" forces global even with a
+ * cwd; "cwd" hashes the param or PI_FREEFLOW_OPENCODE_CWD (else global).
  */
 export function resolveOpenCodeProjectLive(cwd?: string): string {
+ const variant = process.env[OPENCODE_PROJECT_ENV];
+ if (variant === "cwd") {
+  const effective = typeof cwd === "string" && cwd.length > 0 ? cwd : process.env[OPENCODE_CWD_ENV];
+  if (typeof effective === "string" && effective.length > 0) return openCodeProjectForCwd(effective);
+  return OPENCODE_PROJECT_GLOBAL;
+ }
+ if (variant === "global") return OPENCODE_PROJECT_GLOBAL;
  if (typeof cwd === "string" && cwd.length > 0) return openCodeProjectForCwd(cwd);
  return OPENCODE_PROJECT_GLOBAL;
 }
@@ -499,7 +436,9 @@ export function resolveOpenCodeProjectLive(cwd?: string): string {
  * @param sessionKey conversation-scoped key reused within a run
  *   (stableOpenCodeSessionId maps it deterministically; a valid ses_* passes
  *   through verbatim). Omitted/empty allocates a fresh id for this call.
- * @param cwd working directory for the project header; omitted → `global`.
+ * @param cwd working directory for the project header; omitted → `global`
+ *   unless PI_FREEFLOW_OPENCODE_PROJECT=cwd supplies one through
+ *   PI_FREEFLOW_OPENCODE_CWD.
  */
 export function opencodeHeaders(sessionKey?: string, cwd?: string): Record<string, string> {
  const sessionId =
@@ -516,285 +455,3 @@ export function opencodeHeaders(sessionKey?: string, cwd?: string): Record<strin
   "x-opencode-request": createOpenCodeRequestId(),
  };
 }
-
-// ── Relay and Deployment constants ──────────────────────────────────
-export const VERCEL_API = "https://api.vercel.com";
-
-// ── Catalog & Logging constants ─────────────────────────────────────
-export const CATALOG_CACHE_TTL_MS = 86_400_000; // 24 hours — delegate to host fetchDynamicModels
-export const LOG_MAX_BYTES = 10 * 1024 * 1024; // 10MB per file
-export const LOG_MAX_FILES = 10; // 10 archived + current ≈ 110MB cap (rotated, never a single 100MB blob)
-
-// ── Whitelists & Security ───────────────────────────────────────────
-export const ALLOWED_PATH_PATTERN = /^\/v1\/[a-zA-Z0-9/_.,\-?&= %]*$/;
-export const PATH_TRAVERSAL_PATTERN = /\.\./;
-export const ALLOWED_METHODS = new Set(["GET", "POST", "OPTIONS", "HEAD"]);
-
-export const STRIP_HEADERS = new Set([
- "authorization",
- "host",
- "content-length",
- "x-forwarded-for",
- "x-forwarded-host",
- "x-forwarded-proto",
- "x-real-ip",
- "x-client-ip",
- "x-originate-ip",
- "cookie",
- "set-cookie",
- "proxy-connection",
- "proxy-authorization",
-]);
-
-/** Env override that re-roots ALL pi-freeflow data files (tests/CI sandbox).
- *  Unset → pi's agent dir (PI_CODING_AGENT_DIR, else ~/.pi/agent). */
-export const DATA_DIR_ENV = "PI_FREEFLOW_DATA_DIR";
-
-/** Env var pi itself uses to re-root its config dir: pi names it
- *  `<APP_NAME>_CODING_AGENT_DIR` (stock pi → PI_CODING_AGENT_DIR, else
- *  ~/.pi/agent). Freeflow data files follow it so CI/containers only need to
- *  relocate one root instead of granting write access to a hardcoded home
- *  path; when another host (e.g. the omp plugin loader) does not set it, the
- *  ~/.pi/agent default keeps the shared daemon/log location. */
-export const AGENT_DIR_ENV = "PI_CODING_AGENT_DIR";
-
-/** Expand a leading ~ the way pi expands its own agent-dir value. */
-function expandHome(value: string): string {
- if (value === "~") return homedir();
- if (value.startsWith("~/") || value.startsWith("~\\")) return path.join(homedir(), value.slice(2));
- return value;
-}
-
-function dataDirOverride(): string | null {
- const d = process.env[DATA_DIR_ENV];
- return typeof d === "string" && d.trim() !== "" ? expandHome(d) : null;
-}
-
-function defaultAgentDir(): string {
- const d = process.env[AGENT_DIR_ENV];
- if (typeof d === "string" && d.trim() !== "") return expandHome(d);
- return path.join(homedir(), ".pi", "agent");
-}
-
-function dataFilePath(name: string): string {
- const override = dataDirOverride();
- if (override) return path.join(override, name);
- return path.join(defaultAgentDir(), name);
-}
-
-/**
- * Per-installation proxy token file (src/token.ts reads/creates it at 0600).
- * Sits with the other data files so a sandboxed data dir relocates it too.
- */
-export function resolveTokenPath(): string {
- try {
-  return dataFilePath("token");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".pi-freeflow-token",
-  );
- }
-}
-
-export function resolveRelayStatePath(): string {
- try {
-  return dataFilePath("pi-freeflow-relay-state.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".relay-state.json",
-  );
- }
-}
-
-export function resolveLogFilePath(): string {
- try {
-  return dataFilePath("pi-freeflow.log");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   "pi-freeflow.log",
-  );
- }
-}
-
-/**
- * Root directory for staged daemon sources — copies taken outside
- * node_modules because Node's type stripping refuses files under a
- * node_modules path (ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING, issue #52).
- * Version subdirectories live inside it.
- */
-export function resolveDaemonSrcCacheDir(): string {
- try {
-  return dataFilePath("pi-freeflow-daemon-src");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".pi-freeflow-daemon-src",
-  );
- }
-}
-
-export function resolveCatalogCachePath(): string {
- try {
-  return dataFilePath("pi-freeflow-catalog-cache.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".catalog-cache.json",
-  );
- }
-}
-
-export function resolveDebugStatePath(): string {
- try {
-  return dataFilePath("pi-freeflow-debug.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".debug-state.json",
-  );
- }
-}
-
-export function resolveUpdateCachePath(): string {
- try {
-  return dataFilePath("pi-freeflow-update.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".update-cache.json",
-  );
- }
-}
-
-export function resolveOnboardedFlagPath(): string {
- try {
-  return dataFilePath("pi-freeflow-onboarded");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".onboarded",
-  );
- }
-}
-
-export function resolveUpstreamHealthPath(): string {
- try {
-  return dataFilePath("pi-freeflow-upstream-health.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".upstream-health.json",
-  );
- }
-}
-
-/** JSONL audit of tool-call turns that failed or needed repair (src/toolcall-audit.ts). */
-export function resolveToolcallAuditPath(): string {
- try {
-  return dataFilePath("toolcall-audit.jsonl");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".toolcall-audit.jsonl",
-  );
- }
-}
-
-export function resolveSessionPinPath(): string {
- try {
-  return dataFilePath("pi-freeflow-session-pins.json");
- } catch {
-  return path.join(
-   path.dirname(fileURLToPath(import.meta.url)),
-   "..",
-   ".session-pins.json",
-  );
- }
-}
-
-export const RELAY_STATE_FILE = resolveRelayStatePath();
-export const LOG_FILE = resolveLogFilePath();
-export const CATALOG_CACHE_FILE = resolveCatalogCachePath();
-export const DEBUG_STATE_FILE = resolveDebugStatePath();
-export const UPDATE_CACHE_FILE = resolveUpdateCachePath();
-export const ONBOARDED_FLAG_FILE = resolveOnboardedFlagPath();
-export const UPDATE_CHECK_TTL_MS = 86_400_000;
-// ── Security & Relay Validation ─────────────────────────────────────
-/** Opt-out for tests/dev: when set to "1", relay URLs on http:// and private hosts are allowed. */
-export const ALLOW_UNSAFE_RELAY_ENV = "PI_FREEFLOW_ALLOW_UNSAFE_RELAY";
-/** Opt-out for the stale-daemon replace: when "1", a version-mismatched daemon is never killed. */
-export const NO_KILL_ENV = ALLOW_UNSAFE_RELAY_ENV.replace("_ALLOW_UNSAFE_RELAY", "_NO_KILL");
-/** When "0", the extension never spawns a detached proxy daemon (tests/CI). */
-export const DAEMON_SPAWN_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_SPAWN");
-/** Explicit runtime executable path for daemon.ts (overrides process.execPath and PATH search). */
-export const DAEMON_RUNTIME_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_RUNTIME");
-/** Lease TTL for attached clients (ms); expired leases are dropped by the daemon GC. */
-export const DAEMON_TTL_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_TTL_MS");
-/** Client heartbeat interval (ms) — must stay well under the lease TTL. */
-export const DAEMON_HEARTBEAT_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_HEARTBEAT_MS");
-/** Daemon GC sweep interval (ms). */
-export const DAEMON_GC_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_GC_MS");
-/** Zero-lease persistence window before a lease-less daemon exits (ms). */
-export const DAEMON_GRACE_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_GRACE_MS");
-/** Max time a client waits for a freshly spawned daemon to answer /_health (ms). */
-export const DAEMON_READY_TIMEOUT_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_READY_TIMEOUT_MS");
-/** Timeout for a single loopback control call (attach/heartbeat/detach) (ms). */
-export const DAEMON_CONTROL_TIMEOUT_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_CONTROL_TIMEOUT_MS");
-/** Client watchdog tick: how often /_health is polled for version + failed-SSE rate (ms). */
-export const DAEMON_WATCHDOG_MS_ENV = DATA_DIR_ENV.replace("_DATA_DIR", "_DAEMON_WATCHDOG_MS");
-
-function envMs(name: string, fallback: number): number {
- const raw = process.env[name];
- if (raw) {
-  const parsed = Number(raw);
-  if (Number.isFinite(parsed) && parsed > 0) return parsed;
- }
- return fallback;
-}
-
-const IS_WINDOWS_HOST = process.platform === "win32";
-export const DAEMON_SPAWN_ENABLED = process.env[DAEMON_SPAWN_ENV] !== "0";
-export const DAEMON_TTL_MS = envMs(DAEMON_TTL_MS_ENV, 30_000);
-export const DAEMON_HEARTBEAT_MS = envMs(DAEMON_HEARTBEAT_MS_ENV, IS_WINDOWS_HOST ? 8_000 : 10_000);
-export const DAEMON_GC_MS = envMs(DAEMON_GC_MS_ENV, 5_000);
-export const DAEMON_GRACE_MS = envMs(DAEMON_GRACE_MS_ENV, IS_WINDOWS_HOST ? 15_000 : 10_000);
-export const DAEMON_READY_TIMEOUT_MS = envMs(DAEMON_READY_TIMEOUT_MS_ENV, 5_000);
-export const DAEMON_CONTROL_TIMEOUT_MS = envMs(DAEMON_CONTROL_TIMEOUT_MS_ENV, IS_WINDOWS_HOST ? 3_000 : 1_500);
-export const DAEMON_WATCHDOG_MS = envMs(DAEMON_WATCHDOG_MS_ENV, 5_000);
-/** Failed-SSE rolling window (streams) and the failure rate that marks a daemon degraded. */
-export const WATCHDOG_SSE_WINDOW = 20;
-export const WATCHDOG_SSE_FAIL_RATE = 0.5;
-/** Minimum samples before the failed-SSE rate can trigger recovery (avoids single-sample flapping). */
-export const WATCHDOG_SSE_MIN_SAMPLES = 5;
-/** Respawn backoff: min(2s * 2^n, 60s) + jitter. */
-export const RECOVERY_BACKOFF_BASE_MS = 2_000;
-export const RECOVERY_BACKOFF_CAP_MS = 60_000;
-/** Breaker: 5 straight failures inside 5min halts respawn for 10min (in-process fallback meanwhile). */
-export const BREAKER_FAILURES = 5;
-export const BREAKER_WINDOW_MS = 5 * 60_000;
-export const BREAKER_HALT_MS = 10 * 60_000;
-/** Busy bypass: a busy daemon is replaced only after 5min continuous busy with zero forwarded bytes for 60s+. */
-export const BUSY_BYPASS_CONTINUOUS_MS = 5 * 60_000;
-export const BUSY_BYPASS_QUIET_MS = 60_000;
-/** Re-probe of the base port before accepting a walked port (ms). */
-export const BASE_PORT_REPROBE_MS = 3_000;
-export const MAX_BODY_BYTES = 32 * 1024 * 1024;
-/** Default timeout for upstream headers while proxying a request. */
-export const UPSTREAM_HEADER_TIMEOUT_MS = 300_000;
-/** Timeout for refreshing the catalog (host fetchDynamicModels). */
-export const CATALOG_REFRESH_TIMEOUT_MS = 10_000;
-/** Timeout for probing a relay with a light /v1/models request. */
-export const PROBE_TIMEOUT_MS = 5_000;

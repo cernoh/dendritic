@@ -22,7 +22,13 @@
       "extensions": [
         "!extensions/server.ts"
       ]
-    }
+    },
+    "npm:@juicesharp/rpiv-ask-user-question",
+    "npm:pi-context-view",
+    "npm:pi-vision-tool",
+    "npm:@quintinshaw/pi-dynamic-workflows",
+    "./extensions/auto-router-utc.ts",
+    "npm:pi-auto-router"
   ],
   "lastChangelogVersion": "1.4.0",
   "pi-computer-use": {
@@ -46,7 +52,7 @@
   "terminal": {
     "showTerminalProgress": true
   },
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4.1-flash",
+  "defaultProvider": "auto-router",
+  "defaultModel": "failover",
   "hideThinkingBlock": false
 }
