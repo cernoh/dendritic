@@ -35,10 +35,8 @@ in
         # Wayland + XWayland toolkit, portals, and the polkit/keyring pair that
         # keeps sudo and GUI auth prompts rare. Both hosts run MangoWM.
         wayland
-        noctalia
+        dux
         ghostty
-        noctaliaGreeter
-        ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
         # tailscaled (services.tailscale). ASAHI imports the same module; the
         # daemon needs a one-time `sudo tailscale up` per machine.
         tailscale
