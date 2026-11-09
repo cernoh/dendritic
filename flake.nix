@@ -61,8 +61,11 @@
       url = "github:noctalia-dev/noctalia-greeter";
     };
     # Dux (Dank) suite — replacement for Noctalia. Tracked as separate inputs
-    # so each follows its own release cadence (none follow nixpkgs; upstream
-    # publishes against its own locked nixpkgs).
+    # so each follows its own release cadence. Only their *modules* are
+    # consumed: each feature leaves `package` at the upstream default, which
+    # `mkModuleWithDmsPkgs` builds from the host's own pkgs, so none of these
+    # locked nixpkgs trees enters the eval (upstream has no binary cache for
+    # either route — see README's boundaries).
     dms = {
       url = "github:duxlabs-dev/dux-shell";
     };

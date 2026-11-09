@@ -3,20 +3,22 @@
 ## Purpose
 
 One llama.cpp router holding Qwen3-1.7B Q4_K_M, serving pi's session titles on
-`127.0.0.1:8080`. Standalone flake; `import-tree` never sees it and no host build
-depends on it.
+`127.0.0.1:8080`. A dendritic feature like any other: `import-tree` registers it
+and NIXPC imports it, so the wrapper lands in that host's
+`environment.systemPackages`. There is no nested flake — nothing runs from this
+directory.
 
 ## Ownership
 
-`flake.nix` owns the whole deliverable: model pin, router preset, and the
-`pi-titler` wrapper. The pi side is owned by
-`../modules/features/pi-coding-agent/home/agent/` — this directory only names the
-model id that `agents/title-generator.md` and `models.json` must agree on.
+`default.nix` owns the whole deliverable: model pin, router preset, and the
+`pi-titler` wrapper. The pi side is owned by `../pi-coding-agent/home/agent/` —
+this directory only names the model id that `agents/title-generator.md` and
+`models.json` must agree on.
 
 ## Local Contracts
 
 - **The preset section name is the model id**, and three files must agree on it:
-  `flake.nix` (`modelId`), `models.json` (`models[].id`), and
+  `default.nix` (`modelId`), `models.json` (`models[].id`), and
   `agents/title-generator.md` (`model:` as `<provider>/<id>`). Today:
   `Qwen3-1.7B-Q4_K_M` served by provider `pi-titler`.
 - **pi reaches it through a static `models.json` provider, never through pi's
@@ -40,9 +42,10 @@ model id that `agents/title-generator.md` and `models.json` must agree on.
   `config.allowUnfree = true`, because the CUDA redistributables are unfree.
   CUDA is x86_64-only; aarch64 (ASAHI, Apple silicon) gets the CPU build. Verify
   offload with `nix run .#llama -- --list-devices`.
-- **nixpkgs is pinned to the host's revision.** A second tree means a second
-  `cudaPackages` and a re-downloaded CUDA stack. Bump it with the top-level
-  `flake.nix`.
+- **nixpkgs is the host's tree.** The module imports `inputs.nixpkgs` instead of
+  declaring an input of its own, so there is no second `cudaPackages` and no
+  second lockfile to bump; a nixpkgs bump is the top-level `flake.lock` and
+  nothing else.
 - **The GGUF is pinned by commit and hash.** Fetch with
   `nix store prefetch-file --hash-type sha256 <url-at-that-commit>`; never point
   at `resolve/main`.
@@ -60,22 +63,19 @@ model id that `agents/title-generator.md` and `models.json` must agree on.
 
 ## Work Guidance
 
-- `nix fmt` uses the flake's own `formatter` (nixfmt RFC style, same as the
-  rest of the repo).
-- Build to a named link, not `./result`: `nix build ./pi-titler -o pi-titler/result`.
-- `git add pi-titler` before running: a flake path inside a git tree is
-  evaluated from tracked files only.
+- `nix fmt` (nixfmt RFC style) formats this file like any other module.
+- Run it from the flake root: `nix run .#pi-titler`, or the installed `pi-titler`
+  binary on NIXPC. No `git add` step — `import-tree` already registered the
+  module in the top-level tree.
 
 ## Verification
 
 ```sh
-nix-instantiate --parse pi-titler/flake.nix
-nix build ./pi-titler -o pi-titler/result
-nix run .#llama -- --list-devices              # CUDA0 RTX 3050 when CUDA is on
-./pi-titler/result/bin/pi-titler &
+nix-instantiate --parse modules/features/pi-titler/default.nix
+nix eval .#packages.x86_64-linux.pi-titler.name --impure   # "pi-titler"
+nix run .#pi-titler -- --list-devices         # RTX 3050 named when CUDA is on
 curl -s http://127.0.0.1:8080/models | head -c 200   # status loaded, source preset
 pi --list-models | grep titler                 # pi-titler Qwen3-1.7B-Q4_K_M
-pi --no-session --no-tools --model pi-titler/Qwen3-1.7B-Q4_K_M -p 'Say OK'
 ```
 
 A title request sent **without** `chat_template_kwargs` must return text, not an

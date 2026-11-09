@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "enabled": true,
+  "light": "auto-router/failover",
+  "heavy": "opencode-go/deepseek-v4.1-flash",
+  "lightThinking": "medium",
+  "heavyThinking": "high"
+}

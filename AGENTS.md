@@ -120,11 +120,11 @@ relevant child AGENTS.md
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, agent definitions, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
     - `modules/features/pi-coding-agent/` — Pi extension set pins, the PATH `pi` shim, tracked runtime state under `~/.pi/agent`, `npm/patches/` re-apply hook → `modules/features/pi-coding-agent/home/agent/AGENTS.md`
     - `modules/features/pi-bolt/` — Pi-Bolt release pin, the Bun ELF patch rules (interpreter yes, rpath never), version skew against `pkgs.pi-coding-agent` → `modules/features/pi-bolt/AGENTS.md`
+    - `modules/features/pi-titler/` — local llama.cpp router serving Qwen3-1.7B for pi session titles; preset/pin/CUDA contracts → `modules/features/pi-titler/AGENTS.md`
     - `modules/features/wayfinder-dashboard/` — mobile Wayfinder queue, project spaces, Herdr/Pi launches, per-ticket terminal → `modules/features/wayfinder-dashboard/AGENTS.md`
   - `modules/hosts/` — host presets (`NIXPC` x86_64, `ASAHI` aarch64, `hardwareFromMachine` gate) → `modules/hosts/AGENTS.md`
   - `modules/system/` — cross-host system modules (core, home-manager, network, audio, drivers, …) → `modules/system/AGENTS.md`
     - `modules/system/hardware-profiles/` — the nixos-hardware registry and its per-host coverage matrix (why each upstream profile is applied or rejected) → `modules/system/hardware-profiles/AGENTS.md`
 - `.github/` — CI, STE prose lint, workflows, templates → `.github/AGENTS.md`
-- `pi-titler/` — standalone flake: local llama.cpp router + Qwen3-1.7B that titles pi sessions; not part of the dendritic build → `pi-titler/AGENTS.md`
 
 > Nearest AGENTS.md controls local detail; parent docs supply repo-wide rules. Walk root → target, reading every AGENTS.md on the path.

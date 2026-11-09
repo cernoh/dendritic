@@ -27,8 +27,12 @@
 # that launches mango with `-c <store config>` — no ~/.config/mango owned by
 # a home-manager profile, no HM activation clock to reconcile.
 #
-# What stays out: noctalia (separate feature) and the terminal. Helper
-# binaries the bindings/autostart invoke are system packages now.
+# What stays out: the shell (a separate feature) and the terminal. Helper
+# binaries the bindings/autostart invoke are system packages now. Shell-owned
+# binds are NOT written here either — a feature that pipes into its own IPC
+# API (the shell, a bar, a notification daemon) contributes them through
+# `dendritic.mango.extraBinds`, so this file never names an application. The
+# binds that used to call `noctalia msg …` moved to `features/dux` that way.
 #
 # NOTE on the settings lists below: the renderer emits every list element
 # as a config line, so keep comments as Nix comments between elements and
@@ -228,8 +232,6 @@
         # (issue #114); they arrive through dendritic.mango.extraBinds.
         bind = [
           "SUPER,T,spawn_shell,$TERMINAL"
-          "SUPER+SHIFT,T,spawn_shell,noctalia msg panel-toggle cernoh/terminal:panel"
-          "SUPER,D,spawn_shell,noctalia msg panel-open launcher"
           "SUPER+ALT+SHIFT,L,spawn_shell,${swaylockSh}/bin/mango-swaylock"
           "SUPER,Q,killclient"
           "SUPER,F,togglemaximizescreen"
@@ -311,9 +313,6 @@
           "SUPER+SHIFT,minus,resizewin,0,-50"
           "SUPER+SHIFT,equal,resizewin,0,50"
           "SUPER,N,switch_layout"
-          "SUPER+SHIFT,S,spawn_shell,noctalia msg screenshot-region"
-          "CTRL,Print,spawn_shell,noctalia msg screenshot-fullscreen"
-          "ALT,Print,spawn_shell,noctalia msg screenshot-window"
           "SUPER,Escape,setoption,allow_shortcuts_inhibit,0"
           "SUPER+SHIFT,E,quit"
           "CTRL+ALT,Delete,quit"
@@ -398,8 +397,14 @@
           default = [ ];
           description = ''
             Bindings appended to the shared `bind` list, in mango's
-            `MODIFIERS,key,action,argument` form. Use it for bindings that
-            name this host's outputs.
+            `MODIFIERS,key,action,argument` form. Two kinds of fact arrive
+            here, and neither is a compositor fact, which is why neither is
+            written above: the host's output names (NIXPC's two-monitor
+            `tagmon` pair), and the binds a shell feature owns — a shell pipes
+            into its own IPC API, so it advertises those keys itself instead of
+            being named in a compositor file. `features/dux` is the second
+            case. Keys are exclusive: a duplicate fails `mango -c -p` and
+            therefore the build.
           '';
         };
 
@@ -453,9 +458,9 @@
           after = [ "graphical-session-pre.target" ];
         };
 
-        # Helper binaries referenced by bindings/autostart. Noctalia (including
-        # its notification daemon, which claims org.freedesktop.Notifications)
-        # and the terminal are deliberately absent — they are separate features.
+        # Helper binaries referenced by bindings/autostart. No shell and no
+        # terminal: they are separate features, and this module stays
+        # shell-agnostic — see the header.
         # (Formerly home.packages in the HM module; moved system-side with the
         # homelessness change, issue #97.)
         environment.systemPackages = with pkgs; [

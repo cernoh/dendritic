@@ -201,7 +201,7 @@
         {
           imports = with self.homeManagerModules; [
             niri
-            noctalia
+            dux
             ghostty
             posyCursors
             clipboard
@@ -209,14 +209,6 @@
             brave
             vesktop
           ];
-          programs.noctalia.settings = import ./_noctalia-settings.nix;
-
-          # ASAHI-only: ambient-light auto brightness. Out-of-store like the
-          # terminal plugin, so edits stay live. The plugins.enabled entry in
-          # _noctalia-settings.nix turns it on; NIXPC gets neither.
-          home.file.".local/share/noctalia/plugins/auto-brightness".source =
-            config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/.config/dendritic/modules/features/noctalia/plugins/auto-brightness";
-
           # One-shot at graphical login: if the flag file is present, surface a
           # desktop notification. WantedBy default.target (not
           # graphical-session.target) because Niri's session target is not

@@ -1,9 +1,19 @@
-{ self, inputs, moduleWithSystem, ... }:
+# Dux calendar (dank-calendar) feature. Home-manager half only.
+#
+# Upstream (`inputs.dcalendar`) publishes `programs.dank-calendar` on both
+# `nixosModules.default` and `homeModules.default`, and both halves define the
+# same `dcal.service` user unit — importing both would install it twice. The HM
+# half is the one kept: it is the half that can bind the unit to the
+# compositor's `wayland.systemd.target` and write `~/.config/dankcal/…` for the
+# session that is actually running.
+{ self, inputs, ... }:
 {
-  flake.nixosModules.dcalendar = { pkgs, ... }: {
-    environment.systemPackages = [ inputs.dcalendar.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+  flake.homeManagerModules.dcalendar = {
+    imports = [ inputs.dcalendar.homeModules.default ];
+
+    programs.dank-calendar = {
+      enable = true;
+      systemd.enable = true;
+    };
   };
-  flake.homeManagerModules.dcalendar = moduleWithSystem ({ self', ... }: { config, lib, pkgs, ... }: {
-    home.packages = [ inputs.dcalendar.packages.${pkgs.stdenv.hostPlatform.system}.default ];
-  });
 }
