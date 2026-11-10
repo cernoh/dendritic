@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "3dtexel": {
+      "url": "https://3dtexel.com/wp-json/3dtexel-api/v1/mcp"
+    }
+  }
+}

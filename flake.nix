@@ -60,6 +60,24 @@
     noctalia-greeter = {
       url = "github:noctalia-dev/noctalia-greeter";
     };
+    # Dux (Dank) suite — replacement for Noctalia. Tracked as separate inputs
+    # so each follows its own release cadence. Only their *modules* are
+    # consumed: each feature leaves `package` at the upstream default, which
+    # `mkModuleWithDmsPkgs` builds from the host's own pkgs, so none of these
+    # locked nixpkgs trees enters the eval (upstream has no binary cache for
+    # either route — see README's boundaries).
+    dms = {
+      url = "github:duxlabs-dev/dux-shell";
+    };
+    dms-greeter = {
+      url = "github:duxlabs-dev/dux-greeter";
+    };
+    dsearch = {
+      url = "github:duxlabs-dev/dux-search";
+    };
+    dcalendar = {
+      url = "github:duxlabs-dev/dux-calendar";
+    };
     # Pinned rev (v0.2.2), flake = false: consumed as source for the Dart AOT
     # fallback in modules/features/dojjo/_dojjo.pkg.nix (unsupported systems) and
     # for pinning the binary release.

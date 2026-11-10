@@ -35,10 +35,9 @@ in
         # portal stack for both hosts, so no direct `portals` import here (the
         # flatpak feature also imports `portals`; the import is idempotent).
         wayland
-        noctalia
+        dux
         ghostty
         programming
-        noctaliaGreeter
         watt
         timeSync
         tailscale
@@ -49,7 +48,7 @@ in
         # any other route. See modules/system/AGENTS.md and ASAHI/RESCUE.md.
         flatpakAsahi
         obs
-        ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
+
 
         # Keyboard layout: `gb` variant `mac` — "English (UK, Macintosh)" in
         # xkeyboard-config. The keymap follows macOS UK, not the US ANSI keycaps

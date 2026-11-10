@@ -8,6 +8,7 @@
   "dependencies": {
     "@amaster.ai/pi-computer-use": "^0.1.32",
     "@andrewjacop/pi-herdr": "^0.6.0",
+    "@bismawy/pi-jev-eye": "^0.4.0",
     "@ff-labs/pi-fff": "^0.11.0",
     "@juicesharp/rpiv-ask-user-question": "^2.15.0",
     "@juicesharp/rpiv-todo": "^2.15.0",

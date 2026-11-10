@@ -39,3 +39,10 @@ npm/node_modules/
 # tree copy, so a live socket makes every `nix eval .#…` and `nixos-rebuild` on
 # this checkout fail with "has an unsupported type".
 pi-sessions/messaging/
+# pi-jev-eye keeps its routing rule next to its counters: `routing.json` is
+# declarative config (which model serves light vs heavy), `usage.json` is
+# per-day request and spend accounting, rewritten on every call.
+pi-jev-eye/usage.json
+# Scratch working directory some pi tool creates; it holds nothing but an
+# ignore-all `.gitignore`, so commit nothing and never let it dirty a tree copy.
+git/

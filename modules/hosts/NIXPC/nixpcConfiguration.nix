@@ -120,7 +120,7 @@
         { config, ... }:
         {
           imports = with self.homeManagerModules; [
-            noctalia
+            dux
             ghostty
             nixpcDesktop
             brave
@@ -150,10 +150,6 @@
             file:///mnt/2tb-ext4 2tb-ext4
             file:///mnt/endeavouros endeavouros
           '';
-          # Noctalia shell settings: the full exported shell configuration of
-          # this host lives in _noctalia-settings.nix (the same convention as
-          # hosts/ASAHI/_noctalia-settings.nix).
-          programs.noctalia.settings = import ./_noctalia-settings.nix;
         };
     };
 }

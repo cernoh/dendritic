@@ -35,10 +35,8 @@ in
         # Wayland + XWayland toolkit, portals, and the polkit/keyring pair that
         # keeps sudo and GUI auth prompts rare. Both hosts run MangoWM.
         wayland
-        noctalia
+        dux
         ghostty
-        noctaliaGreeter
-        ({ services.displayManager.noctalia-greeter.greeter-args = "--session Mango"; })
         # tailscaled (services.tailscale). ASAHI imports the same module; the
         # daemon needs a one-time `sudo tailscale up` per machine.
         tailscale
@@ -83,6 +81,10 @@ in
         # NIXPC only: ASAHI does not run agents.
         wayfinder-dashboard
         ({ services.wayfinder-dashboard.tailscaleServe.enable = true; })
+        # pi-titler: local llama.cpp server that titles pi sessions with
+        # Qwen3-1.7B. NIXPC only (CUDA on the 3050); the package is also
+        # exposed as `packages.pi-titler` / `apps.pi-titler`.
+        pi-titler
         # Pi-Bolt: the same Pi coding agent compiled ahead of time to one
         # native executable. It reads the very same ~/.pi/agent tree that
         # `pi-coding-agent` (from attrs/programming) owns, so settings,

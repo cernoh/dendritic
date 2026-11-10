@@ -28,7 +28,8 @@
     "npm:pi-vision-tool",
     "npm:@quintinshaw/pi-dynamic-workflows",
     "./extensions/auto-router-utc.ts",
-    "npm:pi-auto-router"
+    "npm:pi-auto-router",
+    "npm:@bismawy/pi-jev-eye"
   ],
   "lastChangelogVersion": "1.4.0",
   "pi-computer-use": {
