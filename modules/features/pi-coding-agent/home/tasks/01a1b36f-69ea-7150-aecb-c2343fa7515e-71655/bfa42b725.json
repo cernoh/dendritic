@@ -1,0 +1,27 @@
+{
+  "id": "bfa42b725",
+  "name": "Launch GNOME Snapshot",
+  "command": "nix shell nixpkgs#snapshot -c snapshot",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a1b36f-69ea-7150-aecb-c2343fa7515e-71655/bfa42b725.output",
+  "cwd": "/home/da",
+  "startTime": 1794011899795,
+  "endTime": 1794011953148,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 73397,
+  "bytesWritten": 2001,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/run/current-system/sw/bin/fish",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "user-non-posix"
+  }
+}
