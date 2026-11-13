@@ -10,7 +10,9 @@
           "id": "Qwen3-1.7B-Q4_K_M",
           "name": "Qwen3 1.7B (local titler)",
           "reasoning": false,
-          "input": ["text"],
+          "input": [
+            "text"
+          ],
           "contextWindow": 16384,
           "maxTokens": 512,
           "cost": {
@@ -20,7 +22,492 @@
             "cacheWrite": 0
           }
         }
-      ]
+      ],
+      "compat": {
+        "supportsLongCacheRetention": false,
+        "sendSessionAffinityHeaders": true
+      }
+    },
+    "freeflow": {
+      "modelOverrides": {
+        "mimo-v2.6-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nemotron-3.5-lightning-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nemotron-3.5-super-vl-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "big-pickle": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "glm-5.3-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "beam-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "deepseek-v4.1-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true,
+            "thinkingFormat": "deepseek"
+          }
+        },
+        "flint-40b-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "crouton-alpha-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "iceman-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "inkling-2-small-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "dots-studio/dots-3-note-preview:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nvidia/nemotron-3-ultra-550b-a55b:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nvidia/nemotron-3.5-lightning:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "cohere/north-mini-code:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "liquid/lfm-3-1.7b:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "kilo-auto/free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "openrouter/free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "stealth/glyph-cluster": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "nvidia/nemotron-3.5-super-vl:free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "cline/nemotron-3.5-super-vl": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/gpt-oss-120b": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/gpt-oss-20b": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Qwen3.5-397B-A17B": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Qwen3.5-9B": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Qwen3.6-27B": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Qwen3.8-27B": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Mistral-Small-3.2-24B-Instruct-2506": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "ovh-free/Meta-Llama-3_3-70B-Instruct": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "longcat-2.5-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        }
+      }
+    },
+    "commandcode": {
+      "modelOverrides": {
+        "deepseek/deepseek-v4-flash-fast": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "z-ai/glm-5.3-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "zai-org/GLM-5.3": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "minimax/minimax-m3.1-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "ornith/ornith-1.5-122b": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "Qwen/Qwen3.8-Max-0902": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "Qwen/Qwen3.8-Flash": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "meituan/LongCat-2.0": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "tencent/hy4-preview": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "google/gemini-3.7-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "stealth/crouton-alpha": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "inclusionai/ling-3.1-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "inclusionai/ling-3.1-flash-1019": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "thinkingmachines/inkling-2-small:free": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        }
+      }
+    },
+    "auto-router": {
+      "modelOverrides": {
+        "failover": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        }
+      }
+    },
+    "opencode-go": {
+      "modelOverrides": {
+        "deepseek-v4.1-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "claude-haiku-5-5": {
+          "compat": {
+            "supportsLongCacheRetention": true
+          }
+        },
+        "minimax-m3": {
+          "compat": {
+            "supportsLongCacheRetention": true
+          }
+        },
+        "qwen3.7-plus": {
+          "compat": {
+            "supportsLongCacheRetention": true
+          }
+        },
+        "qwen3.8-flash": {
+          "compat": {
+            "supportsLongCacheRetention": true
+          }
+        },
+        "qwen3.8-max": {
+          "compat": {
+            "supportsLongCacheRetention": true
+          }
+        },
+        "gemini-4-argon-contributor": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "beam-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "deepseek-v4-pro": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "glm-5.2": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "glm-5.3": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "glm-5.3-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "hy3": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "hy4-preview": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "kimi-k2.7-code": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "kimi-k3": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "longcat-2.0": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "longcat-2.5-preview-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "mimo-v2.5": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "mimo-v2.5-pro": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "mimo-v2.6-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "mimo-v2.6-pro": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "minimax-m3.1-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "step-5-preview": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "gpt-5.6-luna": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "supportsDeveloperRole": false
+          }
+        },
+        "gpt-6-luna": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "supportsDeveloperRole": false
+          }
+        },
+        "grok-4.7": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "supportsDeveloperRole": false
+          }
+        },
+        "muse-spark-1.2-contributor": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "supportsDeveloperRole": false
+          }
+        },
+        "muse-spark-1.3-contributor": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "supportsDeveloperRole": false
+          }
+        },
+        "gemini-4-argon": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "hy4": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "iceman-contributor-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "kimi-k3.1-pro": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "longcat-2.5-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "minimax-m3.1-flash": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        }
+      }
     }
   }
 }

@@ -94,6 +94,7 @@ in
         # build needs AVX2; see features/pi-bolt/AGENTS.md for the pin, the
         # variant table, and why the binary must not be re-patched.
         pi-bolt
+        wheel
       ]
       ++ hardwareProfiles;
   };

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "providers": {
+    "pi-titler": {
+      "signature": "{\"baseUrl\":\"http://127.0.0.1:8080/v1\",\"ids\":[\"Qwen3-1.7B-Q4_K_M\"]}",
+      "fetchedAt": 1794569011866
+    }
+  },
+  "sources": {},
+  "efforts": {}
+}

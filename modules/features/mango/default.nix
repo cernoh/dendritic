@@ -167,7 +167,7 @@
         urgent_color = "0x${self.scheme.palette.error}ff";
         root_color = "0x${self.scheme.palette.base}ff";
 
-        border_radius = 5;
+        border_radius = 16;
         shadows = 0;
         shadows_size = 5;
         shadows_blur = 30;

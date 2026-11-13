@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "authFile": "~/.pi/agent/pi-jev-eye/auth.json",
+  "maxAttempts": 2,
+  "timeoutMs": 1500,
+  "maxToolCalls": 2
+}
