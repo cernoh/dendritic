@@ -1,5 +1,5 @@
-# Dux greeter feature: the greetd login UI that matches the Dux shell. NixOS
-# half only — a greeter runs before any user session exists.
+# Dux greeter: the greetd login UI that matches the Dux shell. NixOS half
+# only — a greeter runs before any user session exists.
 #
 # Upstream (`inputs.dms-greeter`) publishes `programs.dms-greeter` on
 # `nixosModules.default`; `services.displayManager.dux-greeter` never existed,

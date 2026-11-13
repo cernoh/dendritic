@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARTIFACT // DUX DYNAMIC THEMING</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500&family=Oswald:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   MARATHON THEME — canonical copy, inlined (no external stylesheet).
+   ========================================================================= */
+:root{
+  --bg:#08090A; --panel:#0F1112; --panel2:#16191B; --panel3:#1D2124;
+  --line:#24282B; --line2:#343A3E;
+  --fg:#E8EAE6; --dim:#7C8489; --dimmer:#4C5357;
+  --acid:#C9FF3D; --acid-dk:#7E9C1C; --acid-ink:#161B0D;
+  --warn:#FFB020; --bad:#FF4D5E; --cool:#5AC8FF; --violet:#A97BFF;
+  --f-disp:Oswald,"DejaVu Sans Condensed","Arial Narrow",Impact,system-ui,sans-serif;
+  --f-num:Orbitron,"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-ui:"DejaVu Sans Condensed",system-ui,sans-serif;
+  --f-serif:"Source Serif 4",Georgia,"DejaVu Serif",serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"DejaVu Sans Mono",monospace;
+  --ls:.14em;
+  --notch:10px;
+}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--fg); font-family:var(--f-ui);
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding-bottom:64px;
+}
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px);
+}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.lbl{
+  font:600 11px/1 var(--f-ui); letter-spacing:var(--ls); text-transform:uppercase;
+  color:var(--dim); display:flex; align-items:center; gap:10px;
+}
+.lbl b{color:var(--acid);font-weight:600}
+.lbl .rule{flex:1;height:1px;background:var(--line)}
+.status{
+  position:sticky; top:0; z-index:8; display:flex; align-items:center; gap:10px;
+  padding:12px 24px; background:rgba(8,9,10,.92); backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line); flex-wrap:wrap;
+}
+.chip{
+  font:600 11px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--line2); background:var(--panel2); color:var(--fg);
+  padding:7px 10px;
+}
+.chip b{color:var(--acid)}
+.chip.on{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+.chip.on b{color:#0A0B08}
+.brand{font:400 20px/1 var(--f-disp);letter-spacing:.06em;text-transform:uppercase}
+.brand span{color:var(--acid)}
+nav.top{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+nav.top a{
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  text-decoration:none;color:var(--dim);background:var(--panel2);
+  border:1px solid var(--line);padding:8px 13px;
+}
+nav.top a:hover{color:var(--fg);border-color:var(--line2)}
+nav.top a[aria-current]{background:var(--acid);border-color:var(--acid);color:#0A0B08}
+header.hero{padding:48px 0 30px;border-bottom:1px solid var(--line)}
+h1{
+  font:400 clamp(30px,5vw,58px)/0.98 var(--f-disp);
+  letter-spacing:-.01em;text-transform:uppercase;margin:14px 0 0;
+}
+h1 em{font-style:normal;color:var(--acid)}
+.lede{max-width:64ch;color:var(--dim);margin-top:16px;font:16px/1.6 var(--f-serif)}
+.prompt-box{
+  margin-top:22px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);
+  border-left:2px solid var(--acid);font:13px/1.6 var(--f-mono);color:var(--dim);max-width:78ch;
+}
+.prompt-box span{display:block;font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);
+  text-transform:uppercase;color:var(--acid);margin-bottom:8px}
+.verdict{
+  display:flex;gap:18px;align-items:center;flex-wrap:wrap;
+  margin:26px 0 0;padding:16px 18px;
+  background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--acid);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+.verdict .tag{font:700 11px/1 var(--f-mono);letter-spacing:.2em}
+.verdict p{color:var(--fg);font-size:14px}
+.panel{
+  background:var(--panel);border:1px solid var(--line);
+  clip-path:polygon(0 0,calc(100% - var(--notch)) 0,100% var(--notch),100% 100%,var(--notch) 100%,0 calc(100% - var(--notch)));
+}
+section{margin:44px 0;scroll-margin-top:64px}
+section > .lbl{margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.card{padding:20px;display:flex;flex-direction:column;gap:14px;position:relative}
+.card.pick{border-color:var(--acid);background:var(--panel2)}
+.card .key{
+  position:absolute;top:-1px;right:var(--notch);
+  background:var(--panel3);border:1px solid var(--line2);border-top:0;
+  padding:6px 12px;font:700 12px/1 var(--f-mono);letter-spacing:.18em;color:var(--dim);
+}
+.card.pick .key{background:var(--acid);color:#0A0B08;border-color:var(--acid)}
+.card h2{font:400 21px/1.15 var(--f-disp);letter-spacing:.02em;text-transform:uppercase;padding-right:56px}
+.tradeoff{color:var(--acid);font-size:12.5px;font-family:var(--f-mono);letter-spacing:.04em}
+pre{
+  padding:13px 14px;overflow:auto;font:12.5px/1.6 var(--f-mono);color:#D7DBD6;
+  border:1px solid var(--line);border-left:2px solid var(--acid-dk);background-color:var(--panel);
+}
+pre .k{color:var(--violet)} pre .s{color:var(--acid)} pre .c{color:var(--dimmer)}
+dl.pros{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13.5px}
+dl.pros dt{font:700 10px/1.6 var(--f-mono);letter-spacing:.12em}
+dt.up{color:var(--acid)} dt.down{color:var(--bad)}
+dl.pros dd{color:var(--dim)}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:auto}
+.metrics div{background:var(--panel2);padding:10px 12px}
+.metrics b{display:block;font:400 20px/1.2 var(--f-num);color:var(--acid)}
+.metrics span{font:600 9.5px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dimmer)}
+.tabs > summary{list-style:none;cursor:pointer;display:flex;gap:8px;align-items:center;
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);padding:12px 16px;border:1px solid var(--line);background:var(--panel)}
+.tabs > summary::-webkit-details-marker{display:none}
+.tabs[open] > summary{color:var(--acid);border-color:var(--acid)}
+.tabs .body{padding:18px;border:1px solid var(--line);border-top:0;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font:600 10px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  color:var(--dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px}
+tr:hover td{background:var(--panel2)}
+td b{color:var(--acid);font-weight:400}
+.flow{width:100%;height:auto;display:block}
+.flow text{font:600 10px var(--f-ui);letter-spacing:.12em;fill:var(--dim);text-transform:uppercase}
+.flow .node{fill:var(--panel2);stroke:var(--line2)}
+.flow .hot{stroke:var(--acid);fill:var(--panel3)}
+.flow .edge{stroke:var(--acid-dk);stroke-width:1.5;fill:none}
+.flow .edge-dim{stroke:var(--line2);stroke-width:1.5;fill:none}
+.export{
+  position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;gap:14px;align-items:center;
+  padding:11px 24px;background:rgba(8,9,10,.94);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+  font:600 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;color:var(--dim);
+}
+.export kbd{
+  font:600 10px/1 var(--f-mono);border:1px solid var(--line2);background:var(--panel2);
+  color:var(--fg);padding:4px 6px;border-radius:2px;
+}
+button.act{
+  margin-left:auto;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;
+  background:var(--acid);color:#0A0B08;border:0;padding:10px 16px;cursor:pointer;
+}
+#toast{position:fixed;bottom:56px;right:24px;z-index:10;background:var(--acid);color:#0A0B08;
+  padding:11px 15px;font:700 11px/1 var(--f-ui);letter-spacing:var(--ls);text-transform:uppercase;display:none}
+footer{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+  color:var(--dimmer);font:11px/1.6 var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+@media (max-width:720px){ .brand{font-size:16px} nav.top{margin-left:0;width:100%} }
+@media print{ body::after,.status,.export{display:none} body{background:#fff;color:#000} }
+</style>
+</head>
+<body>
+
+<div class="status">
+  <div class="brand">MARATHON<span>·</span>ARTIFACT</div>
+  <div class="chip">Status <b>Built + evaluated</b></div>
+  <div class="chip">Scope <b>5 files moved, 3 rewired</b></div>
+  <div class="chip">Rev <b>01</b></div>
+  <nav class="top">
+    <a href="#verdict" aria-current="page">Overview</a>
+    <a href="#owners">Colour owners</a>
+    <a href="#code">Config</a>
+    <a href="#risks">Risks</a>
+    <a href="#verify">Verification</a>
+  </nav>
+</div>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="lbl">Change <b>/</b> Dux shell <b>/</b> 2026-11-16</div>
+    <h1>Dux suite in one folder,<br><em>matugen</em> owns the colours</h1>
+    <p class="lede">Two changes, one contract. The four Dux features (shell, greeter, search, calendar) collapse into <code>modules/features/dux/</code> with the shell's whole <code>programs.dank-material-shell</code> block in one shared attrset, so NixPC and ASAHI cannot drift. And the colour source for GTK, Qt, MangoWM and the terminal moves from the build-time sepia palette to the shell's wallpaper-derived matugen palette — a wallpaper change recolours the session without a rebuild.</p>
+    <div class="prompt-box"><span>Prompt that produced this</span>enable theming with dms programs.dms-shell = { enable = true; systemd = { enable = true; restartIfChanged = true; }; enableSystemMonitoring = true; enableVPN = true; enableDynamicTheming = true; enableAudioWavelength = true; enableCalendarEvents = true; }; otherwise known as dux shell, and ensure all the configs are synced within the dux folder. It should be the same on both nixpc and asahi.<br><br>↳ follow-ups: "One dux folder, all shell config" · "use dynamic mutagen with sylix so it syncs the color change all over the system" · "Full handover (all consumers)"</div>
+  </header>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">Shipped</span>
+    <p><b><code>programs.dms-shell</code> is the retired name.</b> Upstream dux-shell publishes <code>programs.dank-material-shell</code>; the pasted block was applied under that name, one attrset, both halves, both hosts. Every flag in it was already upstream's default — the real change is the colour handover and the folder.</p>
+  </div>
+
+  <section id="owners">
+    <div class="lbl">Colour owners <b>09</b> <span class="rule"></span> <span>who writes what, after the change</span></div>
+    <table>
+      <thead><tr><th>Surface</th><th>Rendered by</th><th>File</th><th>Recolours on wallpaper change</th></tr></thead>
+      <tbody>
+        <tr><td>Dux shell (bar, panels)</td><td>DMS dynamic theme</td><td><code>~/.config/dms/settings.json</code> <b>(runtime)</b></td><td>yes</td></tr>
+        <tr><td>GTK 3 / GTK 4</td><td>matugen + <code>gtk.sh</code></td><td><code>~/.themes/adw-gtk3*/gtk.css</code>, <code>~/.config/gtk-4.0/gtk.css</code></td><td>yes</td></tr>
+        <tr><td>Qt (qt6ct)</td><td>matugen + DMS</td><td><code>~/.config/qt6ct/{qt6ct.conf,colors/matugen.conf}</code></td><td>yes</td></tr>
+        <tr><td>MangoWM</td><td>matugen include</td><td><code>~/.config/mango/dms/colors.conf</code> + <code>mmsg dispatch reload_config</code></td><td>yes — border, focus, urgent</td></tr>
+        <tr><td>Ghostty</td><td>matugen theme file</td><td><code>~/.config/ghostty/themes/dankcolors</code></td><td>yes — <code>--theme=dankcolors</code></td></tr>
+        <tr><td>nvf / zellij / tmux / omp</td><td><code>self.scheme</code></td><td>store-rendered at build</td><td>no — rebuild</td></tr>
+        <tr><td>greetd greeter, swaylock, mango fallbacks</td><td><code>self.scheme</code></td><td>store-rendered at build</td><td>no — rebuild</td></tr>
+        <tr><td>pi TUI</td><td><code>self.scheme.pi</code> → <code>sepia.json</code></td><td><code>~/.pi/agent/themes/sepia.json</code></td><td>no — rebuild</td></tr>
+        <tr><td>DMS <code>settings.json</code></td><td>the shell itself</td><td><code>~/.config/dms/</code></td><td>never nix-managed — see risks</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="code">
+    <div class="lbl">Config <b>03</b> <span class="rule"></span> <span>the load-bearing bits</span></div>
+    <div class="cards">
+
+      <article class="panel card pick">
+        <div class="key">1 · PICK</div>
+        <h2>dux/shell.nix — one attrset</h2>
+        <div class="tradeoff">◈ TRADEOFF // upstream's defaults, written down</div>
+        <pre><span class="c">// shared by BOTH halves and BOTH hosts</span>
+<span class="k">let</span> shared = {
+  enable = <span class="k">true</span>;
+  enableSystemMonitoring = <span class="k">true</span>;
+  enableVPN = <span class="k">true</span>;
+  enableDynamicTheming = <span class="k">true</span>;  <span class="c"># matugen</span>
+  enableAudioWavelength = <span class="k">true</span>;  <span class="c"># cava</span>
+  enableCalendarEvents = <span class="k">true</span>;   <span class="c"># khal</span>
+}; <span class="k">in</span> {
+  flake.nixosModules.dms = {
+    imports = [ inputs.dms.nixosModules.default ];
+    programs.dank-material-shell = shared;   <span class="c"># no systemd: HM owns the unit</span>
+  };
+  flake.homeManagerModules.dms = {
+    imports = [ inputs.dms.homeModules.default ];
+    programs.dank-material-shell = shared // {
+      systemd = { enable = <span class="k">true</span>; restartIfChanged = <span class="k">true</span>; };
+    };
+  };
+}</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>One block, both hosts — drift is impossible.</dd>
+          <dt class="up">PRO</dt><dd><code>systemd.enable</code> on the HM half only: upstream defines <code>dms.service</code> in both.</dd>
+          <dt class="down">CON</dt><dd>The NixOS half still installs matugen/cava/khal into <code>systemPackages</code>: upstream's <code>common.nix</code> applies the flags per half.</dd>
+        </dl>
+        <div class="metrics"><div><b>4</b><span>Files moved</span></div><div><b>2</b><span>Hosts</span></div><div><b>LOW</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">2</div>
+        <h2>stylix — targets off</h2>
+        <div class="tradeoff">◈ TRADEOFF // stylix keeps fonts, cursor and <code>adw-gtk3</code>; it stops painting</div>
+        <pre>stylix = base // { targets = {
+  gtk.enable = <span class="k">false</span>;   <span class="c"># its gtk.css is a store symlink</span>
+  qt.enable  = <span class="k">false</span>;   <span class="c"># + QT_STYLE_OVERRIDE=kvantum</span>
+}; };
+<span class="c">// residual scaffolding, written explicitly:</span>
+gtk = { enable = <span class="k">true</span>; theme.name = <span class="s">"adw-gtk3"</span>;
+        gtk4.theme = <span class="k">null</span>;  <span class="c"># DMS writes gtk-4.0/gtk.css</span>
+        font = <span class="c">/* from stylix.fonts */</span>; };
+qt = { enable = <span class="k">true</span>; platformTheme.name = <span class="s">"qt6ct"</span>; };</pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd>DMS's <code>gtk.sh</code> can now create <code>gtk.css</code> itself (it refuses a symlink).</dd>
+          <dt class="up">PRO</dt><dd>No Kvantum style override beating qt6ct.</dd>
+          <dt class="down">CON</dt><dd>GTK4 loses HM's <code>adw-gtk3</code> CSS import; it gets matugen colours on Adwaita structure.</dd>
+        </dl>
+        <div class="metrics"><div><b>~75</b><span>Lines</span></div><div><b>1</b><span>Feature</span></div><div><b>MED</b><span>Risk</span></div></div>
+      </article>
+
+      <article class="panel card">
+        <div class="key">3</div>
+        <h2>mango + ghostty — include, don't emit</h2>
+        <div class="tradeoff">◈ TRADEOFF // static sepia stays as the pre-matugen fallback</div>
+        <pre><span class="c">// mango: appended AFTER the render, not in `settings`</span>
+<span class="c">// (toMango sorts keys; `urgent_color` sorts after `source_optional`)</span>
+configText = (toMango settings)
+  + <span class="s">"\nsource_optional = /home/${userName}/.config/mango/dms/colors.conf"</span>
+  + <span class="s">"\nexec_once=${autostartSh}\n"</span>;
+
+<span class="c">// ghostty: name the theme, drop every colour flag</span>
+configFlags = [ <span class="s">"--theme=dankcolors"</span> <span class="s">"--font-family=Cascadia Code NF"</span> <span class="c">/* … */</span> ];
+<span class="c">// an explicit --background always beats a theme, in any order</span></pre>
+        <dl class="pros">
+          <dt class="up">PRO</dt><dd><code>source_optional</code> survives the sandboxed <code>mango -c -p</code> gate.</dd>
+          <dt class="up">PRO</dt><dd>Missing ghostty theme is not an error — terminal still starts.</dd>
+          <dt class="down">CON</dt><dd>Before matugen's first run: mango keeps sepia, ghostty shows its own colours.</dd>
+        </dl>
+        <div class="metrics"><div><b>~20</b><span>Lines</span></div><div><b>2</b><span>Features</span></div><div><b>MED</b><span>Risk</span></div></div>
+      </article>
+
+    </div>
+  </section>
+
+  <section id="flow">
+    <div class="lbl">Data flow <b>/</b> wallpaper → session</div>
+    <div class="panel" style="padding:22px">
+      <svg class="flow" viewBox="0 0 1000 190" role="img" aria-label="Wallpaper to session colour flow">
+        <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+          <path d="M0 0 L7 3 L0 6 z" fill="#7E9C1C"/></marker></defs>
+        <rect class="node hot" x="8"   y="56" width="150" height="56"/><text x="30"  y="88">WALLPAPER</text>
+        <rect class="node hot" x="212" y="56" width="150" height="56"/><text x="238" y="88">MATUGEN ◈</text>
+        <rect class="node" x="416" y="10"  width="180" height="46"/><text x="436" y="38">GTK / QT6CT</text>
+        <rect class="node" x="416" y="66"  width="180" height="46"/><text x="436" y="94">MANGO INCLUDE</text>
+        <rect class="node" x="416" y="122" width="180" height="46"/><text x="436" y="150">GHOSTTY THEME</text>
+        <rect class="node" x="650" y="56" width="150" height="56"/><text x="672" y="88">DMS SHELL</text>
+        <rect class="node" x="844" y="56" width="148" height="56"/><text x="866" y="88">SESSION</text>
+        <path class="edge" d="M158 84 H212" marker-end="url(#a)"/>
+        <path class="edge" d="M362 74 L412 36" marker-end="url(#a)"/>
+        <path class="edge" d="M362 84 H412" marker-end="url(#a)"/>
+        <path class="edge" d="M362 94 L412 142" marker-end="url(#a)"/>
+        <path class="edge-dim" d="M596 33 H620 V70 H646" marker-end="url(#a)"/>
+        <path class="edge" d="M800 84 H844" marker-end="url(#a)"/>
+        <text x="180" y="182">◈ ONE SOURCE AT RUNTIME — NIX ONLY RENDERS WHAT HAS NO TEMPLATE</text>
+      </svg>
+    </div>
+  </section>
+
+  <section id="risks">
+    <div class="lbl">Risks <b>04</b> <span class="rule"></span> <span>each one states what to check</span></div>
+    <details class="tabs" open><summary>▸ R1 — <code>settings.json</code> must stay runtime-owned</summary>
+      <div class="body">Declaring <code>programs.dank-material-shell.settings</code> renders the live 14 KB <code>~/.config/dms/settings.json</code> as a read-only store symlink: bar layout lost, in-app edits stop persisting. This is why Neovim's matugen template cannot be enabled (it defaults off and flipping it needs a <code>settings</code> key). nvf therefore stays on <code>self.scheme</code>. <kbd>owner</kbd> <kbd>revisit only with a settings.json translation</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ R2 — first login before matugen has run</summary>
+      <div class="body">GTK/Qt/mango fall back to their own defaults or the static sepia values; ghostty shows its built-in colours. Everything corrects itself on the shell's first theme pass. <kbd>owner</kbd> <kbd>cosmetic, self-healing</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ R3 — a stylix <code>gtk.css</code> symlink comes back</summary>
+      <div class="body">Re-enabling <code>stylix.targets.gtk</code> (or setting <code>gtk.gtk4.theme</code> back to a theme) puts a store symlink where <code>gtk.sh</code> needs a writable file: DMS prints "user-managed symlink; leaving it untouched", exits 1, and the shell reports "Failed to apply GTK". Symptom to look for: a toast, not a broken build. <kbd>owner</kbd> <kbd>watch on any stylix bump</kbd></div></details>
+    <details class="tabs" style="margin-top:10px"><summary>▸ R4 — live machine drift (not repo content)</summary>
+      <div class="body"><code>~/.config/ghostty/config</code> exists on NIXPC as a hand-written file (plus a stale <code>config.ghostty</code> symlink into the repo) and already sets <code>theme = dankcolors</code>. It is not managed by the flake; the wrapper's flags win over it, so the two now agree. Worth deleting by hand once. <kbd>owner</kbd> <kbd>manual cleanup</kbd></div></details>
+  </section>
+
+  <section id="verify">
+    <div class="lbl">Verification <b>04</b> <span class="rule"></span> <span>what actually ran</span></div>
+    <table>
+      <thead><tr><th>Check</th><th>Command</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>parse</td><td><code>nix-instantiate --parse modules/features/dux/*.nix …</code></td><td><b>pass</b> (5 files + 4 edited)</td></tr>
+        <tr><td>format</td><td><code>nixfmt --check $(git ls-files '*.nix')</code></td><td><b>pass</b></td></tr>
+        <tr><td>mango config gate</td><td><code>nix build … programs.mango.package</code></td><td><b>pass</b> — <code>mango -c -p</code> accepted <code>source_optional</code>, line 177, after every <code>*_color</code></td></tr>
+        <tr><td>NIXPC system</td><td><code>nix build … system.build.toplevel</code></td><td><b>pass</b> (toplevel built)</td></tr>
+        <tr><td>ASAHI system</td><td><code>nix eval … system.build.toplevel.drvPath</code></td><td><b>pass</b> (aarch64 evaluates; not built here)</td></tr>
+        <tr><td>HM generation</td><td>inspect <code>home-manager-generation</code></td><td><b>ok</b> — no <code>gtk.css</code> symlink, no <code>qt6ct.conf</code>; <code>settings.ini</code> keeps <code>adw-gtk3</code></td></tr>
+        <tr><td>both hosts, same flags</td><td><code>nix eval … programs.dank-material-shell</code></td><td><b>identical</b> — all six flags <code>true</code>, <code>restartIfChanged = true</code>; NixOS half <code>systemd.enable = false</code></td></tr>
+      </tbody>
+    </table>
+    <footer>artifact · modules/features/dux/{default,shell,greeter,search,calendar}.nix · stylix, mango, ghostty rewired · generated by pi · self-contained, upload to share</footer>
+  </section>
+</div>
+
+<div class="export">
+  <span><kbd>scroll</kbd> Read</span>
+  <span><kbd>R1</kbd>–<kbd>R4</kbd> Open risks</span>
+  <button class="act" id="copy">Copy follow-up prompt</button>
+</div>
+<div id="toast">Copied to clipboard</div>
+
+<script>
+const SPEC = () => `Continue the dux dynamic-theming change in /home/davr/.config/dendritic.
+
+Done: modules/features/dux/{default,shell,greeter,search,calendar}.nix hold the whole suite; programs.dank-material-shell declares enable + systemd.enable/restartIfChanged + enableSystemMonitoring/enableVPN/enableDynamicTheming/enableAudioWavelength/enableCalendarEvents as one shared attrset for both hosts. stylix gtk/qt targets are off; mango appends source_optional after its rendered config; ghostty names --theme=dankcolors and passes no colour flags.
+
+Still open: Neovim's matugen template is off because enabling it needs programs.dank-material-shell.settings, which would turn the live ~/.config/dms/settings.json into a read-only store symlink. Deciding that requires a settings.json translation strategy.
+
+Do not widen scope. Verify with nix build .#nixosConfigurations.NIXPC.config.system.build.toplevel and nix eval .#nixosConfigurations.ASAHI.config.system.build.toplevel.drvPath --impure.`;
+document.getElementById('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(SPEC()); }
+  catch { prompt('Copy:', SPEC()); }
+  const t = document.getElementById('toast'); t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 1400);
+};
+</script>
+</body>
+</html>

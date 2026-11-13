@@ -11,6 +11,19 @@
 # it, so flags would be dead weight there). Emulator runs get the flake flags
 # prepended; `-e` composes after them (the `ghostty -e top` form used by
 # Noctalia's terminalCommand and Mango's SUPER,T via $TERMINAL is unchanged).
+#
+# COLOURS ARE NOT SET HERE. They come from the Dux shell's dynamic theming:
+# DMS's matugen integration writes `~/.config/ghostty/themes/dankcolors` from
+# the current wallpaper, and the wrapper only names that theme. Two facts fix
+# the shape of this file:
+# - an explicit colour key always beats a `theme`, in any order (verified:
+#   `background` stays put even when `theme` is set after it), so the wrapper
+#   must not pass `--background`/`--foreground`/`--palette`/`--cursor-*` at
+#   all. Keeping them would pin the terminal to the build-time palette and
+#   silently ignore every matugen run.
+# - a missing theme is not an error (verified: ghostty keeps the other values
+#   and exits 0), so the terminal still starts on a machine where matugen has
+#   not run yet — it just shows ghostty's own colours until the shell paints.
 {
   self,
   ...
@@ -23,31 +36,13 @@
       ...
     }:
     let
-      # The palette comes from modules/features/scheme. ghostty has a builtin
-      # theme for every bundled scheme, but not for this one, so the wrapper
-      # passes the colors directly. A static file cannot read nix values; this
-      # wrapper can, so repointing the scheme needs no manual sync.
-      scheme = self.scheme;
-
-      # ANSI names in index order: 0-7 normal, 8-15 bright.
-      ansiOrder = [
-        "black"
-        "red"
-        "green"
-        "yellow"
-        "blue"
-        "magenta"
-        "cyan"
-        "white"
-      ];
-      paletteFlags =
-        lib.imap0 (index: name: "--palette=${toString index}=${scheme.ansiNormal.${name}}") ansiOrder
-        ++ lib.imap0 (
-          index: name: "--palette=${toString (index + 8)}=${scheme.ansiBright.${name}}"
-        ) ansiOrder;
-
-      # Flake-owned settings, previously modules/features/ghostty/config.
+      # The palette is NOT from modules/features/scheme. DMS's dynamic theming
+      # owns terminal colour now: matugen writes the theme file and the wrapper
+      # points ghostty at it (`theme` = a name under ~/.config/ghostty/themes).
       configFlags = [
+        # DMS matugen output; regenerated on every wallpaper/theme change.
+        "--theme=dankcolors"
+
         # Cascadia Code NF draws a dotted zero and ships a real italic face.
         # The italic face alone carries `ss01`, which swaps f, l, r and s for
         # their cursive alternates; the regular face has no `ss01`, so plain
@@ -66,15 +61,8 @@
         "--macos-option-as-alt=true"
         "--background-opacity=0.85"
         "--background-blur=true"
-        "--background=${scheme.hex.base}"
-        "--foreground=${scheme.hex.text}"
-        "--cursor-color=${scheme.hex.primary}"
-        "--cursor-text=${scheme.hex.base}"
-        "--selection-background=${scheme.hex.selection}"
-        "--selection-foreground=${scheme.hex.onSelection}"
         "--cursor-style=block"
-      ]
-      ++ paletteFlags;
+      ];
 
       ghosttyWrapped = pkgs.symlinkJoin {
         name = "ghostty-wrapped";
