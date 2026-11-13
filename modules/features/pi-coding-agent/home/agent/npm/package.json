@@ -2,8 +2,8 @@
   "name": "pi-extensions",
   "private": true,
   "scripts": {
-    "postinstall": "node patches/pi-lazy-skill-tool.mjs && node patches/pi-vision-tool.mjs && node patches/pi-auto-router.mjs",
-    "patch:check": "node patches/pi-lazy-skill-tool.mjs --check && node patches/pi-vision-tool.mjs --check && node patches/pi-auto-router.mjs --check"
+    "postinstall": "node patches/pi-lazy-skill-tool.mjs && node patches/pi-vision-tool.mjs && node patches/pi-auto-router.mjs && node patches/tersio.mjs",
+    "patch:check": "node patches/pi-lazy-skill-tool.mjs --check && node patches/pi-vision-tool.mjs --check && node patches/pi-auto-router.mjs --check && node patches/tersio.mjs --check"
   },
   "dependencies": {
     "@amaster.ai/pi-computer-use": "^0.1.32",

@@ -2,6 +2,14 @@
   "mcpServers": {
     "3dtexel": {
       "url": "https://3dtexel.com/wp-json/3dtexel-api/v1/mcp"
+    },
+    "tersio": {
+      "command": "node",
+      "args": [
+        "~/.pi/agent/npm/node_modules/@krtclcdy/tersio/dist/tersio.js",
+        "mcp"
+      ],
+      "description": "Tersio agent usage: stats, sessions, activity, host wiring, session modes, Headroom savings"
     }
   }
 }

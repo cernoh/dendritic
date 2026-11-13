@@ -63,7 +63,7 @@ Each `features/<name>/default.nix` owns its feature. Shared patterns: out-of-sto
 - `noctalia/` — Noctalia shell feature, the `cernoh/terminal` plugin, `ghostty-term` helper and its frame protocol → `modules/features/noctalia/AGENTS.md`
 - `nixpc-desktop/` — NIXPC-only desktop bundle; owns the Brave-on-NVIDIA Vulkan-off contract and how to re-verify a browser flag change without a rebuild → `modules/features/nixpc-desktop/AGENTS.md`
 - `omp/` — Oh My Pi overlay, HM wrapping, managed skills, agent definitions, agent config, plugins → `modules/features/omp/AGENTS.md`
-- `pi-coding-agent/` — the Pi extension set and its version pins, the PATH `pi` shim, tracked runtime state under `~/.pi/agent`, and the `npm/patches/` re-apply hook for `pi-lazy-skill-tool` → `modules/features/pi-coding-agent/home/agent/AGENTS.md`
+- `pi-coding-agent/` — the Pi extension set and its version pins, the PATH `pi` shim, tracked runtime state under `~/.pi/agent`, and the `npm/patches/` re-apply hooks (`pi-lazy-skill-tool`, `pi-vision-tool`, `pi-auto-router`, `tersio`) → `modules/features/pi-coding-agent/home/agent/AGENTS.md`
 - `pi-bolt/` — Pi-Bolt release pin, the Bun ELF patch rules (interpreter yes, rpath never), version skew against `pkgs.pi-coding-agent` → `modules/features/pi-bolt/AGENTS.md`
 - `pi-titler/` — local llama.cpp router serving Qwen3-1.7B for pi session titles: preset-vs-models-dir, GGUF pin, CUDA-as-config-flag → `modules/features/pi-titler/AGENTS.md`
 - `wayfinder-dashboard/` — mobile Wayfinder frontier queue, project workspaces, Herdr/Pi launches, per-ticket terminal, pi slash commands → `modules/features/wayfinder-dashboard/AGENTS.md`
