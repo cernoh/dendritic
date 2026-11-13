@@ -1,0 +1,5 @@
+# Background-task scratch: the job json plus its captured output, rewritten by
+# the running pi session. Runtime state like everything else under ~/.pi — it
+# is never config, so it never belongs in a commit. See "Resolving merges in
+# this runtime state" in agent/AGENTS.md.
+tasks/

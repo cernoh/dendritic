@@ -233,6 +233,30 @@ listed in `.gitignore`; two entries are credentials and must stay listed.
   `git grep <token>`. An untracked file that was never staged needs a gitignore
   rule, not a rotation.
 
+### Resolving merges in this runtime state
+
+Pi rewrites these files on nearly every session, so a pull conflicts on them
+constantly. Resolve by content, never by "ours" or "theirs" as a side:
+
+- `agent/commandcode-models.json`, `agent/pi-freeflow-opencode-version.json`,
+  `agent/pi-freeflow-update.json`, `home/cc-my-pi-update-check.json` are
+  generated caches — a `checkedAt` stamp plus a provider catalog. The newer
+  `checkedAt` wins (usually ours, but read the stamp, not the branch label),
+  and a catalog is **never hand-merged**: a union resurrects models the
+  provider has dropped, which fails at call time rather than at eval time.
+  Re-check the resolved file is valid JSON; a broken cache silently hides
+  models instead of breaking a build.
+- `home/settings.json` is cc-my-pi's preferences file, and cc-my-pi's first
+  load on a config directory without one copies its defaults back as exactly
+  `{"ccMyPiSetupDone": true}`. A merge that takes that stub (a branch that
+  never had the file) silently drops every rendering setting the live TUI
+  reads through `~/.pi`; it is a strict subset of a real file, so keep the
+  superset.
+- `home/tasks/**` is background-task scratch — the job json and its captured
+  output, rewritten by the running session. `home/.gitignore` ignores it, so a
+  task pair appearing in a merge diff is upstream noise rather than repo
+  content, and it never gets committed back.
+
 ## pi-lazy-loader and pi-lazy-skill-tool
 
 `@valdo766hi/pi-lazy-skill-tool` (skills lazy-loading) declares a peer range of
