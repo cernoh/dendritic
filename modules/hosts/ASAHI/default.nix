@@ -49,7 +49,6 @@ in
         flatpakAsahi
         obs
 
-
         # Keyboard layout: `gb` variant `mac` — "English (UK, Macintosh)" in
         # xkeyboard-config. The keymap follows macOS UK, not the US ANSI keycaps
         # soldered to this keyboard: Shift+3 is £, and € / # sit on the third

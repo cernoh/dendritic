@@ -59,107 +59,107 @@
 # (`attrs/desktop`, lld for the zig-built libghostty-vt) is system-wide, so
 # `pkgs.herdr` here is the same fixed build.
 {
-        self,
-        moduleWithSystem,
-        ...
+  self,
+  moduleWithSystem,
+  ...
 }:
 {
-        flake.homeManagerModules.herdr = moduleWithSystem (
-                _:
-                {
-                        config,
-                        lib,
-                        pkgs,
-                        ...
-                }:
-                let
-                        cfg = config.services.herdr;
-                        herdr = lib.getExe' cfg.package "herdr";
+  flake.homeManagerModules.herdr = moduleWithSystem (
+    _:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      cfg = config.services.herdr;
+      herdr = lib.getExe' cfg.package "herdr";
 
-                        # Readiness gate, not a health check: `ExecStartPost` holds the start job
-                        # open until the API socket answers, so a dependent unit ordered
-                        # `After=herdr.service` is guaranteed a live server. Without it, "started"
-                        # means only "forked", and `herdr-web`'s ping-then-spawn would find no
-                        # server and spawn its own detached one — the arrangement this feature
-                        # exists to remove.
-                        #
-                        # `herdr agent list` is the probe because it is the cheapest CLI call that
-                        # needs the socket and nothing else: it exits 1 when no server answers and
-                        # 0 when one does, where `herdr status` exits 0 either way (it reports the
-                        # absence) and `herdr worktree list` would drag git and a git repo into a
-                        # readiness test. That makes it a strict superset of the `ping` method
-                        # herdr-web itself uses to decide whether to spawn.
-                        waitReady = pkgs.writeShellScript "herdr-wait-ready" ''
-                                set -eu
-                                for ((i = 0; i < 60; i++)); do
-                                  if ${herdr} agent list >/dev/null 2>&1; then
-                                    exit 0
-                                  fi
-                                  sleep 0.5
-                                done
-                                echo "herdr server did not answer on the API socket within 30s" >&2
-                                exit 1
-                        '';
-                in
-                {
-                        options.services.herdr = {
-                                package = lib.mkOption {
-                                        type = lib.types.package;
-                                        default = pkgs.herdr;
-                                        defaultText = lib.literalExpression "pkgs.herdr";
-                                        description = "The herdr package whose `server` this unit runs.";
-                                };
-                        };
-
-                        config = {
-                                systemd.user.services.herdr = {
-                                        Unit = {
-                                                Description = "herdr: persistent terminal-workspace server";
-                                                Documentation = [ "https://herdr.dev" ];
-                                                # A competing server exits 1 immediately; try a few times (a crash
-                                                # restart is legitimate) and then stop rather than loop forever.
-                                                StartLimitIntervalSec = 60;
-                                                StartLimitBurst = 3;
-                                        };
-
-                                        Service = {
-                                                Type = "simple";
-                                                # The socket lives at the default `~/.config/herdr/herdr.sock`;
-                                                # nothing here overrides HERDR_SOCKET_PATH, so every client and
-                                                # bridge finds the same server.
-                                                ExecStart = "${herdr} server";
-                                                ExecStartPost = "${waitReady}";
-                                                Environment = [
-                                                        "PATH=${
-                                                                lib.makeBinPath (
-                                                                        with pkgs;
-                                                                        [
-                                                                                git
-                                                                                curl
-                                                                                coreutils
-                                                                        ]
-                                                                )
-                                                        }"
-                                                ];
-                                                Restart = "on-failure";
-                                                RestartSec = 5;
-                                        };
-
-                                        Install.WantedBy = [ "default.target" ];
-                                };
-                        };
-                }
-        );
-
-        # ---------------------------------------------------------------------------
-        # NixOS module — the enable switch for the host.
-        # ---------------------------------------------------------------------------
-        # Importing this aspect is the whole switch: the daemon is a user service, so
-        # the home-manager half is injected here rather than listed in
-        # `system/home-manager`'s all-host set. That keeps the scope a host decides:
-        # NIXPC imports it today, and adding it to another host means one import
-        # line, with no service or package reaching a host that did not ask for it.
-        flake.nixosModules.herdr = _: {
-                config.home-manager.sharedModules = [ self.homeManagerModules.herdr ];
+      # Readiness gate, not a health check: `ExecStartPost` holds the start job
+      # open until the API socket answers, so a dependent unit ordered
+      # `After=herdr.service` is guaranteed a live server. Without it, "started"
+      # means only "forked", and `herdr-web`'s ping-then-spawn would find no
+      # server and spawn its own detached one — the arrangement this feature
+      # exists to remove.
+      #
+      # `herdr agent list` is the probe because it is the cheapest CLI call that
+      # needs the socket and nothing else: it exits 1 when no server answers and
+      # 0 when one does, where `herdr status` exits 0 either way (it reports the
+      # absence) and `herdr worktree list` would drag git and a git repo into a
+      # readiness test. That makes it a strict superset of the `ping` method
+      # herdr-web itself uses to decide whether to spawn.
+      waitReady = pkgs.writeShellScript "herdr-wait-ready" ''
+        set -eu
+        for ((i = 0; i < 60; i++)); do
+          if ${herdr} agent list >/dev/null 2>&1; then
+            exit 0
+          fi
+          sleep 0.5
+        done
+        echo "herdr server did not answer on the API socket within 30s" >&2
+        exit 1
+      '';
+    in
+    {
+      options.services.herdr = {
+        package = lib.mkOption {
+          type = lib.types.package;
+          default = pkgs.herdr;
+          defaultText = lib.literalExpression "pkgs.herdr";
+          description = "The herdr package whose `server` this unit runs.";
         };
+      };
+
+      config = {
+        systemd.user.services.herdr = {
+          Unit = {
+            Description = "herdr: persistent terminal-workspace server";
+            Documentation = [ "https://herdr.dev" ];
+            # A competing server exits 1 immediately; try a few times (a crash
+            # restart is legitimate) and then stop rather than loop forever.
+            StartLimitIntervalSec = 60;
+            StartLimitBurst = 3;
+          };
+
+          Service = {
+            Type = "simple";
+            # The socket lives at the default `~/.config/herdr/herdr.sock`;
+            # nothing here overrides HERDR_SOCKET_PATH, so every client and
+            # bridge finds the same server.
+            ExecStart = "${herdr} server";
+            ExecStartPost = "${waitReady}";
+            Environment = [
+              "PATH=${
+                lib.makeBinPath (
+                  with pkgs;
+                  [
+                    git
+                    curl
+                    coreutils
+                  ]
+                )
+              }"
+            ];
+            Restart = "on-failure";
+            RestartSec = 5;
+          };
+
+          Install.WantedBy = [ "default.target" ];
+        };
+      };
+    }
+  );
+
+  # ---------------------------------------------------------------------------
+  # NixOS module — the enable switch for the host.
+  # ---------------------------------------------------------------------------
+  # Importing this aspect is the whole switch: the daemon is a user service, so
+  # the home-manager half is injected here rather than listed in
+  # `system/home-manager`'s all-host set. That keeps the scope a host decides:
+  # NIXPC imports it today, and adding it to another host means one import
+  # line, with no service or package reaching a host that did not ask for it.
+  flake.nixosModules.herdr = _: {
+    config.home-manager.sharedModules = [ self.homeManagerModules.herdr ];
+  };
 }
