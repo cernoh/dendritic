@@ -31,7 +31,7 @@
 { self, ... }:
 {
   flake.nixosModules.dux =
-    { config, lib, ... }:
+    { config, lib, pkgs, ... }:
     let
       # Store path, not a bare `dms`. A mango bind runs through `spawn_shell`,
       # whose PATH is whatever the session inherited — and the shell's own
@@ -44,6 +44,10 @@
         dms
         dms-greeter
       ];
+
+      # Qt5 compatibility shim required by the DMS clight widget and other
+      # Qt5-era QML imports pulled in by dux plugins.
+      environment.systemPackages = [ pkgs.qt6.qt5compat ];
 
       # Mapped from the Noctalia binds these replace: `panel-open launcher` →
       # the DMS launcher, `screenshot-region|fullscreen|window` → `dms
@@ -62,11 +66,13 @@
       ];
     };
 
-  flake.homeManagerModules.dux = {
+  flake.homeManagerModules.dux = { pkgs, ... }: {
     imports = with self.homeManagerModules; [
       dms
       dsearch
       dcalendar
     ];
+
+    home.packages = [ pkgs.qt6.qt5compat ];
   };
 }

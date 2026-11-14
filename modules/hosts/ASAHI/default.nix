@@ -65,6 +65,9 @@ in
           };
           console.keyMap = "gb";
         })
+        # Clight ambient-light daemon (clight + clightd) — needed by the DMS
+        # DankClight plugin. Enabled only on asahi (laptop with ambient sensor).
+        { services.clight.enable = true; }
       ]
       ++ hardwareProfiles;
   };
