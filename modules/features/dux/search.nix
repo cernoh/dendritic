@@ -1,5 +1,5 @@
-# Dux search (dsearch) feature: the indexed filesystem search daemon behind the
-# shell's search panel. Home-manager half only.
+# Dux search (dsearch): the indexed filesystem search daemon behind the shell's
+# search panel. Home-manager half only.
 #
 # `inputs.dsearch` publishes `homeModules.dsearch` and nothing else — there is
 # no NixOS module, so `programs.dsearch` only exists inside home-manager and a

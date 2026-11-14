@@ -10,10 +10,12 @@ directory.
 
 ## Ownership
 
-`default.nix` owns the whole deliverable: model pin, router preset, and the
-`pi-titler` wrapper. The pi side is owned by `../pi-coding-agent/home/agent/` —
-this directory only names the model id that `agents/title-generator.md` and
-`models.json` must agree on.
+`default.nix` owns the whole deliverable: model pin, router preset, the
+`pi-titler` wrapper, and a `homeManagerModules.pi-titler` systemd user
+service that keeps the server resident on NIXPC (started on `default.target`).
+The pi side is owned by `../pi-coding-agent/home/agent/` — this directory only
+names the model id that `agents/title-generator.md` and `models.json` must
+agree on.
 
 ## Local Contracts
 

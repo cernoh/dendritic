@@ -161,13 +161,16 @@
         gap_outer_horizontal = host.gaps;
         gap_outer_vertical = host.gaps;
         border_px = host.borderWidth;
-        # Sepia palette, from features/scheme. mango takes 0xRRGGBBAA.
+        # Colours: the static values below are the fallback. The DMS
+        # dynamic-theme include is appended AFTER the whole render (see
+        # `configText`), because the renderer sorts keys and a `*_color` line
+        # sorting after the include would beat it. mango takes 0xRRGGBBAA.
         focus_color = "0x${self.scheme.palette.primary}ff";
         border_color = "0x${self.scheme.palette.outline}ff";
         urgent_color = "0x${self.scheme.palette.error}ff";
         root_color = "0x${self.scheme.palette.base}ff";
 
-        border_radius = 5;
+        border_radius = 16;
         shadows = 0;
         shadows_size = 5;
         shadows_blur = 30;
@@ -337,10 +340,24 @@
         ];
       };
 
-      # The settings render, plus exec_once for the session-root autostart
-      # (identical structure to the HM module's finalConfigText: toMango +
-      # "\nexec_once=...\n").
-      configText = (toMango settings) + "\nexec_once=${autostartSh}\n";
+      # The settings render, then the DMS dynamic-theme include, then
+      # exec_once for the session-root autostart (identical structure to the HM
+      # module's finalConfigText: toMango + "\nexec_once=...\n").
+      #
+      # Dynamic theming, from features/dux: matugen writes
+      # ~/.config/mango/dms/colors.conf (border, focus and urgent colour) and
+      # reloads the compositor through `mmsg dispatch reload_config`. Three
+      # rules shape the line:
+      # - it is appended after the render, not written into `settings`, because
+      #   `toMango` sorts attributes and a `*_color` key sorting after
+      #   `source_optional` (mj. `urgent_color`) would beat the include.
+      # - `source_optional`, not `source`: the build-time `mango -c -p` gate runs
+      #   in the sandbox, where that path cannot exist, and the required form
+      #   fails the whole rebuild on a missing file.
+      # - absolute, not `./`: a `./` path resolves against *this* file's
+      #   directory, which is the store.
+      colorsInclude = "source_optional = /home/${config.dendritic.userName}/.config/mango/dms/colors.conf";
+      configText = (toMango settings) + "\n${colorsInclude}\nexec_once=${autostartSh}\n";
 
       # Build-time validation, exactly like the HM module's validatedConfig:
       # mango -c <file> -p checks the config before it ever ships.

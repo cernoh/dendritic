@@ -2,10 +2,24 @@
 # forks (DMS = "Dux Modular Shell"). Replacement for the `noctalia` +
 # `noctaliaGreeter` pair both hosts used to import.
 #
+# The whole suite lives in this one directory, so the shell's configuration has
+# a single home rather than being spread over four sibling features:
+#   shell.nix     programs.dank-material-shell   (both halves)
+#   greeter.nix   programs.dms-greeter           (NixOS)
+#   search.nix    programs.dsearch               (home-manager)
+#   calendar.nix  programs.dank-calendar         (home-manager)
+# `import-tree` registers each file as a top-level flake-parts module, so the
+# exported names stay `nixosModules.{dms,dms-greeter}` and
+# `homeManagerModules.{dms,dsearch,dcalendar}` — a host may still import one
+# piece alone. This file is the bundle both hosts actually import.
+#
+# The `programs.dank-material-shell` block itself is in `shell.nix`; it is one
+# attrset shared by both halves and therefore identical on NixPC and ASAHI.
+#
 # Which half each feature lands on follows from where upstream publishes its
-# module (see each feature's header): the shell, search and calendar are
-# user-session features and are exported on the home-manager half only, while
-# the greeter runs before any session exists and is the one NixOS-side import.
+# module (see each file's header): the shell, search and calendar export a
+# home-manager half, while the greeter runs before any session exists and is
+# the one NixOS-side import.
 #
 # This module also owns the shell's compositor keys. They are NOT in
 # `features/mango`: the compositor feature must not name an application, so it

@@ -2,12 +2,13 @@
   "name": "pi-extensions",
   "private": true,
   "scripts": {
-    "postinstall": "node patches/pi-lazy-skill-tool.mjs && node patches/pi-vision-tool.mjs && node patches/pi-auto-router.mjs",
-    "patch:check": "node patches/pi-lazy-skill-tool.mjs --check && node patches/pi-vision-tool.mjs --check && node patches/pi-auto-router.mjs --check"
+    "postinstall": "node patches/pi-lazy-skill-tool.mjs && node patches/pi-vision-tool.mjs && node patches/pi-auto-router.mjs && node patches/tersio.mjs",
+    "patch:check": "node patches/pi-lazy-skill-tool.mjs --check && node patches/pi-vision-tool.mjs --check && node patches/pi-auto-router.mjs --check && node patches/tersio.mjs --check"
   },
   "dependencies": {
     "@amaster.ai/pi-computer-use": "^0.1.32",
     "@andrewjacop/pi-herdr": "^0.6.0",
+    "@bismawy/pi-arnative": "^0.10.0",
     "@bismawy/pi-jev-eye": "^0.4.0",
     "@ff-labs/pi-fff": "^0.11.0",
     "@juicesharp/rpiv-ask-user-question": "^2.15.0",
@@ -15,7 +16,6 @@
     "@krtclcdy/tersio": "^2.25.14",
     "@quintinshaw/pi-dynamic-workflows": "^3.15.0",
     "@valdo766hi/pi-lazy-skill-tool": "^0.3.1",
-    "cc-my-pi": "^1.4.3",
     "pi-agent-browser-native": "^0.9.6",
     "pi-auto-router": "^0.3.1",
     "pi-background-tasks": "^2.6.9",

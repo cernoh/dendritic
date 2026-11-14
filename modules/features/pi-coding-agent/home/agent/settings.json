@@ -1,7 +1,6 @@
 {
   "packages": [
     "npm:pi-freeflow",
-    "npm:cc-my-pi",
     "npm:pi-tool-discipline",
     "npm:@ff-labs/pi-fff",
     "npm:pi-web-access",
@@ -29,7 +28,14 @@
     "npm:@quintinshaw/pi-dynamic-workflows",
     "./extensions/auto-router-utc.ts",
     "npm:pi-auto-router",
-    "npm:@bismawy/pi-jev-eye"
+    {
+      "source": "npm:@bismawy/pi-arnative",
+      "extensions": [
+        "!extensions/todos.ts"
+      ]
+    },
+    "npm:@bismawy/pi-jev-eye",
+    "../../../../mnt/2tb-ext4/pi-lazy-extensions-clef"
   ],
   "lastChangelogVersion": "1.4.0",
   "pi-computer-use": {
@@ -48,7 +54,7 @@
   "defaultTools": [
     "+codemode"
   ],
-  "theme": "sepia",
+  "theme": "arnative-garden",
   "quietStartup": true,
   "terminal": {
     "showTerminalProgress": true

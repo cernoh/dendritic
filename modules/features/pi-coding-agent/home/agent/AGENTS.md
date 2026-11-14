@@ -186,6 +186,51 @@ ranges:
   with `extensions: ["!extensions/server.ts"]` to load the real extension set
   (caveman, pstack, rtk, combo, commands, timing, updater) and skip the plugin
   entry. Drop the filter only when upstream adds a `pi` manifest.
+  **This is package mode, and it is the whole install.** Upstream has a second,
+  mutually exclusive shape: `tersio install --host pi` copies 150 files into
+  `~/.pi/agent/extensions` (tree mode) and warns "pi also has a tersio package
+  … or both copies load". Never run it here — that directory is this checkout
+  (out-of-store symlink), so the copy would land in git and double-load against
+  the package. It would also register an MCP server in `settings.json`.
+  `npm/patches/tersio.mjs` keeps the diagnosis honest about the shape in use:
+  `doctor.js` and `host-tree.js` compare every installed host against a copied
+  tree, so package mode reported a phantom "Add-on tree content: 150 declared
+  files not written" — an **issue** whose printed remedy (`tersio doctor --fix
+  extensions`) cannot clear it, because that repair skips a tree with zero files
+  present. The patch skips the comparison only when the host reads `via:
+  package` **and** no declared file exists on disk, so a half-written tree is
+  still caught; omp keeps its check (its plugin dir *is* the package), dsh is
+  exempt (`via: package` by design). Verified on 2.25.20 (latest): 2 missing →
+  0. Re-check with `npm run patch:check` after any install.
+- **RTK is tersio's add-on, not a nix package.** `rtk` (rtk-ai/rtk, the token
+  filter behind tersio's `rtk=on` combo) comes from upstream's installer into
+  `~/.local/bin` (musl static, so it runs on NixOS):
+  `curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh |
+  sh`. nixpkgs carries `rtk` 1.0.1, deliberately unused — the add-on is
+  tersio-managed like Caveman, pstack, Ponytail and Headroom, and a nix copy at
+  an older version would be shadowed by `~/.local/bin` (first in PATH) while
+  doctor still reported the version gap. `tersio doctor` proves it with `RTK
+  binary: ok rtk <version>`; without the binary the filter is inert, not broken.
+- **Tersio's MCP server is wired by hand into `agent/mcp.json`.** Upstream would
+  do it through `tersio install --host pi`, which is the tree-mode command above
+  — so the entry was written with pi's own writer instead:
+
+  ```sh
+  pi mcp add tersio --description "Tersio agent usage: stats, sessions, …" -- \
+    node '~/.pi/agent/npm/node_modules/@krtclcdy/tersio/dist/tersio.js' mcp
+  ```
+
+  `agent/mcp.json` is tracked, so a fresh checkout carries it; `pi mcp list`
+  must print `tersio: connected, 6 tools` (`tersio_stats`, `_sessions`,
+  `_activity`, `_hosts`, `_modes`, `_headroom`). Three details are load-bearing:
+  the command is `node` plus a `~/`-rooted script path because `tersio` itself is
+  not on PATH (only `~/.pi/agent/npm/node_modules/.bin/tersio`, which npm
+  recreates on every install) and a bare `tersio` in the entry would fail to
+  spawn; the `~/` form is what pi's `mcp.json` resolves at spawn; and the file
+  is edited only through `pi mcp add`/`remove`, never by hand, so pi keeps the
+  schema it validates. A running session needs `/reload` (or a restart) to pick
+  it up. This is also what clears doctor's `Pi MCP` warning — `tersio doctor`
+  reads the same `mcpServers` map.
 
 `settings.json` lists packages unversioned, so a bare `pi install npm:<pkg>`
 silently un-pins. Update from the repo path instead: bump the range in
@@ -232,6 +277,30 @@ listed in `.gitignore`; two entries are credentials and must stay listed.
   rotating, prove reachability: `git log --all -S<token> --oneline` and
   `git grep <token>`. An untracked file that was never staged needs a gitignore
   rule, not a rotation.
+
+### Resolving merges in this runtime state
+
+Pi rewrites these files on nearly every session, so a pull conflicts on them
+constantly. Resolve by content, never by "ours" or "theirs" as a side:
+
+- `agent/commandcode-models.json`, `agent/pi-freeflow-opencode-version.json`,
+  `agent/pi-freeflow-update.json`, `home/cc-my-pi-update-check.json` are
+  generated caches — a `checkedAt` stamp plus a provider catalog. The newer
+  `checkedAt` wins (usually ours, but read the stamp, not the branch label),
+  and a catalog is **never hand-merged**: a union resurrects models the
+  provider has dropped, which fails at call time rather than at eval time.
+  Re-check the resolved file is valid JSON; a broken cache silently hides
+  models instead of breaking a build.
+- `home/settings.json` is cc-my-pi's preferences file, and cc-my-pi's first
+  load on a config directory without one copies its defaults back as exactly
+  `{"ccMyPiSetupDone": true}`. A merge that takes that stub (a branch that
+  never had the file) silently drops every rendering setting the live TUI
+  reads through `~/.pi`; it is a strict subset of a real file, so keep the
+  superset.
+- `home/tasks/**` is background-task scratch — the job json and its captured
+  output, rewritten by the running session. `home/.gitignore` ignores it, so a
+  task pair appearing in a merge diff is upstream noise rather than repo
+  content, and it never gets committed back.
 
 ## pi-lazy-loader and pi-lazy-skill-tool
 

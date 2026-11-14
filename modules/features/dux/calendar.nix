@@ -1,4 +1,4 @@
-# Dux calendar (dank-calendar) feature. Home-manager half only.
+# Dux calendar (dank-calendar). Home-manager half only.
 #
 # Upstream (`inputs.dcalendar`) publishes `programs.dank-calendar` on both
 # `nixosModules.default` and `homeModules.default`, and both halves define the

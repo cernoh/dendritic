@@ -2,9 +2,15 @@
 #
 # Ported from the standalone `pi-titler/` flake into a dendritic feature so
 # NIXPC builds it as part of the system. Exposes `packages.pi-titler`,
-# `apps.pi-titler`, and `flake.nixosModules.pi-titler` (adds the package to
-# `environment.systemPackages`).
-{ self, inputs, ... }:
+# `apps.pi-titler`, `flake.nixosModules.pi-titler` (adds the package to
+# `environment.systemPackages`), and `flake.homeManagerModules.pi-titler`
+# (runs it as a user service so it is resident whenever pi-bolt is used).
+{
+  self,
+  inputs,
+  moduleWithSystem,
+  ...
+}:
 let
   modelId = "Qwen3-1.7B-Q4_K_M";
   ggufUrl = "https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/d7f544eead698dbd1f15126ef60b45a1e1933222/Qwen3-1.7B-Q4_K_M.gguf";
@@ -61,9 +67,40 @@ in
       };
     };
 
+  flake.homeManagerModules.pi-titler = moduleWithSystem (
+    { self', ... }:
+    {
+      config,
+      lib,
+      pkgs,
+      ...
+    }:
+    let
+      pi-titler = lib.getExe self'.packages.pi-titler;
+    in
+    {
+      systemd.user.services.pi-titler = {
+        Unit = {
+          Description = "pi-titler: local llama.cpp server for pi session titles";
+          After = [ "graphical-session.target" ];
+        };
+        Service = {
+          Type = "simple";
+          ExecStart = pi-titler;
+          Restart = "on-failure";
+          RestartSec = 5;
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
+    }
+  );
+
   flake.nixosModules.pi-titler =
     { pkgs, ... }:
     {
-      environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.pi-titler ];
+      config = {
+        environment.systemPackages = [ self.packages.${pkgs.stdenv.hostPlatform.system}.pi-titler ];
+        home-manager.sharedModules = [ self.homeManagerModules.pi-titler ];
+      };
     };
 }
