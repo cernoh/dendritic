@@ -24,6 +24,7 @@ in
 
         desktop
         asahiConfiguration
+        bootvine
         asahiPlatform
         widevine
         niri

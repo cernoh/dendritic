@@ -109,6 +109,12 @@ Default section order:
 When the user requests a durable behavior change, record it here or in the
 relevant child AGENTS.md
 
+## Feature Addition Contract
+
+- Any new feature MUST be added dendritically: its own folder under `modules/features/<name>/`, its own `default.nix` entry point, and a link/import from the best-fitting consumer (`modules/attrs/` machine-class bundle such as `desktop`/`programming`, or `modules/system/` / `modules/hosts/` where appropriate). Never inline a feature into an existing module or a host preset.
+- The folder MUST contain an `AGENTS.md` when it becomes a durable boundary (own purpose, rules, or workflow), following the Child Doc Shape, and the parent `modules/features/AGENTS.md` Child DOX Index MUST list it.
+- The feature exposes `flake.nixosModules.<name>` / `flake.homeManagerModules.<name>` and is enabled by import, per `modules/features/AGENTS.md`. Verify with `nix-instantiate --parse modules/features/<name>/default.nix` then `nix flake check --impure`.
+
 ## Child DOX Index
 
 - `modules/` — dendritic flake-parts tree (auto-registration, `parts.nix`, `verify.nix`, `_` exclusion) → `modules/AGENTS.md`

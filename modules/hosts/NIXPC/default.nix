@@ -22,6 +22,7 @@ in
 
         desktop
         nixpcConfiguration
+        bootvine
         nixpcDesktop
         nvidiaDrivers
         # smartmontools + smartd over the NVMe and the three SATA disks, plus
