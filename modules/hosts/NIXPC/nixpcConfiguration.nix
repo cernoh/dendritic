@@ -74,15 +74,13 @@
       # cannot probe (no TYPE, no by-uuid/by-partuuid symlinks), so both
       # entries pin /dev/disk/by-id WWN paths (udev-built, blkid-independent).
       fileSystems = {
-        "/mnt/2tb-storage" = {
-          device = "/dev/disk/by-id/wwn-0x5000c500e5f021d1-part1";
-          fsType = "btrfs";
-          options = [
-            "compress=zstd"
-            "noatime"
-            "nofail"
-          ];
-        };
+        # DISABLED 2026-11-13: device WWN wwn-0x5000c500e5f021d1 is not
+        # present in /dev/disk/by-id — the disk is gone/dead. Mount would fail.
+        # "/mnt/2tb-storage" = {
+        #   device = "/dev/disk/by-id/wwn-0x5000c500e5f021d1-part1";
+        #   fsType = "btrfs";
+        #   options = [ "compress=zstd" "noatime" "nofail" ];
+        # };
         # data1 is pinned by WWN rather than by-uuid, unlike every other entry
         # here. Reason (2026-10-13, issue #274): after the ext4 -> btrfs mkfs,
         # util-linux 2.42.3 blkid cannot probe this partition at all -- it
@@ -106,13 +104,15 @@
             "nofail"
           ];
         };
-        "/mnt/endeavouros" = {
-          device = "/dev/disk/by-uuid/c6c7f349-20be-44aa-93da-0b358cb61b7b";
-          fsType = "btrfs";
-          options = [
-            "nofail"
-          ];
-        };
+        # DISABLED 2026-11-13: /dev/sdb2 (UUID c6c7f349-...) is unreadable
+        # ("can't read superblock"). The disk is dead/corrupt; entry removed so
+        # nixos-rebuild switch can succeed. Re-add once the disk is repaired or
+        # replaced.
+        # "/mnt/endeavouros" = {
+        #   device = "/dev/disk/by-uuid/c6c7f349-20be-44aa-93da-0b358cb61b7b";
+        #   fsType = "btrfs";
+        #   options = [ "nofail" ];
+        # };
       };
       # Host-specific HM features; the shared homeManager module contributes
       # nvf + omp, and `imports` concatenates across modules.
@@ -134,9 +134,9 @@
           # file pickers list both mounts at top level. mkOutOfStoreSymlink
           # keeps them plain symlinks (no store copy of the disk contents).
           home.file = {
-            "2tb-storage".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-storage";
+            # "2tb-storage".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-storage";  # disabled: disk gone
             "2tb-ext4".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-ext4";
-            "endeavouros".source = config.lib.file.mkOutOfStoreSymlink "/mnt/endeavouros";
+            # "endeavouros".source = config.lib.file.mkOutOfStoreSymlink "/mnt/endeavouros";  # disabled: disk dead
             # Downloads is the landing zone for multi-GB archives (transmission,
             # persepolis, browser: the 2026-09 Trash held a 49 GiB .7z). Keep it
             # off the NVMe so one download cannot fill /. An absent data disk
@@ -146,9 +146,9 @@
             "Downloads".source = config.lib.file.mkOutOfStoreSymlink "/mnt/2tb-ext4/Downloads";
           };
           xdg.configFile."gtk-3.0/bookmarks".text = ''
-            file:///mnt/2tb-storage 2tb-storage
+            # file:///mnt/2tb-storage 2tb-storage
             file:///mnt/2tb-ext4 2tb-ext4
-            file:///mnt/endeavouros endeavouros
+            # file:///mnt/endeavouros endeavouros
           '';
         };
     };
