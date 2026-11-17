@@ -216,6 +216,12 @@
             "supportsLongCacheRetention": false,
             "sendSessionAffinityHeaders": true
           }
+        },
+        "hy4-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
         }
       }
     },
@@ -287,6 +293,16 @@
           }
         },
         "thinkingmachines/inkling-2-small:free": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "tencent/hy4": {
+          "compat": {
+            "supportsLongCacheRetention": false
+          }
+        },
+        "tencent/hy4-flash": {
           "compat": {
             "supportsLongCacheRetention": false
           }
@@ -505,6 +521,17 @@
           "compat": {
             "supportsLongCacheRetention": false,
             "sendSessionAffinityHeaders": true
+          }
+        },
+        "hy4-flash-free": {
+          "compat": {
+            "supportsLongCacheRetention": false,
+            "sendSessionAffinityHeaders": true
+          }
+        },
+        "qwen4-max": {
+          "compat": {
+            "supportsLongCacheRetention": true
           }
         }
       }

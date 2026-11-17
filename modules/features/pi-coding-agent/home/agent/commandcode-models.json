@@ -418,6 +418,14 @@
       "maxTokens": 65536
     },
     {
+      "id": "Qwen/Qwen4-Max",
+      "name": "Qwen 4 Max (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 1000000,
+      "maxTokens": 65536
+    },
+    {
       "id": "Qwen/Qwen3.8-Omni-Flash",
       "name": "Qwen 3.8 Omni Flash (CC)",
       "api": "openai-responses",
@@ -546,6 +554,22 @@
       "maxTokens": 65536
     },
     {
+      "id": "tencent/hy4",
+      "name": "Tencent Hy4 (CC)",
+      "api": "openai-completions",
+      "reasoning": false,
+      "contextWindow": 1024000,
+      "maxTokens": 65536
+    },
+    {
+      "id": "tencent/hy4-flash",
+      "name": "Tencent Hy4 Flash (CC)",
+      "api": "openai-completions",
+      "reasoning": false,
+      "contextWindow": 1024000,
+      "maxTokens": 65536
+    },
+    {
       "id": "tencent/hy4-preview",
       "name": "Tencent Hy4 Preview (CC)",
       "api": "openai-completions",
@@ -663,6 +687,14 @@
       "api": "openai-completions",
       "reasoning": false,
       "contextWindow": 1048576,
+      "maxTokens": 65536
+    },
+    {
+      "id": "recursive/flint-v1.0:free",
+      "name": "Flint (CC)",
+      "api": "openai-responses",
+      "reasoning": false,
+      "contextWindow": 262144,
       "maxTokens": 65536
     },
     {
