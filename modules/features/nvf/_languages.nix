@@ -24,13 +24,11 @@
     };
     dart = {
       enable = true;
-      flutter-tools = {
-        enable = true;
-        color = {
-          enable = true;
-          virtualText.enable = true;
-        };
-      };
+      # nvf v26.07 moved flutter-tools under `extensions` and dropped the
+      # `color` sub-option entirely (flutter-tools.nvim removed the colour
+      # highlight/virtual-text feature); the assertion for the old path is a
+      # hard eval failure, not a warning.
+      extensions.flutter-tools.enable = true;
     };
     kotlin = {
       enable = true;

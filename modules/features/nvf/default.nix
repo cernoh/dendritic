@@ -241,8 +241,8 @@ in
             };
           };
           # --- Languages ---
-          # `pkgs.flutter` (default `flutterPackage` for flutter-tools) pulls
-          # `aapt` via `flutter.nix:NIX_AAPT2_BINARY_PATH`, but `aapt`
+          # `pkgs.flutter` (default `setupOpts.flutter_path` for flutter-tools)
+          # pulls `aapt` via `flutter.nix:NIX_AAPT2_BINARY_PATH`, but `aapt`
           # is only available on x86_64-linux + darwin (aapt/package.nix
           # meta.platforms). On aarch64-linux this makes the nvf module
           # un-evaluatable — `nixos-rebuild switch --flake .#ASAHI` failed
@@ -253,8 +253,10 @@ in
             languagesConfig.languages
             // lib.optionalAttrs (pkgs.stdenv.hostPlatform.isAarch64 && pkgs.stdenv.hostPlatform.isLinux) {
               dart = languagesConfig.languages.dart // {
-                flutter-tools = languagesConfig.languages.dart.flutter-tools // {
-                  enable = lib.mkForce false;
+                extensions = languagesConfig.languages.dart.extensions // {
+                  flutter-tools = languagesConfig.languages.dart.extensions.flutter-tools // {
+                    enable = lib.mkForce false;
+                  };
                 };
               };
             };
