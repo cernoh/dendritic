@@ -42,6 +42,24 @@ greetd. Nothing here names a colour — see `Local Contracts`.
   those files from its own UI. Declaring them freezes the live `settings.json`
   (bar layout, widgets, `currentThemeName`) at build time and breaks in-app
   persistence. The shell's runtime settings are deliberately not nix-managed.
+- **`inputs.dms` is pinned to e919c08 in `flake.lock`, on purpose.** dux-shell
+  from 8f8ccd0 (2026-11-17) on ships a `vendorHash` that only matches *its own*
+  locked nixpkgs' Go: under this flake's `go-1.27.3` the `dms-shell`
+  `go-modules` fixed-output derivation wants `sha256-DinkXtyVURJ5I00B+j/otCcjm2MD9B0vessdqwd8zoU=`
+  while every upstream commit (main included) declares
+  `sha256-4DLiQLLY7F2usM8lAie2lPAXijDpJi13G33h5lyUSzs=`, so the whole system fails
+  with `hash mismatch in fixed-output derivation` before the shell is reached.
+  Verified by hand: `go mod vendor` on that rev's `core` with this nixpkgs' Go
+  yields exactly the `got:` tree, so it is upstream/nixpkgs skew, not a flaky
+  build. e919c08 (2026-11-09) is the last rev that realizes and is what the
+  live NixPC system was built from; it also has no `dux-qt-base` input at all
+  (the embedded qtbase came later), so re-locking it drops the
+  `dms/dux-qt-base` nodes. Restore with `nix flake lock --override-input dms
+  github:duxlabs-dev/dux-shell/e919c08f040e8109fcfe33593cb4e4ade24e8a7d`; undo by
+  dropping the comment's pin from `flake.nix` **and** re-locking, but only after
+  checking that upstream's hash matches a tree this nixpkgs' Go produces (the
+  cheap check is `go mod vendor` in `core` + `nix hash path vendor`). A plain
+  `nix flake update` un-pins it silently.
 - **Leave `package` at the upstream default.** `mkModuleWithDmsPkgs` builds the
   shell from the *consumer's* pkgs, so it shares one nixpkgs eval with the
   quickshell it runs; `inputs.dms.packages.<system>.default` would build against

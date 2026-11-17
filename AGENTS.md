@@ -123,6 +123,7 @@ relevant child AGENTS.md
     - `modules/features/computer-use/` — wlroots capture/injection tools, patched `cua-driver`, AT-SPI2 a11y bus → `modules/features/computer-use/AGENTS.md`
     - `modules/features/funes/` — pinned prebuilt `funes` binary plus its mandatory `hf` and `trufflehog` companions, no auto `funes add` → `modules/features/funes/AGENTS.md`
     - `modules/features/noctalia/` — Noctalia shell, the `cernoh/terminal` plugin, `ghostty-term` helper → `modules/features/noctalia/AGENTS.md`
+    - `modules/features/nix-crab/` — NIXPC-only Steam unlock stack, reimplemented locally (the `nix-crab` input is only a pin carrier): SLSsteam/slsteam-moon injection, CloudRedirect + its mirror-swapped assets and single staged hook path, ACCELA, SteaMidra, the optional Millennium/LuaTools stacks (Millennium disabled on a stale bun-deps pin) → `modules/features/nix-crab/AGENTS.md`
     - `modules/features/omp/` — Oh My Pi overlay, HM wrapping, managed-skills, agent definitions, plugins, `~/.omp` → `modules/features/omp/AGENTS.md`
     - `modules/features/pi-coding-agent/` — Pi extension set pins, the PATH `pi` shim, tracked runtime state under `~/.pi/agent`, `npm/patches/` re-apply hook → `modules/features/pi-coding-agent/home/agent/AGENTS.md`
     - `modules/features/pi-bolt/` — Pi-Bolt release pin, the Bun ELF patch rules (interpreter yes, rpath never), version skew against `pkgs.pi-coding-agent` → `modules/features/pi-bolt/AGENTS.md`

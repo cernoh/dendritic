@@ -95,6 +95,12 @@ in
         # build needs AVX2; see features/pi-bolt/AGENTS.md for the pin, the
         # variant table, and why the binary must not be re-patched.
         pi-bolt
+        # Steam client unlock stack (SLSsteam, Millennium, ACCELA, SteaMidra,
+        # CloudRedirect). NIXPC only: ASAHI runs no Steam client. It imports
+        # upstream's modules file by file and swaps CloudRedirect's dead
+        # upstream for a live mirror — see features/nix-crab/AGENTS.md before
+        # touching either.
+        nix-crab
         wheel
       ]
       ++ hardwareProfiles;

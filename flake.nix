@@ -66,6 +66,15 @@
     # `mkModuleWithDmsPkgs` builds from the host's own pkgs, so none of these
     # locked nixpkgs trees enters the eval (upstream has no binary cache for
     # either route — see README's boundaries).
+    # Pinned to e919c08 (2026-11-09) by `nix flake lock --override-input dms`:
+    # dux-shell >= 8f8ccd0 (2026-11-17) ships a `vendorHash` computed against
+    # its own locked nixpkgs' Go, so `go mod vendor` under this flake's go-1.27.3
+    # produces a different tree and `dms-shell`'s go-modules FOD fails with a
+    # hash mismatch (got sha256-DinkXtyVURJ…, upstream carries sha256-4DLiQL… at
+    # every commit, main included). e919c08 is the rev the running system was
+    # built from and it realizes. A plain `nix flake update dms` silently undoes
+    # the override and breaks the build again — re-check the hash first, and see
+    # modules/features/dux/AGENTS.md.
     dms = {
       url = "github:duxlabs-dev/dux-shell";
     };
@@ -136,6 +145,36 @@
     bootvine = {
       url = "git+https://codeberg.org/wvhulle/bootvine";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+    nix-crab = {
+      url = "github:ItszFinn/nix-crab";
+
+      inputs.nixpkgs.follows = "nixpkgs";
+      # Upstream pins these two at github:Selectively11/… , whose
+      # account is gone (404 for the release assets, the CLI and the
+      # gh-pages flatpakrepo). crghofficial/cloudredirect is the live
+      # continuation of the same project — same C++ sources, same
+      # org.cloudredirect.CloudRedirect app id, Linux `cloud_redirect.so`
+      # + `cloud_redirect_cli` + flatpak repo — and the only place the
+      # assets still exist, so nix-crab's inputs follow ours instead.
+      # See modules/features/nix-crab/AGENTS.md.
+      inputs.cloudredirect.follows = "cloudredirect";
+      inputs.cloudredirect-cli.follows = "cloudredirect-cli";
+    };
+    # CloudRedirect assets for modules/features/nix-crab (NIXPC only).
+    # `type = file`, so the release assets are pinned by narHash in
+    # flake.lock; bump the tag here and re-lock — the URLs are
+    # versioned on purpose (upstream's `releases/latest` form breaks
+    # the lock's narHash on every upstream release).
+    cloudredirect = {
+      type = "file";
+      url = "https://github.com/crghofficial/cloudredirect/releases/download/v2.6.5/cloud_redirect.so";
+      flake = false;
+    };
+    cloudredirect-cli = {
+      type = "file";
+      url = "https://github.com/crghofficial/cloudredirect/releases/download/v2.6.5/cloud_redirect_cli";
+      flake = false;
     };
   };
   outputs = inputs: inputs.flake-parts.lib.mkFlake { inherit inputs; } (inputs.import-tree ./modules);
